@@ -2,6 +2,10 @@ Prop is a pattern matching language based on C++.
 It implements algebraic datatypes, pattern matching and rewriting,
 and generates C++ code as output.
 ------------------------------------------------------------------------------
+Release 2.4
+     Updated projects and solution to Visual Studio 2010.
+	 Removed "using namespace std"'s to local std::'s
+
 Release 2.3.8
      Converted tabs to 2 spaces.
 Release 2.3.7
