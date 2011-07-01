@@ -1,0 +1,109 @@
+#include <AD/pretty/postream.h>
+#include "phase2.ph"
+#include "list.ph"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor and destructor for phase2 
+//
+///////////////////////////////////////////////////////////////////////////////
+Phase2::Phase2() {}
+Phase2::~Phase2() {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to invoke phase2 
+//
+///////////////////////////////////////////////////////////////////////////////
+Exp Phase2::phase2(Exp e) 
+{  message("Quantifier elimination phase", e); 
+   (*this)(e); 
+   return collect_subqueries(e);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Transformation to eliminate existential quantifiers 
+//  by transforming them into count queries.
+//
+///////////////////////////////////////////////////////////////////////////////
+rewrite Phase2
+{
+//
+// Locate all existential quantifiers. 
+//
+   EXISTS(x,A,p): 
+   {  IdSet S;
+      free_vars(p,S);
+
+      // Transform: exists x : A . p  where x does not occur in p
+      // into:      #A > 0 and p
+      if (! S.contains(x)) { rewrite(And(Nonempty(A),p)); }
+
+      // Transform: exists x : A . p(x) 
+      // into: #C > 0
+      //       where C = { x : A | p(x) }
+      if (S.size() == 1)
+      {  Id C = gensym("C");
+	 Exp find_query = GENERATOR(#[x],#[A],GUARD(p,ID(x)));
+	 add_subquery(C,find_query);
+	 rewrite(Nonempty(ID(C)));
+      }
+
+      //  Transform: exists x : A . p(x,y) 
+      //  into:   C(y)
+      //          where C = { [y, #{ [y,x] : x in A | p(x,y)}] : y in B }
+      if (S.size() == 2)
+      {  Id C = gensym("C");
+	 Id y = "???";
+	 foreach(i,S) if (S.value(i) != x) y = S.value(i);
+	 Exp B = range_of(y);
+         Exp count_query = 
+	    GENERATOR(#[y],#[B],
+	       TUPLE(#[ID(y), 
+		  Count(
+		     GENERATOR(#[x],#[A],
+		        GUARD(p,TUPLE(#[ID(y),ID(x)]))))]));
+         add_subquery(C,count_query);
+	 rewrite(Gt(APP(C,#[ID(y)]),Zero));
+      } 
+
+      // Arity is not zero or one
+      error("Cannot simplify quantifier",redex); 
+   }
+
+//
+// Also simplify all negated relational operator. 
+//
+|  Not(Eq(a,b)):  Ne(a,b)
+|  Not(Ne(a,b)):  Eq(a,b)
+|  Not(Gt(a,b)):  Le(a,b)
+|  Not(Ge(a,b)):  Lt(a,b)
+|  Not(Lt(a,b)):  Ge(a,b)
+|  Not(Le(a,b)):  Gt(a,b)
+
+//
+// Flatten into DNF form 
+//
+|  And(Or(a,b),c):  Or(And(a,c),And(b,c))
+|  And(a,Or(b,c)):  Or(And(a,b),And(a,c))
+|  Not(And(a,b)):   Or(Not(a),Not(b))
+|  Not(Or(a,b)):    And(Not(a),Not(b))
+|  Not(Not(a)):     a 
+|  Or(Or(a,b),c):   Or(a,Or(b,c))
+
+|  GENERATOR(x,A,GENERATOR(y,B,C)): GENERATOR(append(x,y),append(A,B),C)
+|  GENERATOR(x,A,GUARD(p as Nonempty(C),E)):
+      GUARD(p,GENERATOR(x,A,E))
+|  GENERATOR(x,A,GUARD(And(p1 as Nonempty(C),p2),E)):
+      GUARD(p1,GENERATOR(x,A,GUARD(p2,E)))
+|  GENERATOR(x,A,GUARD(True,E)): GENERATOR(x,A,E)
+|  GENERATOR(#[x],#[A],ID y) | x == y: A
+|  GUARD(p1,GUARD(p2,E)): GUARD(And(p1,p2),E)
+
+//
+//  Collect subqueries generated
+//
+postorder:
+|  LET(x,A,B) | has_subqueries(): collect_subqueries(redex)
+};

@@ -1,0 +1,258 @@
+//////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements datatype instantiations
+//
+//////////////////////////////////////////////////////////////////////////////
+
+#include "datatype.ph"
+#include "ast.ph"
+#include "ir.ph"
+#include "type.h"
+#include "datagen.h"
+#include "options.h"
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to instantiate a list of datatypes
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeCompiler::instantiate_datatypes( Bool external, Tys tys)
+{
+   if ( !external)
+     {  for_each (Ty, ty, tys) instantiate_datatypes( true,ty); }
+   {  for_each (Ty, ty, tys) instantiate_datatypes( external,ty); }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to instantiate one datatype
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeCompiler::instantiate_datatypes( Bool e, Ty ty)
+{
+  match (deref_all(ty))
+    {
+      my_ty as DATATYPEty({ id, hierarchy, polyty ... },arg_types):
+        {  if (hierarchy == 0)
+	      {
+	        error ( "%Ldefinition of datatype %T is unknown\n", ty);
+	      }
+	      else
+	      {
+	        if ( !is_ground( my_ty))
+	          error( "%Lmissing parameters in instantiation of datatype %T\n", ty);
+
+	        hierarchy->generate_datatype_instantiations( *this, arg_types, e);
+	      }
+        }
+      | ty:
+        { error( "%Ldefinition of %T is not found\n", ty); }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to instantiate a datatype
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::generate_datatype_instantiations
+   (CodeGen& C, Tys argument_types, Bool interface)
+{
+  if (is_view()) return;
+
+  get_info();
+  Id msg = interface ? "Interface specification" : "Instantiation";
+  C.pr(
+        "%^%/"
+        "%^//"
+        "%^// %s of datatype %s%P"
+        "%^//"
+        "%^%/"
+        "%#",
+        msg, datatype_name, argument_types, line, file
+      );
+  DefKind k = interface ? EXTERNAL_DEFINITION : EXTERNAL_INSTANTIATION;
+
+  gen_class_instantiation(C, argument_types, k);
+  gen_class_implementation(C, argument_types, k);
+  for (int i = 0; i < number_of_subclasses; i++)
+     subclasses[i]->gen_class_implementation(C, argument_types, k);
+  C.pr( "\n\n");
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the implementation of a class
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::gen_class_implementation(CodeGen& C, Tys tys, DefKind k)
+{
+  ///////////////////////////////////////////////////////////////////////////
+  //
+  // Compute the new argument types of the constructors
+  //
+  ///////////////////////////////////////////////////////////////////////////
+  match (cons)
+  {
+    ONEcons { ty, cons_ty ... }:
+      {
+        switch (k)
+        {
+        case EXTERNAL_INSTANTIATION:
+        case EXTERNAL_DEFINITION:
+              cons_arg_ty = apply_ty(cons_ty,tys); break;
+        default:
+              cons_arg_ty = ty; break;
+        }
+      }
+  | NOcons:
+     {  cons_arg_ty = NOty; }
+  }
+
+  ///////////////////////////////////////////////////////////////////////////
+  //
+  // Generate the constructors, destructors, and datatype constructor
+  // function if inline methods are not used.
+  //
+  ///////////////////////////////////////////////////////////////////////////
+
+  if ( !root->inline_methods)
+  {
+    // Generate the constructor of the class
+    if (cons != NOcons && (k != EXTERNAL_DEFINITION || tys != #[]))
+      gen_class_constructor( C, tys, k);
+
+    // Generate the destructor of the class
+    if ((k != EXTERNAL_DEFINITION || tys != #[]) &&
+        ((root->qualifiers & QUALvirtualdestr) ||
+        (qualifiers & QUALvirtualdestr) ||
+        (cons && is_array)))
+      gen_class_destructor( C, tys, k);
+
+    if (cons != NOcons && (k != EXTERNAL_DEFINITION || tys != #[]))
+      generate_datatype_constructor( C, tys, k);
+  }
+
+  ///////////////////////////////////////////////////////////////////////////
+  //
+  // Generate the implementation methods for various features
+  //
+  ///////////////////////////////////////////////////////////////////////////
+  if (root->qualifiers & QUALpersistent && k == EXTERNAL_INSTANTIATION)
+    generate_persistence_implementation( C, tys, k);
+  //if (root->qualifiers & QUALvariable && k == EXTERNAL_INSTANTIATION)
+  //    generate_logic_implementation( C, tys, k);
+  if (root->qualifiers & QUALcollectable && k == EXTERNAL_INSTANTIATION)
+    generate_gc_implementation( C, tys, k);
+  if (root->qualifiers & QUALrelation && k == EXTERNAL_INSTANTIATION)
+    generate_inference_implementation( C, tys, k);
+  if (root->qualifiers & QUALprintable)
+    generate_print_implementation( C, tys, k);
+}
+
+void DatatypeHierarchy::gen_class_implementation( CodeGen& C, Tys tys,DefKind k)
+{
+  DatatypeClass::gen_class_implementation( C, tys, k);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate template instantiation of a class
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::gen_class_instantiation( CodeGen& C, Tys tys, DefKind k)
+{
+  C.pr( "%^template class %S%P;", class_name, tys);
+
+  if (cons != NOcons && root->inline_methods)
+  {  // Constructor function
+    C.pr(
+          "%^template %S%P * %S%b;",
+          root->class_name, tys,
+          constructor_name, cons_arg_ty, cons->name, TYsimpleformal
+        );
+    // List constructor
+    if (is_list)
+    {
+    C.pr(
+          "%^template %S%P * %S%b;",
+          root->class_name, tys, constructor_name,
+          component_ty(cons_arg_ty,1), cons->name, TYsimpleformal
+        );
+    }
+    // Array constructor
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate template instantiation of a class hierarchy
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::gen_class_instantiation( CodeGen& C, Tys tys, DefKind k)
+{
+  if (tys != #[] && k == EXTERNAL_INSTANTIATION && arg_constructors > 0)
+  {
+    C.pr( "%n#ifdef PROP_EXPLICIT_TEMPLATE_INSTANTIATION");
+    DatatypeClass::gen_class_instantiation( C, tys, k);
+    for (int i = 0; i < number_of_subclasses; i++)
+    {
+      subclasses[i]->gen_class_instantiation( C, tys, k);
+    }
+    gen_untagging_function_instantiation( C, tys, k);
+    gen_downcasting_function_instantiation( C, tys, k);
+    C.pr( "%n#endif /* PROP_EXPLICIT_TEMPLATE_INSTANTIATION */");
+   }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate template instantiation of untagging functions.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::gen_untagging_function_instantiation
+   (CodeGen& C, Tys tys, DefKind k)
+{
+  C.pr(
+        "%^template int boxed(const %S%P *);"
+        "%^template int untag(const %S%P *);",
+        class_name, tys, class_name, tys
+      );
+  if (optimizations & OPTtaggedpointer)
+  {
+    C.pr(
+          "%^template int untagp(const %S%P *);"
+          "%^template %S%P * derefp(const %S%P *);",
+          class_name, tys, class_name, tys, class_name, tys
+        );
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate template instantiation of downcasting functions.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::gen_downcasting_function_instantiation
+   (CodeGen& C, Tys tys, DefKind k)
+{
+  if (options.inline_casts == false || parameters != #[])
+  {
+    for (int i = 0; i < number_of_subclasses; i++)
+    {
+      DatatypeClass * D = subclasses[i];
+      C.pr(
+            "%^template %S%P * _%S(const %S%P *);",
+            root->class_name, tys, D->constructor_name, class_name, tys
+          );
+    }
+  }
+}

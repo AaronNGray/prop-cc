@@ -1,0 +1,28 @@
+#
+#  These are the files that will not be put into a distribution tar file.
+#  We're using egrep patterns.
+#
+.*\.o
+.*\.report
+.*\.info
+.*/lib-src/Makefile
+.*/prop-src/Makefile
+.*/tools/pretty/niceprop
+.*/develop/.*
+.*/lib-src/libprop.a
+.*/prop-src/prop
+.*/app/willard/willard
+.*/app/test_vcg/exp
+.*/app/test_vcg/cfg
+.*/demos/exp
+.*/demos/prog
+.*/demos/persistent
+.*/demos/logic
+.*/demos/inference
+.*/demos/rewrite-trick[0-9]*
+.*/tests/list[0-9]*
+.*/tests/tuple
+.*/tests/rewriting[0-9]*
+.*/tests/test_gc[0-9]*
+.*/tests/qa[0-9]*
+.*/tests/prop[0-9]*

@@ -1,0 +1,54 @@
+#include <stdlib.h>
+#include "setl-lexeme.ph"
+#include "setl-syntax.ph"
+#include "setl-ast.ph"
+
+syntax SETLSyntax
+{  
+   left: 2 '[' '{' '(' ;
+   left: 3 '*' '/' "mod" "div";
+   left: 4 '+' '-';
+   left: 5 ":=" "with" "less";
+
+   exp(Exp):	literal			{ $$ = LITexp($1); }
+	|	'(' exp ')'		{ $$ = $2; }
+	|	exp '+' exp
+	|	exp '-' exp
+	|	exp '*' exp
+	|	exp '/' exp
+	|	exp "mod" exp
+	|	exp "div" exp
+	|	'-' exp
+        |	'{' exp_list '}'
+        |	'[' exp_list ']'
+	|	exp '(' exp ')'
+	|	exp '{' exp '}'
+	|	exp '[' exp ']'
+	|	exp "with" exp
+	|	exp "less" exp
+	|	"arb" exp
+	|	exp ":=" exp
+	|	exp "with" ":=" exp
+	|	exp "less" ":=" exp
+	;
+
+   exp_list(Exps):			{ $$ = #[]; }
+	|	exp_list_1		{ $$ = $1; }
+	;
+
+   exp_list_1(Exps):	exp		{ $$ = #[ $1 ]; }
+	|	exp ',' exp_list_1	{ $$ = #[ $1 ... $3 ]; }
+	;
+
+   literal Literal:
+		integer			{ $$ = INTlit($1); } 
+	|	real			{ $$ = REALlit($1); }
+	|	character		{ $$ = CHARlit($1); }
+	|	string			{ $$ = STRINGlit($1); }
+	;
+
+   integer(int):	INTEGER		{ $$ = atol(lexer_buf.text()); };
+   real(double):	REAL;
+   character(char):	CHARACTER;
+   string(const char*): STRING;
+};

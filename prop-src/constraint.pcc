@@ -1,0 +1,151 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the auxiliary methods of the constraint compiler,
+//  which include various pretty printing and AST transformation routines.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include <AD/strings/quark.h>
+#include "ir.ph"
+#include "ast.ph"
+#include "constraint.ph"
+#include "wam.ph"
+#include "type.h"
+#include "hashtab.h"
+#include "datagen.h"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Instantiate the constraint datatypes
+//
+///////////////////////////////////////////////////////////////////////////////
+
+instantiate datatype ConstraintSet,
+                     ConstraintDef,
+                     ConstraintRule,
+                     List<ConstraintDef>,
+                     ConstraintBody
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty printing routines.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print a rule set.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << ( std::ostream& f, ConstraintSet ruleset)
+{
+  match (ruleset) of
+    CONSTRAINTset rules: { return f << rules; }
+  end match;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print a list of constraint definition.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << ( std::ostream& f, ConstraintDefs defs)
+{
+  match while (defs) of
+    #[ one ... rest ]: { f << one; defs = rest; }
+  end match;
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print a definition.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << ( std::ostream& f, ConstraintDef def)
+{
+  match (def) of
+    CONSTRAINTruledef r:         { return f << r << '\n'; }
+  | CONSTRAINTtype (id,ty):      { return f << id << " : " << ty << ";\n"; }
+  | CONSTRAINTinstness (id,pat): { return f << id << " = " << pat << ";\n"; }
+  | CONSTRAINTdet  (id,pat,det):
+        { return f << id << " :: " << pat << " is " << det << ";\n"; }
+  end match;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print a constraint rule.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << ( std::ostream& f, ConstraintRule rule)
+{
+  match (rule) of
+    CONSTRAINTrule { id, pat, body = CONSTRAINTnone ... }: // axiom
+       {  return f << id << ' ' << pat << ';'; }
+    | CONSTRAINTrule { id, pat, body ... }:                // inference rule
+       {  return f << id << ' ' << pat << " :- " << body << ';'; }
+  end match;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print the body of a constraint.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << ( std::ostream& f, ConstraintBody b)
+{
+  match (b) of
+     CONSTRAINTnone:       // skip
+  | CONSTRAINTcut:        { f << "!"; }
+  | CONSTRAINTand (a,b):  { f << a << ", " << b; }
+  | CONSTRAINTif (a,b,c): { f << "if " << a << " then " << b
+                              << " else " << c << " end if"; }
+  | CONSTRAINTbody  _:    { f << "{ ... }"; }
+  | CONSTRAINTcall  e:    { f << e; }
+  end match;
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Hash function for id/type pair
+//
+///////////////////////////////////////////////////////////////////////////////
+
+unsigned int id_ty_hash( HashTable::Key k)
+{
+  Pair<Id,Ty> key = (Pair<Id,Ty>)(k);
+  return string_hash(key->fst); // + ty_hash(key->snd);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Equality function for id/type pair
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool id_ty_equal( HashTable::Key a, HashTable::Key b)
+{
+  Pair<Id,Ty> x = (Pair<Id,Ty>)(a);
+  Pair<Id,Ty> y = (Pair<Id,Ty>)(b);
+  return string_equal(x->fst,y->fst); // && ty_equal(x->snd,y->snd);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor and destructor of the constraint compiler
+//
+///////////////////////////////////////////////////////////////////////////////
+
+ConstraintCompiler:: ConstraintCompiler() : internal(0) {}
+ConstraintCompiler::~ConstraintCompiler() {}

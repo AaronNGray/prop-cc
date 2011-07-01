@@ -1,0 +1,168 @@
+graph:{
+   title: "1"
+   node.color: lightgreen
+   node.shape: ellipse
+   xbase: 100
+   yspace: 40
+   xspace: 50
+   layoutalgorithm: tree
+   display_edge_labels: yes
+   label: "A Sample Graph"
+   node:{
+      title: "52"
+      color: pink
+      shape: box
+      label: "z"
+   }
+   node:{
+      title: "49"
+      color: pink
+      shape: box
+      label: "x"
+   }
+   node:{
+      title: "10"
+      label: "+"
+   }
+   node:{
+      title: "34"
+      color: lightyellow
+      label: "123"
+   }
+   node:{
+      title: "46"
+      color: pink
+      shape: box
+      label: "y"
+   }
+   node:{
+      title: "43"
+      color: pink
+      shape: box
+      label: "x"
+   }
+   node:{
+      title: "40"
+      label: "+"
+   }
+   node:{
+      title: "37"
+      color: pink
+      shape: box
+      label: "z"
+   }
+   node:{
+      title: "31"
+      label: "*"
+   }
+   node:{
+      title: "16"
+      label: "-"
+   }
+   node:{
+      title: "28"
+      color: pink
+      shape: box
+      label: "y"
+   }
+   node:{
+      title: "25"
+      color: pink
+      shape: box
+      label: "x"
+   }
+   node:{
+      title: "22"
+      label: "+"
+   }
+   node:{
+      title: "19"
+      color: pink
+      shape: box
+      label: "z"
+   }
+   node:{
+      title: "13"
+      label: "*"
+   }
+   node:{
+      title: "7"
+      label: "/"
+   }
+   node:{
+      title: "4"
+      label: "+"
+   }
+   node:{
+      title: "2"
+      label: "-"
+   }
+   edge:{
+      sourcename: "10"
+      targetname: "52"
+   }
+   edge:{
+      sourcename: "10"
+      targetname: "49"
+   }
+   edge:{
+      sourcename: "40"
+      targetname: "46"
+   }
+   edge:{
+      sourcename: "40"
+      targetname: "43"
+   }
+   edge:{
+      sourcename: "31"
+      targetname: "40"
+   }
+   edge:{
+      sourcename: "31"
+      targetname: "37"
+   }
+   edge:{
+      sourcename: "16"
+      targetname: "34"
+   }
+   edge:{
+      sourcename: "16"
+      targetname: "31"
+   }
+   edge:{
+      sourcename: "22"
+      targetname: "28"
+   }
+   edge:{
+      sourcename: "22"
+      targetname: "25"
+   }
+   edge:{
+      sourcename: "13"
+      targetname: "22"
+   }
+   edge:{
+      sourcename: "13"
+      targetname: "19"
+   }
+   edge:{
+      sourcename: "7"
+      targetname: "16"
+   }
+   edge:{
+      sourcename: "7"
+      targetname: "13"
+   }
+   edge:{
+      sourcename: "4"
+      targetname: "10"
+   }
+   edge:{
+      sourcename: "4"
+      targetname: "7"
+   }
+   edge:{
+      sourcename: "2"
+      targetname: "4"
+   }
+}

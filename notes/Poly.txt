@@ -1,0 +1,39 @@
+   Polymorphic datatypes should be defined and used in the following manner:
+
+   (1)  A polymorphic datatype is defined using the usual 'datatype'
+        declaration.  This should be placed in a .ph file.
+
+        E.g. 
+           datatype TREE<T> = empty | leaf (T) | node (TREE<T>, T, TREE<T>);
+
+   (2)  Any additional refinement can be declared in the same file
+        (or some other .ph file that includes the .ph file with
+         the datatype declaration)
+        using the 'refine' declaration.
+
+        E.g.
+           // Now the tree is also has pretty printers 
+           // and is garbage collected.
+           refine TREE<T> :: printable collectable;
+
+   (3)  We must give Prop an indication of the parameters with which we 
+        intend to instantiate the polymorphic datatype.  This is done
+        with the 'instantiate extern datatype' declaration in an .ph file. 
+
+        E.g.
+           instantiate extern datatype TREE<int>, TREE<const char *>; 
+
+   (4)  Finally, we must instantiate the datatype with the 
+        'instantiate datatype' declaration in a .pcc file.  This will
+        generate all the appropriate methods and data for each instance.
+
+        E.g.
+           instantiate datatype TREE<int>, TREE<const char *>; 
+
+        This should be done only once in a single file and if done correctly,
+        should make it possible for you to generate only one copy of code
+        for each datatype.
+
+    You can find some more examples in the tools/incoming directory.
+    I apologize for not having the documentation ready.  You can also email
+    me for more clarification when needed.

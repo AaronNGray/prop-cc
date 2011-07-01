@@ -1,0 +1,321 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the class definition mechanism of Prop.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include <AD/strings/quark.h>
+#include "ir.ph"
+#include "ast.ph"
+#include "classdef.h"
+#include "type.h"
+#include "list.h"
+#include "hashtab.h"
+#include "datatype.h"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Names of various class types
+//
+///////////////////////////////////////////////////////////////////////////////
+
+const char * ClassDefinition::class_type_name[ ClassDefinition::LAST_CLASS] =
+{
+  "datatype",
+  "rewrite class",
+  "syntax class",
+  "inference class",
+  "graphtype",
+  "dataflow class",
+  "datatype subclass",
+  "attributegrammar class",
+  "constraint class",
+  "class"
+};
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Hashtable that contains all the classes indexed by name
+//
+///////////////////////////////////////////////////////////////////////////////
+
+HashTable ClassDefinition::defined_classes(string_hash, string_equal);
+
+ClassDefinition * ClassDefinition::lookup_class(CLASS_TYPE ct, Id name)
+{
+  HashTable::Entry * e = defined_classes.lookup(name);
+
+  if (e == 0)
+  {
+    error("%L%s %s has not been defined\n", class_type_name[ct], name);
+    return 0;
+  }
+  else
+  {
+    ClassDefinition * C = (ClassDefinition *)(e->v);
+
+    if (C->class_type != ct && ct != ANY_CLASS)
+    {
+      error("%Lclass %s is not a %s\n"
+	      "%!this is where %s %s was previously defined\n",
+             name, class_type_name[ct],
+	      C->loc(), class_type_name[C->class_type], name);
+	  return 0;
+    }
+    else
+      return C;
+  }
+}
+
+void ClassDefinition::insert_class( ClassDefinition * C)
+{
+  HashTable::Entry * e = defined_classes.lookup( C->class_name);
+
+  if (e)
+  {
+    ClassDefinition * old_def = (ClassDefinition*)(e->v);
+
+    error("%Lredefinition of %s %s\n"
+           "%!this is where it was previously defined.\n",
+	    class_type_name[C->class_type], C->class_name,
+	    old_def->loc());
+  }
+  else
+  {
+    defined_classes.insert( C->class_name,C);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor and destructors for datatype compiler
+//
+///////////////////////////////////////////////////////////////////////////////
+
+ClassDefinition::ClassDefinition
+  ( CLASS_TYPE ct, Id id, TyVars p, Inherits subclasses, TyQual qual, Decls body)
+  : class_type(ct),
+    class_name(id), parameters(p), inherited_classes(subclasses),
+    qualifiers(qual), class_body(body)
+{
+  constructor_code = #[];
+  destructor_code  = #[];
+  insert_class(this);
+}
+
+ClassDefinition::~ClassDefinition() {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a class definition
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void ClassDefinition::gen_class_definition( CodeGen& C)
+{
+  gen_class_predefinition( C);
+  C.pr( "%^%Hclass %s", parameters, class_name);
+  if ( inherited_classes != #[]) C.pr ( " : %I", inherited_classes);
+  C.pr( " {%+\n");
+  gen_class_interface( C);
+  C.pr( "%&%-%^};\n", class_body);
+  gen_class_postdefinition( C);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  The default is to generate nothing for the following
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void ClassDefinition::gen_class_predefinition( CodeGen& C) {}
+void ClassDefinition::gen_class_interface( CodeGen& C) {}
+void ClassDefinition::gen_class_postdefinition( CodeGen& C) {}
+void ClassDefinition::gen_class_implementation( CodeGen& C, Tys, DefKind) {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Useful methods
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Id ClassDefinition::mangled_name() const { return mangle(class_name); }
+Bool ClassDefinition::is_polymorphic() const { return parameters != #[]; }
+Bool ClassDefinition::is_view() const { return qualifiers & QUALview; }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to add a base class to the inheritance list
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void ClassDefinition::add_base_class( Id name, Scope s, TyQual q)
+{
+  inherited_classes = add_inherit( name, #[], inherited_classes, s, q);
+}
+
+void ClassDefinition::append_base_class( Id name, Scope s, TyQual q)
+{
+  inherited_classes = append( inherited_classes,
+			  add_inherit( name, #[], #[], s, q));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a constructor
+//
+///////////////////////////////////////////////////////////////////////////////
+void ClassDefinition::gen_class_constructor( CodeGen& C, Tys tys, DefKind k)
+{
+  switch( k)
+  {
+  case INTERFACE_DEFINITION:
+      C.pr( "%^%s ", class_name); break;
+  case INLINE_IMPLEMENTATION:
+      C.pr( "%^inline %s ", class_name); break;
+  case EXTERNAL_IMPLEMENTATION:
+      C.pr( "%^%H %s%V::%s ", parameters, class_name, parameters, class_name);
+	  break;
+  case EXTERNAL_INSTANTIATION:
+  case EXTERNAL_DEFINITION:
+      C.pr( "%^%s%P::%s ", class_name, tys, class_name);
+	  break;
+  }
+
+  gen_class_constructor_parameters( C, tys, k);
+
+  switch( k)
+  {
+  case INLINE_IMPLEMENTATION:
+  case EXTERNAL_IMPLEMENTATION:
+  case EXTERNAL_INSTANTIATION:
+      gen_class_constructor_initializers( C, tys, k);
+	  C.pr( "%^{%+");
+      gen_class_constructor_body( C, tys, k);
+	  if ( constructor_code) C.pr( "%^%&", constructor_code);
+	  C.pr( "%-%^}");
+	  break;
+  case INTERFACE_DEFINITION:
+  case EXTERNAL_DEFINITION:
+	  C.pr( ";");
+	  break;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a destructor
+//
+///////////////////////////////////////////////////////////////////////////////
+void ClassDefinition::gen_class_destructor(CodeGen& C, Tys tys, DefKind k)
+{
+  Id v = (qualifiers & QUALvirtualdestr) ? "virtual " : "";
+  switch (k)
+  {
+  case INTERFACE_DEFINITION:
+      C.pr( "%^%s~%s()", v, class_name);
+      break;
+  case INLINE_IMPLEMENTATION:
+      C.pr("%^inline %s~%s()", v, class_name);
+      break;
+  case EXTERNAL_IMPLEMENTATION:
+      C.pr("%^%H %s%V::~%s()",
+	     parameters, class_name, parameters, class_name);
+	  break;
+  case EXTERNAL_INSTANTIATION:
+  case EXTERNAL_DEFINITION:
+      C.pr("%^%s%P::~%s()", class_name, tys, class_name);
+	  break;
+  }
+
+  switch (k)
+  {
+  case INLINE_IMPLEMENTATION:
+  case EXTERNAL_IMPLEMENTATION:
+  case EXTERNAL_INSTANTIATION:
+	  C.pr( "%^{%+");
+	  gen_class_destructor_body( C, tys, k);
+	  if ( destructor_code) C.pr( "%^%&", destructor_code);
+	  C.pr( "%-%^}");
+	  break;
+  case INTERFACE_DEFINITION:
+  case EXTERNAL_DEFINITION:
+	  C.pr( ";");
+	  break;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Defaults method to generate various parts of the constructor and destructor
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void ClassDefinition::gen_class_constructor_parameters( CodeGen& C, Tys, DefKind)
+{
+  C.pr("()");
+}
+
+void ClassDefinition::gen_class_constructor_initializers( CodeGen&, Tys, DefKind)
+{
+}
+void ClassDefinition::gen_class_constructor_body( CodeGen&, Tys, DefKind)
+{
+}
+void ClassDefinition::gen_class_destructor_body( CodeGen&, Tys, DefKind)
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to add constructor code to a class
+//
+///////////////////////////////////////////////////////////////////////////////
+
+ClassDefinition * ClassDefinition::lookup_class_or_datatype
+   (Id class_name, Id constructor)
+{
+  match ( lookup_ty( class_name))
+  {
+  DATATYPEty ({ hierarchy ... }, _) | class_name == constructor:
+      { return hierarchy; }
+  | DATATYPEty (_,_):
+      {
+        Cons cons = lookup_cons( constructor);
+        if (cons)
+          return cons->class_def;
+      }
+   | _: { return lookup_class( ANY_CLASS,class_name); }
+   }
+   return 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to add constructor code to a class
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void ClassDefinition::add_constructor_code
+   (Id class_name, Id constructor, Decls body)
+{
+  ClassDefinition * C = lookup_class_or_datatype( class_name, constructor);
+  if (C)
+    C->constructor_code = append( C->constructor_code, body);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to add destructor code to a class
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void ClassDefinition::add_destructor_code
+   (Id class_name, Id destructor, Decls body)
+{
+  ClassDefinition * C = lookup_class_or_datatype( class_name,destructor);
+  if (C)
+    C->destructor_code = append( C->destructor_code, body);
+}

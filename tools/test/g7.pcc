@@ -1,0 +1,39 @@
+////////////////////////////////////////////////////////////////////////////
+//  This file demonstrates the use of the syntax declaration.
+////////////////////////////////////////////////////////////////////////////
+
+#include <iostream.h>
+
+lexemetype Token = IDENT   "[a-zA-Z_][a-zA-Z0-9_]*" 
+                 | INTEGER "[0-9]+"
+                 | IF      "if" 
+                 | THEN    "then"
+                 | ELSE    "else"
+                 | WHILE   "while"
+                 | DO      "do"
+                 ; 
+
+int get_token()
+{  for(;;) {
+      lexscan(cin) {
+         case IDENT:           return IDENT;
+         case INTEGER:         return INTEGER;
+         case IF:              return IF;
+         case THEN:            return THEN;
+         case ELSE:            return ELSE;
+         case WHILE:           return WHILE;
+         case DO:              return DO;
+         case "[(),{}+\-*/]":  return ?token[0];
+         case "(\t| |\n)":     break;
+         case eof:             return EOF;
+      }
+   }
+}
+
+syntax class Simple {};
+
+syntax Simple 
+{
+   Opts : Opt Opt ;
+   Opt  : IDENT ;
+};

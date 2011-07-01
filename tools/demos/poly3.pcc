@@ -1,0 +1,26 @@
+datatype LIST<T> = nil | list { hd : T, tl : LIST<T> }
+and      TREE<T> = empty | leaf (T) | node (T, LIST< TREE<T> >)
+;
+
+template <class T>
+   int depth (TREE<T> tree)
+   {  match (tree) {
+         case empty:  return 0;
+         case leaf _: return 1;
+         case node(_,children):
+            int max = 0;
+            for (LIST< TREE<T> > l = children; l; l = l->tl) { 
+               int d = depth(l->hd);
+               if (d > max) max = d;
+            }
+            return max + 1;
+      }
+  }
+
+typedef TREE<int> X;
+typedef LIST< TREE<int> > Y;
+
+int main()
+{  TREE<int> l = TREE<int>::node(1, LIST< TREE<int> >::nil);
+   int n = depth(l);
+}

@@ -1,0 +1,70 @@
+////////////////////////////////////////////////////////////////////////////
+//  This file demonstrates the use of the syntax declaration.
+////////////////////////////////////////////////////////////////////////////
+
+#include <iostream.h>
+#include <AD/automata/lexerbuf.h>
+
+datatype Token :: lexeme
+                 = IDENT   "[a-zA-Z_][a-zA-Z0-9_]*" 
+                 | INTEGER "[0-9]+"
+                 | IF      "if" 
+                 | THEN    "then"
+                 | ELSE    "else"
+                 | WHILE   "while"
+                 | DO      "do"
+                 ; 
+
+syntax class Testing 
+{
+public:
+   LexerBuffer lexbuf;
+   int Testing::get_token();
+};
+
+int Testing::get_token()
+{  for(;;) {
+      matchscan(lexbuf) {
+         case IDENT:           return IDENT;
+         case INTEGER:         return INTEGER;
+         case IF:              return IF;
+         case THEN:            return THEN;
+         case ELSE:            return ELSE;
+         case WHILE:           return WHILE;
+         case DO:              return DO;
+         case /[(),{}+\-*\/]/: return lexbuf[0];
+         case /(\t| |\n)/:     break;
+         case _:               return EOF;
+      }
+   }
+}
+
+syntax Testing
+{
+   left: 2 '+' '-' ;
+   left: 1 '*' '/' ;
+   stmt_list : 
+             | stmt stmt_list 
+             ;
+   stmt      : IF expr THEN stmt ELSE stmt 
+             | WHILE expr DO stmt
+             | '{' stmt_list '}'
+             | expr '=' expr
+             ;
+   expr      : '-' expr       
+             | expr '*' term  
+             | expr '/' term  
+             | term
+             ;
+   term      : term '+' item
+             | term '-' item
+             | item
+             ;
+   item      : INTEGER
+             | IDENT
+             | '(' expr_list ')'   
+             ;
+   expr_list : expr
+             | expr ',' expr_list
+             ;
+};

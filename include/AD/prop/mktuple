@@ -1,0 +1,55 @@
+#!/usr/bin/perl
+
+@arities=(2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
+
+for $k (@arities)
+{  $file = "tuple$k.h";
+   open(FILE,">$file") || die("$!\n");
+   print STDERR "[Generating $file]\n"; 
+   $formals       = "";
+   $members       = "";
+   $args          = "";
+   $actuals       = "";
+   $type_params   = "";
+   $initializers  = "";
+
+   for ($i = 1; $i <= $k; $i++)
+   {  $formals      = "$formals, " if $formals ne "";
+      $actuals      = "$actuals, " if $actuals ne "";
+      $type_params  = "$type_params, " if $type_params ne "";
+      $args         = "$args,\n" if $args ne "";
+      $initializers = "$initializers,\n" if $initializers ne "";
+      $formals      = "${formals}class T$i";
+      $members      = "${members}      T$i _$i;\n";
+      $args         = "${args}         const T$i& x$i";
+      $initializers = "${initializers}         _$i(x$i)";
+      $actuals      = "${actuals}x$i";
+      $type_params  = "${type_params}T$i";
+   }
+
+   print FILE <<"END";
+#ifndef prop_tuple${k}_h
+#define prop_tuple${k}_h
+
+template <$formals>
+   class Tuple$k {
+   public:
+$members
+      inline Tuple$k() {}
+      inline Tuple$k(   
+$args
+      ) : 
+$initializers 
+      {}
+   };
+
+template <$formals>
+   inline Tuple$k<$type_params> mkTuple$k(
+$args
+      ) 
+   { return Tuple$k<$type_params>($actuals); }
+
+#endif
+END
+   close(FILE);
+} 

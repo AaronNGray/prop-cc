@@ -1,0 +1,77 @@
+//////////////////////////////////////////////////////////////////////////////
+// NOTICE:
+//
+// ADLib, Prop and their related set of tools and documentation are in the
+// public domain.   The author(s) of this software reserve no copyrights on
+// the source code and any code generated using the tools.  You are encouraged
+// to use ADLib and Prop to develop software, in both academic and commercial
+// settings, and are welcomed to incorporate any part of ADLib and Prop into
+// your programs.
+//
+// Although you are under no obligation to do so, we strongly recommend that
+// you give away all software developed using our tools.
+//
+// We also ask that credit be given to us when ADLib and/or Prop are used in
+// your programs, and that this notice be preserved intact in all the source
+// code.
+//
+// This software is still under development and we welcome(read crave for)
+// any suggestions and help from the users.
+//
+// Allen Leung (leunga@cs.nyu.edu)
+// 1994-1997
+//////////////////////////////////////////////////////////////////////////////
+
+#include <AD/ag/parsenodes.h>
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor and destructor for a parse tree node
+//
+//////////////////////////////////////////////////////////////////////////////
+
+inline AGParseTree::AGParseTree(AGParseTree * sibling, AGParseTree * child)
+    : my_sibling(sibling), my_child(child)
+{}
+
+AGParseTree::~AGParseTree()
+{}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor and destructor for a terminal node
+//
+//////////////////////////////////////////////////////////////////////////////
+
+AGTerminal::AGTerminal(const char* id, AGParseTree* sibling, AGParseTree* child)
+    : AGParseTree( sibling, child)
+{
+  the_id = id;
+}
+
+AGTerminal::~AGTerminal()
+{}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor and destructor for a non-terminal node
+//
+//////////////////////////////////////////////////////////////////////////////
+
+AGNonterminal::AGNonterminal( int production_no, AGParseTree* sibling, AGParseTree* child)
+    : AGParseTree(sibling, child),
+    the_production_number(production_no)
+
+    AGNonterminal::~AGNonterminal()
+{}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to
+//
+//////////////////////////////////////////////////////////////////////////////
+
+AGParseTree * AGParseTree::make_node( int p, AGParseTree* a, AGParseTree* b)
+{
+  return new (memory_manager) AGParseTree(p,a,b);
+}

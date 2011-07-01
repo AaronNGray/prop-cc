@@ -1,0 +1,123 @@
+//
+//  This is a simple self-contained test of Prop's inference formalism.
+//
+//  To compile on Unix: 
+//
+//     prop dates.pcc
+//     gcc -I<prop-include-dir> dates.cc -o dates -L<ADLib-library-dir>
+//         -lad -liostream -lg++
+//
+
+#include <string.h>
+#include <iostream.h>
+
+//
+// Defines a simple relation(this should be placed in an include file).
+// Notice that this relation is actually a variant.
+// In general, we allow variant relations and relations
+// with arbitrarily complex arguments, just like any ``datatypes.''
+// In fact, an ``relation'' can be used as a datatype in Prop's
+// other pattern matching constructs.
+//
+relation Person = male   (char *)
+                | female (char *) 
+                ;
+
+relation Animal = animal (char *);
+
+//
+// Instantiate the relation: Prop will generate additional methods to
+// implement the relation type.
+// (This should be placed in an implementation file.)
+//
+instantiate relation Person, Animal;
+
+//
+// The inference construct defines a new inference class with
+// a set of inference rules.  Each instance of Dates should be
+// considered an independent (deductive) database.
+//
+inference class Dates {};
+inference Dates {
+
+     //
+     // First, say hello to myself, the author.
+     //
+     male ("allen")
+ ->  { cout << "Hi Al\n"; };
+
+     //
+     // print all names
+     //
+     male (p) 
+ ->  { cout << p << " is here\n"; };
+     female (p) 
+ ->  { cout << p << " is here\n"; };
+
+     //
+     // Print all pairs of potential couples.
+     // This is basically a simple cartesian product.
+     //
+     male (m) and female (f)
+ ->  { cout << "Heterosexual couple " << m << " and " << f << '\n'; };
+ 
+     //
+     // This is the 90's, so try gays and lesbians too.
+     // But make sure we don't print duplicates.
+     //
+     male (m1) and male (m2) where (strcmp(m1,m2) < 0)
+ ->  { cout << "Gay couple " << m1 << " and " << m2 << '\n'; };
+
+     female (f1) and female (f2) where (strcmp(f1,f2) < 0)
+ ->  { cout << "Lesbian couple " << f1 << " and " << f2 << '\n'; };
+
+};
+
+int main()
+{  // Instantiate an inference object
+   Dates dates;  
+
+   //
+   // Insert some facts
+   //
+   dates << male("mike") 
+         << male("vijay")
+         << male("allen")
+         << male("neal")
+         << female("holly")
+         << female("rachel")
+         << female("beth")
+         << female("jessica")
+         << female("michele")
+         ;
+
+   //
+   // These facts will not fire any rules, of course.
+   //
+   dates << animal ("monkey")
+         << animal ("weasel")
+         ;
+
+   //
+   // Run the inference engine until it is stable.
+   // The inference rules defined above will be fired and dating
+   // candidates will be printed.  Notice that the order in which
+   // this occurs is non-deterministic.
+   //
+   dates.infer();
+
+   //
+   // The above is actually an abbreviation for the following loop.
+   //
+   // while (! dates.is_stable())   // while not stable
+   //    dates.fire();              // execute one rule
+   //
+
+   //
+   // Clears the database.  
+   // It doesn't have any observable effect in our example, however.
+   //
+   dates.clear();
+
+   return 0;
+}

@@ -1,0 +1,634 @@
+lexemetype T =
+  and_ | as_ | in_ | datatype_ | type_ | where_ | view_ | public_ | private_ | protected_ 
+| id_ | functor_ | let_ | defrule_ | if_ | assert_ | retract_ | left_arrow_
+| colon_dash_ | defclause_ | lexscan_ | lexscanner_ | tokentype_
+| and_colon_ | or_colon_ | not_colon_ | implies_colon_ | equiv_colon_ | xor_colon_
+| character_ | integer_ | real_ | string_ | regexp_
+| and_also_ | or_else_ | left_shift_ | right_shift_
+| inc_ | dec_ | ge_ | le_ | eq_ | ne_ | dots_
+| match_ | matchall_ | rewrite_ | reduce_ | case_ | operator_
+| class_ | struct_ | union_ | exp_
+| plus_eq_ | minus_eq_ | mult_eq_ | div_eq_ | mod_eq_
+| or_eq_ | and_eq_ | xor_eq_ | left_shift_eq_ | right_shift_eq_ 
+| arrow_ | colon_colon_ | int_ | instantiate_ | error_colon_ | eof_colon_ 
+| before_colon_ | case_insensitive_colon_ | non_backtracking_colon_
+| contexts_colon_ | lalr1_parse_ | lalr1_parser_
+;
+
+%left inc_ dec_
+%left '.' arrow_
+%left '*' '/' '%'
+%left '+' '-'
+%left left_shift_ right_shift_
+%left '<' '>' ge_ le_
+%left eq_ ne_
+%left '&'
+%left '^'
+%left '|'
+%left and_also_
+%left or_else_
+%right '=' plus_eq_ minus_eq_ mult_eq_ div_eq_ mod_eq_
+%right or_eq_ and_eq_ xor_eq_ left_shift_eq_ right_shift_eq_ 
+%left colon_colon_
+%left not_colon_
+%left and_colon_
+%left implies_colon_
+%left xor_colon_
+%left equiv_colon_
+%left or_colon_
+
+syntax class BigOne {};
+
+syntax BigOne {
+/***************************************************************************
+ *  The start symbol 
+ ***************************************************************************/
+start:		 decl_list	
+;
+/***************************************************************************
+ *  Declaration list
+ ***************************************************************************/
+decl_list:	
+| decl decl_list
+;
+
+/***************************************************************************
+ *  Declarations can be either datatype or type declarations, pattern 
+ *  matching or rewriting statements
+ ***************************************************************************/
+decl:	a_decl 
+;
+a_decl:	data_type 
+	datatype_decl_list where_types ';'	
+|	token_type 
+	datatype_decl_list where_types ';'	
+|	instantiate_datatype_decl 
+|	typep type_decl_list ';' 
+|	match_decl	
+|	matchall_decl
+|	rewrite_decl	
+|	reduce_decl
+|	let_decl
+|	production_decl	
+|	horn_clause_decl	
+|	lexscan_decl		
+|	parse_decl		
+// |	error ';'		
+;
+
+token_type:	tokentype_	
+;
+data_type:	datatype_	
+;
+typep:		type_		
+;
+
+/***************************************************************************
+ *   Parser generator
+ ***************************************************************************/
+parse_decl:	lalr1_parse paren_exp '{' parse_rule_list '}'
+		
+;
+
+lalr1_parse:	lalr1_parse_	
+;
+
+parse_rule_list: 
+|		parse_rule parse_rule_list  
+		
+;
+
+parse_rule:	id ':' parse_production_list
+		';'
+		
+;
+
+parse_production_list:	parse_production	
+			
+		|	parse_production '|' parse_production_list
+			
+		;
+
+parse_production:	parse_symbol_list 
+;
+
+parse_symbol_list:	
+|			parse_symbol parse_symbol_list
+			
+;
+
+parse_symbol:		id		
+|			functor		
+|			character	
+|			'{' 
+			line_num
+			 
+			decl_list 
+			 
+			'}'
+			
+;
+
+line_num:	;	
+
+/***************************************************************************
+ *   Lexical scanner generator
+ ***************************************************************************/
+lex_dummy:	 ;
+lexscan_decl:	lexscan_tok paren_exp lex_dummy
+                '{' case_insensitive_opt non_backtracking_opt contexts_opt
+		    before_opt lexscan_rules '}' 
+;
+
+contexts_opt:	contexts_colon_ id	
+|					
+;
+
+non_backtracking_opt: non_backtracking_colon_			
+|						
+;
+
+case_insensitive_opt: case_insensitive_colon_	
+|						
+;
+
+before_opt:	
+|		before_colon_  '{' 
+		 
+		decl_list 
+		
+		'}'
+;
+		
+
+lexscan_tok:	lexscan_	
+;
+
+lexscan_rules:	lexscan_rule			
+		
+|		lexscan_rule lexscan_rules	
+		
+;
+
+lexscan_rule:	casep string_or_wild_card ':'
+		 decl_list 
+|		casep functor ':'
+		 decl_list 
+|		casep eof_colon_ 
+		 decl_list 
+;
+
+string_or_wild_card:	string	
+		|	'_'	
+		;
+
+/***************************************************************************
+ *   Instantiate a datatype 
+ ***************************************************************************/
+instantiate_datatype_decl: instantiatep datatype_ instantiate_ty_decl_list ';' 
+	
+;
+
+instantiate_ty_decl_list: 
+	instantiate_ty_decl
+	
+|	instantiate_ty_decl ',' instantiate_ty_decl_list
+	
+;
+
+instantiate_ty_decl:  
+	id 
+	
+|	id '<' ty_or_int_list '>'
+	
+;
+
+instantiatep:	instantiate_	
+;
+
+/***************************************************************************
+ *  Reduction rules
+ ***************************************************************************/
+reduce_decl:	reduce paren_exp '{' reduction_rules '}'
+;
+
+reduce:		reduce_		
+;
+
+reduction_rules:	
+;
+
+/***************************************************************************
+ *  Rewrite rules
+ ***************************************************************************/
+rewrite_decl:	rewrite_tok '(' exp ')' '{' body '}'
+;
+
+rewrite_tok:	rewrite_	
+;
+
+/***************************************************************************
+ *  Datatype declaration list contains a list of mutually recursive 
+ * datatype declarations.
+ ***************************************************************************/
+datatype_decl_list:	datatype_decl 				
+			
+|			datatype_decl and_ datatype_decl_list	
+			
+;
+
+/***************************************************************************
+ *  An optional list of type declarations may follow datatype declarations
+ ***************************************************************************/
+where_types:	
+|		where_ type_ type_decl_list 
+;
+
+/***************************************************************************
+ *  Type declarations
+ ***************************************************************************/
+type_decl_list:	type_decl			
+|		type_decl and_ type_decl_list	
+;
+
+/***************************************************************************
+ *  Type declarations may be used in place of typedef's
+ ***************************************************************************/
+type_decl:	id '=' ty
+		
+|		id '<' template_var_list '>' '=' ty
+		
+;
+
+/***************************************************************************
+ *  A datatype declaration defines the name of the type (which may be
+ *  parametric) followed a list of term declarations. 
+ ***************************************************************************/
+datatype_decl:	id scope_opt '=' term_decl_list 
+		 view_decl body
+		
+|		id '<' template_var_list '>' scope_opt '=' term_decl_list 
+		 view_decl body
+		
+;
+
+scope_opt:			
+|		scope		
+;
+
+scope:		public_		
+|		private_	
+|		protected_	
+;
+
+view_decl:	
+|		viewp view_aliases 
+;
+
+viewp:		view_ 
+;
+
+view_aliases:	view_alias	
+|		view_alias '|' view_aliases	
+;
+
+view_alias:	term_decl ':' pat	
+;
+
+body:		
+|		scope '{' 
+		 
+		decl_list 
+		
+		'}'
+		
+;
+
+/***************************************************************************
+ *  Termplate variable list
+ ***************************************************************************/
+template_var_list:	template_var 	
+|			template_var ',' template_var_list	
+			
+;		
+
+/***************************************************************************
+ *  A template variable may be parameterized by type or by an integer
+ ***************************************************************************/
+template_var:	class_ id	
+|		id		
+|		ty id		
+;
+
+/***************************************************************************
+ *  Horn clauses
+ ***************************************************************************/
+horn_clause_decl:  defclause_tok horn_clause_list '.' 
+;
+
+defclause_tok:	defclause_	
+;
+
+horn_clause_list:	horn_clause	
+|			horn_clause and_ horn_clause_list	 
+;
+
+horn_clause:	clause 	
+|		clause colon_dash_ clause_list	
+;
+
+clause:		id pat	
+;
+
+clause_list:	clause	
+|		clause ',' clause_list	
+;
+
+
+/***************************************************************************
+ *
+ *   Let declarations
+ *    
+ ***************************************************************************/
+let_decl:	let_tok
+		let_exp_list in_
+		'{'
+		decl_list 
+		'}'
+;
+
+let_tok:	let_	
+;
+
+let_exp_list:	let_exp		
+|		let_exp and_ let_exp_list	
+;
+
+let_exp:	pat '=' paren_exp 
+|		pat '=' id
+;
+
+match_decl:	match_tok match_exp_list 
+		
+		'{' rule_list 
+		'}'
+;
+
+matchall_decl:	matchall_tok match_exp_list 
+		
+		'{' rule_list 
+		'}'
+;
+
+match_tok:	match_	
+;
+matchall_tok:	matchall_	
+;
+	
+match_exp_list:	paren_exp			
+|		paren_exp and_ match_exp_list	
+;
+
+paren_exp:	'('  exp 
+		
+;
+
+rule_list:	rule		
+|		rule rule_list	
+;
+
+rule :		casep pat 
+		where_opt 
+		':'
+		
+		decl_list
+;
+
+casep:		case_ 
+;
+
+production_decl:	defrule_ production_rule_list ';'
+;
+			
+
+production_rule_list:	
+|			production_rule production_rule_list
+			
+;
+
+production_rule:	rule_name
+			antecedent_list 
+			decl_list 
+			'}'
+;
+
+rule_name:		id ':'		
+|			string ':'	
+;
+
+antecedent_list:	antecedent 
+			
+|			antecedent ',' antecedent_list
+			
+; 
+
+antecedent:	id paren_exp
+|		id 
+		where_opt
+|		id left_arrow_ id 
+		paren_exp
+|		'!' 
+		antecedent	
+		
+;
+
+dots_opt:		
+|		dots_	
+;
+
+where_opt:			  
+|		where_ paren_exp  
+;
+
+simple_pat:	
+	'(' pat ')'			
+|	'(' pat_list2 ')'		
+|	id				
+|	id as_ simple_pat		
+|	functor				
+|	functor simple_pat		
+|	'[' pat_list ']'		
+|	'`' '[' pat_list dots_opt ']'	
+|	'{' lab_pat_list '}'
+|	'(' simple_pat binop_pat pat ')' 
+|	'(' prefixop simple_pat ')'	
+|	'(' simple_pat postfixop ')'	
+|	integer				
+|	character			
+|	real				
+|	string				
+|	regexp				
+|	'_'				
+|	'(' pat ':' ty ')'		
+;
+
+pat:	simple_pat			
+|	pat and_colon_ pat		
+|	pat or_colon_ pat		
+|	pat implies_colon_ pat		
+|	pat equiv_colon_ pat		
+|	pat xor_colon_ pat		
+|	not_colon_ simple_pat		
+;
+
+lab_pat_list:			
+|		lab_pat_list2	
+;
+
+lab_pat_list2:	lab_pat  
+|		lab_pat ',' lab_pat_list2 
+;
+
+lab_pat:	id '=' pat	
+|		id		
+;
+
+pat_list:			
+|		pat		
+|		pat_list2	
+;
+
+pat_list2:	pat ',' pat
+		
+|		pat ',' pat_list2	
+;
+
+class_ty:	class_ class_ty			
+|		id				
+|		id '<' ty_or_int_list '>'	
+;
+
+ty:	class_ty			
+|	'(' ty ')'			
+|	'(' ty_list ')'			
+|	'{' lab_ty_list '}'
+|	ty '['  exp 
+|	ty '*'				
+|	ty '&'				
+|	ty id				
+;
+
+ty_list:	ty ',' ty	
+		
+|		ty ',' ty_list	
+;
+
+lab_ty_list:	lab_ty			
+|		lab_ty ',' lab_ty_list	
+;
+
+lab_ty:		id ':' ty	
+;
+
+term_decl:	id 			
+|		id string		
+|		id '(' ty ')'		
+|		id '(' ty_list ')'	
+|		id '{' lab_ty_list '}'
+|		prefixop ty		
+|		ty postfixop		
+|		ty binop ty 		
+|		'(' ty '|' ty ')'	
+;
+
+term_decl_list:	term_decl			
+|		term_decl '|' term_decl_list	
+;
+
+prefixop:	'~'			
+|		'!'			
+|		'-'			
+|		inc_			
+|		dec_			
+|		operator_ prefixop	
+;
+
+postfixop:	inc_			
+|		dec_			
+|		operator_ postfixop	
+;
+
+binop_pat:	binop	
+|		'*'	
+|		'|'	
+|		'>'	
+|		'&'	
+;
+
+binop:	'+'			
+|	'-'		
+|	'/'		
+|	'%'		
+|	'^'		
+|	'='		
+|	ge_		
+|	le_		
+|	ne_		
+|	eq_		
+|	or_else_	
+|	and_also_	
+|	left_shift_	
+|	right_shift_	
+|	plus_eq_ 	
+|	minus_eq_ 	
+|	mult_eq_ 	
+|	div_eq_ 	
+|	mod_eq_		
+|	or_eq_ 		
+|	and_eq_ 	
+|	xor_eq_ 	
+|	left_shift_eq_ 	
+|	right_shift_eq_ 
+|	arrow_		
+|	operator_ '*'	
+|	operator_ '|'	
+|	operator_ '>'	
+|	operator_ '<'	
+|	operator_ '&'	
+|	operator_ binop	
+;
+
+exp:		exp_	
+;
+
+ty_or_int_list:	ty_or_int			
+		
+|		ty_or_int ',' ty_or_int_list	
+		
+;
+
+ty_or_int:	ty	
+|		integer	
+;
+
+id:		id_		
+;
+
+functor:	functor_	
+;
+
+character:	character_	
+;
+
+integer:	integer_	
+;
+
+real:		real_		 
+;
+
+string:		string_ 	
+;
+
+regexp:		regexp_		
+;
+};

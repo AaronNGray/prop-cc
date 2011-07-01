@@ -1,0 +1,31 @@
+#include <iostream.h>
+
+datatype List<T> = nil | cons(class T, List<T>);
+
+template <class T>
+   int length(List<T> l)
+   {  match (l) {
+         case nil:       return 0;
+         case cons(_,l): return 1 + length(l);
+      }
+   }
+
+template <class T>
+   ostream& operator << (ostream& out, List<T> l)
+   {  match (l) {
+         case nil:       return out;
+         case cons(h,t): out << h; 
+                         if (t != nil) out << ", "; 
+                         return out << t;  
+      }
+   }
+
+instantiate datatype List<int>;
+
+int main()
+{  List<int> l = cons(1,cons(2,cons(3,nil)));
+   cout << "length [" << l << "] = " << length(l) << '\n';
+   return 0;
+}
+
+

@@ -1,0 +1,8 @@
+datatype List = nil | cons(int,List);
+
+int length(List l)
+{  match (l) {
+      case nil:       return 0;
+      case cons(_,l): return 1 + length(l);
+   }
+}

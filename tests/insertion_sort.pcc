@@ -1,0 +1,61 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Test garbage collection by insertion sorting a list in reverse sorted
+//  order.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <iostream.h>
+#include <AD/gc/gc.h>
+
+//  A collectable integer list
+
+datatype List :: collectable = #[] | #[ int ... List ];
+
+//  Instantiate the list datatype
+
+instantiate datatype List;
+
+//  Pretty print a list
+
+ostream& operator << (ostream& f, List l)
+{  match (l)
+   {  #[]:             { return f; }
+   |  #[one]:          { return f << one; }
+   |  #[one ... rest]: { return f << one << ", " << rest; }
+   }
+}
+
+//  Insert x into the sorted list l
+
+List insert (int x, List l)
+{  match (l)
+   {  #[]:        { return #[x]; }
+   |  #[h ... t]: { return h < x ? #[h ... insert(x,t)] : #[x ... l]; }
+   }
+}
+
+//  Sort a list
+
+List sort (List l)
+{  match (l)
+   {  #[] || #[_]: { return l; }
+   |  #[h ... t]:  { return insert(h,sort(t)); }
+   }
+}
+
+//  Create a list from hi to lo in descending order
+
+List range (int hi, int lo)
+{  return hi < lo ? #[] : #[hi ... range(hi-1,lo)]; }
+
+//  Sorting the list #[1000, 999, 998 ... 1] 
+//  Use 1 megabyte for heap space.
+
+int main()
+{  GC::get_default_gc().set_initial_heap_size(1024*1024);
+   List l = range(1000,1);
+   cout << sort(l) << '\n';
+   GC::get_default_gc().print_statistics(cout);
+   return 0;
+}

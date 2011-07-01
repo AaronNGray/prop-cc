@@ -1,0 +1,198 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the analysis routines for patterns and match
+//  decision trees.  These are used for mode analysis and determinism
+//  analysis for logic clauses compilation.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include "ir.ph"
+#include "matchcom.ph"
+#include "pat.ph"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Convert a pattern into an unifier if the constructor is part of
+//  an unifiable type.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Pat mkunifier( Cons cons, Pat pat, Pat transformed_pat)
+{
+  match (cons)
+  {
+  ONEcons { alg_ty = DATATYPEty({ qualifiers, terms, unit ... },_) ... }
+         | qualifiers & QUALunifiable:
+    {
+      Cons unifier_cons = terms[unit];
+      Bool mode_save = write_mode;
+      write_mode = true;
+      Pat new_p = LOGICALpat( ORpat, transformed_pat,
+                        UNIFYpat( APPpat( CONSpat( unifier_cons), WILDpat()),
+                                    pat2unifier( pat)));
+      write_mode = mode_save;
+      return new_p;
+    }
+  | _: { return pat; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Convert a simple pattern into an unifier.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Pat unifier_of( Pat pat)
+{
+  Pat new_p = pat;
+  match (pat)
+  {
+    NOpat || WILDpat _ || IDpat _ ||
+    LITERALpat _ || CONTEXTpat _ || LEXEMEpat _: // skip
+  | CONSpat cons:       { new_p = mkunifier( cons, pat, pat); }
+  | APPpat(a as CONSpat c,b):
+                        { new_p = mkunifier( c, pat, APPpat( a, unifier_of(b))); }
+  | TYPEDpat(p, t):     { new_p = TYPEDpat( unifier_of(p),t); }
+  | ASpat(id,p,t,e):    { new_p = ASpat( id, unifier_of(p),t,e); }
+  | ARRAYpat(ps,f):     { new_p = ARRAYpat( unifier_of( ps), f); }
+  | TUPLEpat ps:        { new_p = TUPLEpat( unifier_of( ps)); }
+  | EXTUPLEpat ps:      { new_p = EXTUPLEpat( unifier_of( ps)); }
+  | RECORDpat(ps,f):    { new_p = RECORDpat( unifier_of(ps), f); }
+  | GUARDpat(p, e):     { new_p = GUARDpat( unifier_of(p), e); }
+  | LISTpat { cons, nil, head, tail }:
+      {
+        new_p = LISTpat'
+                  {
+                    cons = cons, nil = nil,
+                    head = unifier_of(head),
+                    tail = unifier_of(tail)
+                  };
+      }
+  | VECTORpat { cons, len, array, elements, head_flex, tail_flex }:
+      {
+        new_p = VECTORpat'
+                  {
+                    cons     = cons,
+                    len      = unifier_of(len),
+                    array    = unifier_of(array),
+                    elements = unifier_of(elements),
+                    head_flex = head_flex,
+                    tail_flex = tail_flex
+                  };
+      }
+  | LOGICALpat( cont, a, b):
+      { new_p = LOGICALpat(cont,unifier_of(a),unifier_of(b)); }
+  | MARKEDpat(l, p):    { new_p = MARKEDpat(l, unifier_of(p)); }
+  | _:                  { bug ("%Lunsupported unifier: %p", pat); }
+  }
+  if (new_p != pat && boxed(pat) && boxed(new_p))
+  {
+    new_p->selector = pat->selector;
+    new_p->ty       = pat->ty;
+  }
+  return new_p;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Convert a simple pattern list into an unifier list.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Pats unifier_of( Pats pats)
+{
+  match (pats)
+  {
+    #[]:        { return #[]; }
+  | #[h ... t]: { return #[unifier_of(h) ... unifier_of(t)]; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Convert a simple labeled pattern list into an labeled unifier list.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+LabPats unifier_of( LabPats pats)
+{
+  match (pats)
+  {
+    #[]:        { return #[]; }
+  | #[h ... t]: {
+                  LabPat lab_pat;
+                  lab_pat.label = h.label;
+                  lab_pat.pat   = unifier_of(h.pat);
+                  return #[ lab_pat ... unifier_of(t) ];
+                }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Check whether pattern a subsumes b, i.e. more general.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool subsumes( Pat a, Pat b, Bool v)
+{
+  match (a) and (b)
+  {
+    WILDpat _ || IDpat _, _:
+      { return true; }
+  | BACKEDGEpat( _, _, a), _:
+      { return subsumes( a, b, v); }
+  | LITERALpat i, LITERALpat j:
+      { return literal_equal( i, j); }
+  | TUPLEpat a, TUPLEpat b:
+      { return subsumes( a, b, v); }
+  | EXTUPLEpat a, EXTUPLEpat b:
+      { return subsumes( a, b, v); }
+  | ASpat( _, a, _, _), _:
+      { return subsumes( a, b, v); }
+  | _, ASpat(_,b,_,_):
+      { return subsumes( a, b, v); }
+  | TYPEDpat( a, _), _:
+      { return subsumes( a, b, v); }
+  | _, TYPEDpat( b, _):
+      { return subsumes( a, b, v); }
+  | CONSpat c, CONSpat d:
+      { return c == d; }
+  | APPpat( a, b), APPpat( c, d):
+      { return subsumes( a, c, v) && subsumes( b, d, v); }
+  | GUARDpat( a, b), GUARDpat( c, d):
+      { return subsumes( a, c, v) && equal( b, d); }
+  | LOGICALpat( ORpat, x, y), b:
+      { return subsumes(x,b,v) && subsumes(y,b,v); }
+  | _, _:
+      { return false; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Checks whether list a subsumes list b.  Subsumption is computed
+//  componentwise.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool subsumes( Pats a, Pats b, Bool v)
+{  match (a) and (b)
+   {
+     #[],        #[]:        { return true; }
+   | #[m ... n], #[o ... p]: { return subsumes(m,o,v) && subsumes(n,p,v); }
+   | _,          _:          { return false; }
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Computes the subsumption info for two labeled pat lists.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool subsumes( LabPats, LabPats, Bool verbose)
+{
+  return false;
+}

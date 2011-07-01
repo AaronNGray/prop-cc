@@ -1,0 +1,40 @@
+Input:
+{[x,y]: x in A, y in B | (x < y)}
+{[x,y]: x in A, y in B | (x < y)}
+
+[Renaming phase]
+
+{[x,y]: x in A, y in B | (x < y)}
+
+[DNF construction and simplification phase]
+
+{[x,y]: x in A, y in B | (x < y)}
+
+[Constructing the query graph]
+
+[Query Graph]
+   edge x -> y
+{[x,y]: x in A, y in B | (x < y)}
+
+[Quantifier elimination phase]
+
+{[x,y]:[x,y] in [A,B] | (x < y)}
+
+[Disjunction removal phase]
+
+{[x,y]:[x,y] in [A,B] | (x < y)}
+
+[Conjunctive query decomposition phase]
+
+[Query Graph]
+   edge x -> y
+{[x,y]:[x,y] in [A,B] | (x < y)}
+
+[Projection recognition phase]
+
+{[x,y]:[x,y] in [A,B] | (x < y)}
+
+[Simple find/count query decomposition phase]
+
+Output:
+{[x,y]:[x,y] in [A,B] | (x < y)}

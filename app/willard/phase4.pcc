@@ -1,0 +1,133 @@
+#include <AD/pretty/postream.h>
+#include "list.ph"
+#include "phase4.ph"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor and destructor for phase4 
+//
+///////////////////////////////////////////////////////////////////////////////
+Phase4::Phase4() {}
+Phase4::~Phase4() {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to invoke phase4 
+//
+///////////////////////////////////////////////////////////////////////////////
+Exp Phase4::phase4(Exp e) 
+{ message("Conjunctive query decomposition phase", e);
+  (*this)(e); 
+  print_query_graph();
+  return collect_subqueries(e); 
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to construct a projection query Q(x,y) given (x,y)
+//
+///////////////////////////////////////////////////////////////////////////////
+Exp Phase4::make_projection(Id x, Id y, Ids xs, Exps As,
+			    const IdSet& fv, Exp predicate)
+{  Exp exp = predicate;
+   match while (xs) and (As) of
+      #[a ... b], #[c ... d]:
+      {  // Make projections.
+	 // If a new existential quantifier is introduced, set
+	 // change to true so that we'll reiterate the process.
+	 if (! fv.contains(a)) 
+	 { exp = EXISTS(a,c,exp); changed = true; }
+	 xs = b; As = d;
+      }
+   end match;
+   exp = GENERATOR(#[x,y],#[range_of(x),range_of(y)],
+	    GUARD(exp,TUPLE(#[ID(x),ID(y)])));
+   add_edge_query(x,y,exp);
+   Id Q = gensym();
+   add_subquery(Q,exp);
+   return ID(Q);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to decompose a conjunctive query into projections and joins
+//
+///////////////////////////////////////////////////////////////////////////////
+Exp Phase4::decompose_conjunct(Exp E, Ids xs, Exps As, Exp P)
+{  match (P)
+   {  And(a,b):
+      {  Exp x = decompose_conjunct(E,xs,As,a);
+         Exp y = decompose_conjunct(E,xs,As,b);
+	 return OP("join",#[x,y]);
+      }
+   |  OP("=" || "/=" || "<" || ">" || "<=" || ">=" || "#", es):
+      {  
+         // Collect all free variables in this expression.
+         IdSet S;
+         free_vars(es,S);   
+
+         // Now add edges to the query graph.
+         foreach(i,S)
+         {  Id x = S.value(i);
+    	    foreach(j,S)
+	    {  Id y = S.value(j);
+	       if (has_edge(x,y)) 
+		  return make_projection(x,y,xs,As,S,P);
+	    }
+         }
+	 Id Q = gensym();
+	 add_subquery(Q, GENERATOR(xs,As,GUARD(P,E)));
+	 return ID(Q);
+      }
+   |  e:  { error("Can't decompose conjunct", e); return e; }
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to construct a natural join queries given edges (x,y) and (y,z)
+//
+///////////////////////////////////////////////////////////////////////////////
+//Exps Phase4::make_natural_join(Id x, Id y, Id z, Exps queries)
+//{  Exp a = find_edge_query(x,y);
+//   Exp b = find_edge_query(y,z);
+//}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Transformation rules to construct edge queries.
+//
+///////////////////////////////////////////////////////////////////////////////
+rewrite Phase4
+{
+
+  // Flatten conjunctions
+  And(a,OP("and",es)): OP("and",#[a ... es])
+
+  // Locate all conjuctions and create natural joins between the edge queries.
+  // Locate all atomic predicates.  For each edge (x,y) in the query
+  // graph, create the edge query Q(x,y).
+| GENERATOR(vs,As,GUARD(OP("and",es),E)): 
+  {  Ids  xs   = #[];
+     Exps Qs   = #[];
+     Exps exps = #[];
+     Exps conjuncts = es;
+     match while (conjuncts) of
+	#[ h ... t]:
+	{  IdSet S;
+	   free_vars(h,S);
+	   Id Q = gensym();
+	   xs   = #[ Q ... xs ];
+	   Qs   = #[ GENERATOR(vs,As,GUARD(h,E)) ... Qs ];
+           exps = #[ ID(Q) ... exps ];
+	   conjuncts = t;
+	}
+     end match;
+
+     rewrite (make_let(xs,Qs,OP("join",exps)));
+  }
+
+  // Flatten LETs
+| LET(x,LET(y,b,a),e): LET(y,b,LET(x,a,e))
+
+};

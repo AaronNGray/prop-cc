@@ -1,0 +1,38 @@
+#include <iostream.h>
+
+
+datatype Exp :: rewrite =
+   NUM   of int        => _  
+|  ADD   of Exp, Exp   => "(" _ "+" _ ")"
+|  FINAL of Exp        => "FINAL(" _ ")"
+;
+
+instantiate datatype Exp;
+
+rewrite class Silly (Exp) {
+public:
+   Silly() {}
+};
+
+rewrite Silly {
+topdown:
+   FINAL _: cutrewrite /* skip all subtrees starting with FINAL */
+
+bottomup:
+|  NUM 0:  FINAL(NUM(1))
+|  NUM x:  FINAL(NUM(2))
+};
+
+int main() 
+{
+   Exp e = ADD(NUM(0),NUM(3));
+   Silly S;
+   cout << "Before = " << e << '\n';
+   S(e);
+   cout << "After = " << e << '\n';
+   rewrite (e) type (Exp) {
+      FINAL e: e
+   }
+   cout << "Finally = " << e << '\n';
+   return 0;
+}

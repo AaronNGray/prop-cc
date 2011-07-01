@@ -1,0 +1,28 @@
+#include <iostream.h>
+
+
+datatype Exp :: rewrite =
+   NUM   of int        => _  
+|  ADD   of Exp, Exp   => "(" _ "+" _ ")"
+;
+
+instantiate datatype Exp;
+
+rewrite class Silly (Exp) {
+public:
+   Silly() {}
+};
+
+rewrite Silly {
+   NUM x: { x = x == 0 ? 1 : 2; }
+};
+
+int main() 
+{
+   Exp e = ADD(NUM(0),NUM(3));
+   Silly S;
+   cout << "Before = " << e << '\n';
+   S(e);
+   cout << "After = " << e << '\n';
+   return 0;
+}

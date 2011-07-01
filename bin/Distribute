@@ -1,0 +1,58 @@
+#!/bin/sh 
+#
+#  This script creates a distribution tape of the current directory
+#  excluding all the files listed in NO_DISTRIBUTE.  
+#
+export PATH
+
+NO_DISTRIBUTE=$1
+
+if [ x$NO_DISTRIBUTE = x ]; then
+   echo "Missing the distribution file"
+   exit 1
+fi
+
+PATH=/bin:/usr/bin:/usr/ucb:/usr/local/bin
+DIR=`pwd`
+PROPDIR=`basename $DIR`
+echo "Creating distribution for $PROPDIR"
+rm -f MANIFEST TIMESTAMP
+echo "Distribution made on `date` by `whoami`" >TIMESTAMP
+uname -a >>TIMESTAMP
+
+if [ -f $NO_DISTRIBUTE ]; then 
+   PAT=`grep -v '^#' $NO_DISTRIBUTE`
+   PAT="^(@@@|"`echo "$PAT" | tr '\012' '|'`"@@@)\$"
+   cd ..
+   echo "'$PAT'"
+   find $PROPDIR ! -type d -print | egrep -v "$PAT" | sort > $PROPDIR/MANIFEST
+else
+   cd ..
+   find $PROPDIR ! -type d -print | sort > $PROPDIR/MANIFEST
+fi
+echo "Distributing list MANIFEST created"
+
+tar -cvf $PROPDIR.tar $PROPDIR/MANIFEST
+
+COUNT=""
+SMALL_LIST=""
+MARKER=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+FILES=`cat $PROPDIR/MANIFEST`
+for file in $FILES ; do 
+   COUNT=X$COUNT
+   SMALL_LIST="$SMALL_LIST $file"
+   if [ $COUNT = $MARKER ]; then
+      tar -rvf $PROPDIR.tar $SMALL_LIST;
+      COUNT="";
+      SMALL_LIST="";
+   fi;
+done 
+tar -rvf $PROPDIR.tar $SMALL_LIST $PROPDIR/MANIFEST
+
+if [ -f $PROPDIR.tar.gz ]; then
+   echo "Moving $PROPDIR.tar.gz to $PROPDIR.tar.gz.bak"
+   mv $PROPDIR.tar.gz $PROPDIR.tar.gz.bak
+fi
+echo "gzip $PROPDIR.tar"
+gzip $PROPDIR.tar
+echo "Distribution file is in ../$PROPDIR.tar.gz"

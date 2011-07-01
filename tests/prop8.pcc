@@ -1,0 +1,56 @@
+// Test generating of rewriting system with lots of rules and states
+
+
+datatype T = f(T,T) | g(T) | h(T) | a 
+  | a0 | a1 | a2 | a3 | a4 | a5 | a6 | a7 | a8 | a9 
+  | b0 | b1 | b2 | b3 | b4 | b5 | b6 | b7 | b8 | b9 
+  | c0 | c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8 | c9 
+  | d0 | d1 | d2 | d3 | d4 | d5 | d6 | d7 | d8 | d9 
+  | e0 | e1 | e2 | e3 | e4 | e5 | e6 | e7 | e8 | e9 
+  | f0 | f1 | f2 | f3 | f4 | f5 | f6 | f7 | f8 | f9 
+  | g0 | g1 | g2 | g3 | g4 | g5 | g6 | g7 | g8 | g9 
+  | h0 | h1 | h2 | h3 | h4 | h5 | h6 | h7 | h8 | h9 
+  | i0 | i1 | i2 | i3 | i4 | i5 | i6 | i7 | i8 | i9 
+  | j0 | j1 | j2 | j3 | j4 | j5 | j6 | j7 | j8 | j9 
+;
+
+instantiate datatype T;
+
+int main()
+{  T x = f(a,a);
+   rewrite (x) type (T)
+   {
+a0: a | a1: a | a2: a | a3: a | a4: a | a5: a | a6: a | a7: a | a8: a | a9: a 
+| b0: a | b1: a | b2: a | b3: a | b4: a | b5: a | b6: a | b7: a | b8: a | b9: a 
+| c0: a | c1: a | c2: a | c3: a | c4: a | c5: a | c6: a | c7: a | c8: a | c9: a 
+| d0: a | d1: a | d2: a | d3: a | d4: a | d5: a | d6: a | d7: a | d8: a | d9: a 
+| e0: a | e1: a | e2: a | e3: a | e4: a | e5: a | e6: a | e7: a | e8: a | e9: a 
+| f0: a | f1: a | f2: a | f3: a | f4: a | f5: a | f6: a | f7: a | f8: a | f9: a 
+| g0: a | g1: a | g2: a | g3: a | g4: a | g5: a | g6: a | g7: a | g8: a | g9: a 
+| h0: a | h1: a | h2: a | h3: a | h4: a | h5: a | h6: a | h7: a | h8: a | h9: a 
+| i0: a | i1: a | i2: a | i3: a | i4: a | i5: a | i6: a | i7: a | i8: a | i9: a 
+| j0: a | j1: a | j2: a | j3: a | j4: a | j5: a | j6: a | j7: a | j8: a | j9: a 
+| g(a0): a | g(a1): a | g(a2): a | g(a3): a | g(a4): a | g(a5): a | g(a6): a | g(a7): a | g(a8): a | g(a9): a 
+| g(b0): a | g(b1): a | g(b2): a | g(b3): a | g(b4): a | g(b5): a | g(b6): a | g(b7): a | g(b8): a | g(b9): a 
+| g(c0): a | g(c1): a | g(c2): a | g(c3): a | g(c4): a | g(c5): a | g(c6): a | g(c7): a | g(c8): a | g(c9): a 
+| g(d0): a | g(d1): a | g(d2): a | g(d3): a | g(d4): a | g(d5): a | g(d6): a | g(d7): a | g(d8): a | g(d9): a 
+| g(e0): a | g(e1): a | g(e2): a | g(e3): a | g(e4): a | g(e5): a | g(e6): a | g(e7): a | g(e8): a | g(e9): a 
+| g(f0): a | g(f1): a | g(f2): a | g(f3): a | g(f4): a | g(f5): a | g(f6): a | g(f7): a | g(f8): a | g(f9): a 
+| g(g0): a | g(g1): a | g(g2): a | g(g3): a | g(g4): a | g(g5): a | g(g6): a | g(g7): a | g(g8): a | g(g9): a 
+| g(h0): a | g(h1): a | g(h2): a | g(h3): a | g(h4): a | g(h5): a | g(h6): a | g(h7): a | g(h8): a | g(h9): a 
+| g(i0): a | g(i1): a | g(i2): a | g(i3): a | g(i4): a | g(i5): a | g(i6): a | g(i7): a | g(i8): a | g(i9): a 
+| g(j0): a | g(j1): a | g(j2): a | g(j3): a | g(j4): a | g(j5): a | g(j6): a | g(j7): a | g(j8): a | g(j9): a 
+| h(a0): a | h(a1): a | h(a2): a | h(a3): a | h(a4): a | h(a5): a | h(a6): a | h(a7): a | h(a8): a | h(a9): a 
+| h(b0): a | h(b1): a | h(b2): a | h(b3): a | h(b4): a | h(b5): a | h(b6): a | h(b7): a | h(b8): a | h(b9): a 
+| h(c0): a | h(c1): a | h(c2): a | h(c3): a | h(c4): a | h(c5): a | h(c6): a | h(c7): a | h(c8): a | h(c9): a 
+| h(d0): a | h(d1): a | h(d2): a | h(d3): a | h(d4): a | h(d5): a | h(d6): a | h(d7): a | h(d8): a | h(d9): a 
+| h(e0): a | h(e1): a | h(e2): a | h(e3): a | h(e4): a | h(e5): a | h(e6): a | h(e7): a | h(e8): a | h(e9): a 
+| h(f0): a | h(f1): a | h(f2): a | h(f3): a | h(f4): a | h(f5): a | h(f6): a | h(f7): a | h(f8): a | h(f9): a 
+| h(g0): a | h(g1): a | h(g2): a | h(g3): a | h(g4): a | h(g5): a | h(g6): a | h(g7): a | h(g8): a | h(g9): a 
+| h(h0): a | h(h1): a | h(h2): a | h(h3): a | h(h4): a | h(h5): a | h(h6): a | h(h7): a | h(h8): a | h(h9): a 
+| h(i0): a | h(i1): a | h(i2): a | h(i3): a | h(i4): a | h(i5): a | h(i6): a | h(i7): a | h(i8): a | h(i9): a 
+| h(j0): a | h(j1): a | h(j2): a | h(j3): a | h(j4): a | h(j5): a | h(j6): a | h(j7): a | h(j8): a | h(j9): a 
+| f(a,X) | X == a: a
+   }
+   return 0;
+}

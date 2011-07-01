@@ -1,0 +1,824 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the datatype compiler of Prop.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include <AD/strings/quark.h>
+#include "ir.ph"
+#include "ast.ph"
+#include "type.h"
+#include "datagen.h"
+#include "options.h"
+
+using namespace std;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor and destructors for datatype compiler
+//
+///////////////////////////////////////////////////////////////////////////////
+DatatypeCompiler:: DatatypeCompiler(TyOpt opt, int embedded_tags)
+   : optimizations(opt),
+     max_embedded_tags(embedded_tags),
+     temp_vars("_T")
+     {  max_embedded_bits = 0;
+        for (int i = embedded_tags - 1; i > 0; i >>= 1)
+           max_embedded_bits++;
+     }
+DatatypeCompiler::~DatatypeCompiler() {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Top level method to map datatype and type definitions into
+//  a C++ class hierarchy.
+//
+///////////////////////////////////////////////////////////////////////////////
+void DatatypeCompiler::gen_datatype
+   (DatatypeDefs data_defs, ViewDefs view_defs,
+    LawDefs law_defs, TyDefs ty_defs)
+{
+   //  Generate forward definitions
+   {  for_each (DatatypeDef, d, data_defs) gen_forward_def(d); }
+   {  for_each (TyDef, t, ty_defs)         gen_type_def(t); }
+
+   //  Generate the class hierarchies
+   {  for_each (DatatypeDef, d, data_defs) gen_class_hierarchy(d); }
+
+   //  Compile the pattern laws
+   gen_law_defs(law_defs);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a forward datatype definitions
+//
+///////////////////////////////////////////////////////////////////////////////
+void DatatypeCompiler::gen_forward_def(DatatypeDef data_def)
+{  match (data_def)
+   {  DATATYPEdef(id,tyvars,_,qual,terms,_) | (qual & QUALview) == 0:
+      {
+         if (terms != #[]) {
+            match (lookup_ty(id))
+            {  TYCONty(DATATYPEtycon
+                  { id, unit, arg, terms, opt, qualifiers ... },_):
+               {  if (arg == 0) // all unit constructors, generate them
+                     gen_unit_constructors(id,unit,terms,false,qualifiers & QUALlexeme);
+                  else { // otherwise
+                     gen_forward_class_def(id, tyvars, qualifiers);
+                     gen_forward_arg_constructors(id,tyvars,unit,arg,opt,terms);
+                  }
+               }
+            |  _:  { bug ("gen_forward_def()"); }
+            }
+         } else {
+            gen_forward_class_def(id, tyvars, qual);
+         }
+      }
+   |  _: // skip views
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Print a forward class definition for variant types.
+//
+///////////////////////////////////////////////////////////////////////////////
+void DatatypeCompiler::gen_forward_class_def(Id id, TyVars tyvars, TyQual qual)
+{
+   pr ("%^%/%^// Forward class definition for %s%V%^%/"
+       "%n#ifndef datatype_%s_defined\n"
+       "%n#define datatype_%s_defined\n",
+       id, tyvars, id, id);
+   Id is_const = (qual & QUALconst) ? "const " : "";
+   if (tyvars)
+      pr ("#   define %s%v %sa_%s%V *\n", id, tyvars, is_const, id, tyvars);
+   else
+      pr ("%^   typedef %sclass a_%s * %s;\n", is_const, id, id);
+   pr ("#endif\n\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to map unit constructors as enum's.
+//
+///////////////////////////////////////////////////////////////////////////////
+void DatatypeCompiler::gen_unit_constructors
+   (Id id, int n, Cons terms[], Bool intern, Bool is_lexeme)
+{
+   if (intern)
+      pr ("%^enum Tag_%s {\n%+",id);
+   else
+      pr ("%^%/%^// Definition of datatype '%s'%^%/%^enum %s {\n%+",id,id);
+   int count = 0;
+   Bool comma = false;
+   for (int i = 0; i < n; i++)
+   {  match (terms[i])
+      {  ONEcons { name, tag, ty ... }:
+         {  if (! (intern && ty == NOty)) {
+               if (comma) pr (", ");
+               if ((count % 4) == 0) pr ("%^");
+               if (intern) pr ("tag_");
+               pr ("%S = %i", name, tag_of(terms[i]));
+               comma = true;
+               count++;
+            }
+         }
+      |  _: { /* skip */ }
+      }
+   }
+   pr ("%-%^};\n\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate forward class definitions for
+//  a datatype with arguments.
+//
+///////////////////////////////////////////////////////////////////////////////
+void DatatypeCompiler::gen_forward_arg_constructors
+   (Id id, TyVars tyvars, int unit, int arg, TyOpt opt, Cons terms[])
+{  int arity = unit + arg;
+   pr ("%^%/%^// Class hierarchy for datatype %s%V%^%/"
+       "%^%Hclass a_%s; // base class for datatype %s%V\n",
+       id, tyvars, tyvars, id, id, tyvars);
+   if ((opt & OPTsubclassless) == 0) {
+      pr ("%+");
+      for (int i = 0; i < arity; i++)
+      {  match (terms[i])
+         {  ONEcons { name, ty = ty as ! NOty, opt ... }:
+            {  pr ("%^%Hclass %s_%S;\t// subclass for '%s %T'\n",
+                   tyvars, id, name, name, ty);
+            }
+         |  _:  { /* skip */ }
+         }
+      }
+      pr ("%-");
+   }
+   pr ("\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a forward type definition
+//
+///////////////////////////////////////////////////////////////////////////////
+void DatatypeCompiler::gen_type_def (TyDef ty_def)
+{  match (ty_def)
+   {  TYdef(id,tyvars,ty,generative) | generative:
+      {  pr ("%^%/%^// Definition of type %s%V%^%/"
+             "%#"
+             "%^%^typedef %t;\n\n",
+             id, tyvars, ty_def->begin_line, ty_def->file_name, ty, id);
+      }
+   |  _: /* skip */
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the class hierarchy
+//
+///////////////////////////////////////////////////////////////////////////////
+void DatatypeCompiler::gen_class_hierarchy(DatatypeDef d)
+{  match (d)
+   {  DATATYPEdef(id,tyvars,_,this_qual,_,_) | (this_qual & QUALview) == 0:
+      {  match (lookup_ty(id))
+         {  TYCONty(DATATYPEtycon { id, unit, arg, terms, inherit,
+                                    qualifiers, opt, body ... },_):
+            {  if (arg > 0) {
+                  Bool has_subclass =
+                     gen_base_class(id,tyvars,unit,arg,opt,terms,inherit,
+                                 qualifiers,body);
+                  // If we have no subclass and no virtual functions
+                  // then don't inherit from the base class at all!
+                  // if (! has_subclass && (opt & OPTtagless) &&
+                  //     (qualifiers & QUALvirtualdestr) == 0)
+                  //    opt |= OPTbaseclassless;
+                  int arity = unit + arg;
+                  if ((opt & OPTsubclassless) == 0)
+                     for (int i = 0; i < arity; i++)
+                        if (terms[i]->ty != NOty)
+                           gen_subclass(id, tyvars, unit, arg, opt,
+                                        qualifiers, terms[i]);
+                  if ((opt & OPTsubclassless) == 0 && tyvars != #[])
+                     gen_downcasting_functions
+                        (id, tyvars, unit + arg, terms, qualifiers);
+              }
+
+              //  If the class is unifiable, generate the dereference method
+              if (qualifiers & QUALunifiable)
+              {  Id var_name  = terms[unit]->name;
+                 Id down_cast = (opt & OPTsubclassless) ? ""
+                                   : Quark("_",mangle(var_name)).string();
+                 pr("%^%/"
+                    "%^//  Variable dereferencing method"
+                    "%^%/"
+                    "%^%Hinline %s%v deref_var(%s%v _x_)"
+                    "%^{  while (untag(_x_) == %i && %s(_x_)->%S != _x_)"
+                    "%^      _x_ = %s(_x_)->%S;"
+                    "%^   return _x_;"
+                    "%^}\n\n",
+                    tyvars, id, tyvars, id, tyvars,
+                    unit, down_cast, var_name, down_cast, var_name,
+                    id, tyvars);
+              }
+
+              if ((qualifiers & QUALprintable) && tyvars == 0)
+                 pr ("%^%Hostream& operator << (ostream&,%s%v);"
+                     "%^%Hostream& pretty_print(ostream&,%s%v,int = 0,int = 0);\n\n",
+                     tyvars, id, tyvars, tyvars, id, tyvars);
+            }
+         |  _: { /* skip */ }
+         }
+      }
+   |  _:  // skip views
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Print a subclass
+//
+///////////////////////////////////////////////////////////////////////////////
+void DatatypeCompiler::pr_subclass(Bool& subclass, Id name)
+{  pr (subclass ? ", " : " : ");
+   pr ("public %s",name);
+   subclass = true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Do we need to inherit from a subclass?  Do so only if the qualifier
+//  has been declared and the user defined class have not inherit from the
+//  same class.
+//
+///////////////////////////////////////////////////////////////////////////////
+static Bool need_subclass (TyQual q, TyQual qualifier, Inherits superclasses)
+{  if ((q & qualifier) == 0) return false;
+   for_each(Inherit, i, superclasses)
+   {  if ((i.qualifiers & q) || has_qual(q,i.super_class)) return false;
+   }
+   return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the base class
+//
+///////////////////////////////////////////////////////////////////////////////
+Bool DatatypeCompiler::gen_base_class
+   (Id id, TyVars tyvars,
+    int unit, int arg, TyOpt opt, Cons terms[], Inherits inherit,
+    TyQual qualifiers, Decls body)
+{  int arity = unit + arg;
+
+   pr ("%^%/%^// Base class for datatype '%s%V'%^%/%^", id, tyvars);
+   if (tyvars) pr ("%H%+%^", tyvars);
+   pr ("class a_%s", id);
+
+   Bool subclass = false;
+   // if (qualifiers & QUALunifiable)   pr_subclass (subclass,"LogicalTerm");
+   if (need_subclass(QUALcollectable,qualifiers, inherit))
+      pr_subclass (subclass,"GCObject");
+   if (need_subclass(QUALpersistent,qualifiers, inherit))
+      pr_subclass (subclass,"PObject");
+   if (qualifiers & QUALrelation)    pr_subclass (subclass,"Fact");
+   if (qualifiers & QUALrewritable)  pr_subclass (subclass,"TermObj");
+
+   if (inherit != #[]) {
+      pr (subclass ? ", " : " : ");
+      pr ("%I",inherit);
+      subclass = true;
+   }
+
+   pr (" {\n%^public:%+");
+
+   for (int i = 0; i < arity; i++)
+   {  match (terms[i])
+      {  ONEcons { name, ty = NOty, tag ... }:
+         { if (tyvars)
+              pr ("%n#  define %S %i\n", name, tag);
+           else
+              pr ("%n#  define %S (%s)%i\n",name, id, tag);
+         }
+      |  _:  { /* skip */ }
+      }
+   }
+
+   if ((opt & OPTtagless) == 0 || (opt & OPTtaggedpointer))
+      gen_unit_constructors (id,arity,terms,true);
+   if ((opt & OPTtagless) == 0) {
+      pr ("%-%^protected:%+"
+          "%^const Tag_%s _tag_;"
+          "%^inline a_%s(Tag_%s _t_) : _tag_(_t_) {}"
+          "%-%^public:%+",
+          id, id, id);
+   }
+
+   gen_untagging_functions   (id, tyvars, unit, arg, qualifiers, opt);
+
+   if (opt & OPTsubclassless) {
+      for (int i = 0; i < arity; i++)
+      {  match (terms[i])
+         {  ONEcons { name, location, ty = ty as ! NOty, opt = my_opt,
+                      qual = cons_qual ... }:
+            {  if ((my_opt & OPTunboxed) == 0) {
+                  pr ("%#%^%b\n", location->begin_line, location->file_name,
+                      ty, name, TYbody);
+                  gen_class_constructor(id,tyvars,name,unit,arg,opt,ty,true,cons_qual);
+               }
+               gen_datatype_constructor
+                  (id,tyvars,name,unit,arg,opt | my_opt,ty,true,cons_qual);
+               gen_class_destructor(id,tyvars,name,ty,qualifiers,opt | my_opt,true);
+            }
+         |  _: { /* skip */ }
+         }
+      }
+   } else {
+      gen_class_destructor(id,tyvars,0,NOty,qualifiers,opt,true);
+   }
+
+   if (qualifiers & QUALrelation)
+      pr ("%^static  RelTag relation_tag;"
+          "%^virtual RelTag get_tag() const;\n");
+
+   if ((opt & OPTsubclassless) == 0 && tyvars == #[])
+      gen_downcasting_functions (id, tyvars, unit + arg, terms, qualifiers);
+   gen_class_interface(id, tyvars, 0, qualifiers, opt, 0);
+
+   pr ("%&",body);
+
+   pr ("%-%^};\n\n");
+   if (tyvars) pr ("%-");
+
+   return subclass;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the untagging functions of a class
+//
+///////////////////////////////////////////////////////////////////////////////
+void DatatypeCompiler::gen_untagging_functions
+   (Id id, TyVars tyvars, int unit, int arg, TyQual qual, TyOpt opt)
+{
+   Id is_const = (qual & QUALconst) ? "const " : "";
+
+   ///////////////////////////////////////////////////////////////////////////
+   // Generate untagger.
+   ///////////////////////////////////////////////////////////////////////////
+   if ((opt & OPTtagless) == 0)
+      pr ("%^inline int untag() const { return _tag_; }\n");
+
+   ///////////////////////////////////////////////////////////////////////////
+   // Generate function that checks for boxity.
+   ///////////////////////////////////////////////////////////////////////////
+   pr ("%^inline friend int boxed(const a_%s * x) { return ", id);
+   if (unit == 0) pr ("1");
+   else if (unit == 1) pr ("x != 0");
+   else pr ("(unsigned long)x >= %i", unit);
+   pr ("; }\n");
+
+   ///////////////////////////////////////////////////////////////////////////
+   // Generate function that untags the pointer if
+   // the tags are embedded into a pointer.
+   ///////////////////////////////////////////////////////////////////////////
+   if (opt & OPTtaggedpointer)
+   {  pr ("%^inline friend int untagp(const a_%s * x)"
+          "%^   { return (unsigned long)x & %i; }"
+          "%^inline friend %sa_%s * derefp(const a_%s * x)"
+          "%^   { return (%sa_%s*)((unsigned long)x & ~%i); }",
+          id, max_embedded_tags - 1,
+          is_const, id, id, is_const, id, max_embedded_tags - 1);
+   }
+
+   ///////////////////////////////////////////////////////////////////////////
+   // Generate a generic untag function that works on all boxed
+   // and unboxed variants.
+   ///////////////////////////////////////////////////////////////////////////
+   pr ("%^inline friend int untag(const a_%s * x) { return ", id);
+   if (unit == 0) {
+      // No unboxed variants.
+      if (opt & OPTtaggedpointer) pr ("untagp(x)");
+      else if (arg == 1)          pr ("0");
+      else                        pr ("x->_tag_");
+   } else if (unit == 1) {
+      // Only one unboxed variants.
+      if (opt & OPTtaggedpointer) pr ("x ? untagp(x)+1 : 0");
+      else if (arg == 1)          pr ("x ? 1 : 0");
+      else                        pr ("x ? (x->_tag_+1) : 0");
+   } else {
+      // More than one unboxed variants.
+      if (opt & OPTtaggedpointer)
+         pr ("boxed(x) ? untagp(x) + %i : (unsigned long)x", unit);
+      else if (arg == 1)
+         pr ("boxed(x) ? %i : (unsigned long)x", 1 + unit);
+      else
+         pr ("boxed(x) ? x->_tag_ + %i : (unsigned long)x", unit);
+   }
+   pr ("; }\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the downcasting functions of a class
+//
+///////////////////////////////////////////////////////////////////////////////
+void DatatypeCompiler::gen_downcasting_functions
+   (Id id, TyVars tyvars, int n, Cons terms[], TyQual qual)
+{  //if (inline_casts && tyvars == #[]) return;
+   Id is_const = (qual & QUALconst) ? "const " : "";
+   pr ("%^%/"
+       "%^// Downcasting functions for %s%V"
+       "%^%/",
+       id, tyvars
+      );
+
+   Cons var_cons = NOcons;
+
+   for (int i = 0; i < n; i++)
+   {  match (terms[i])
+      {  ONEcons { name, ty = ty as (! NOty), qual ... }:
+         {
+            pr ("%^%Hinline %s%s%s_%S%V * _%S(%s%v _x_) "
+                "{ return (%s%s_%S%V *)_x_; }\n",
+                tyvars, (tyvars == #[] ? "friend " : ""), is_const,
+                id, name, tyvars, name, id, tyvars,
+                is_const, id, name, tyvars);
+             if (qual & QUALvariable) var_cons = terms[i];
+         }
+      |  _: { /* skip */ }
+      }
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a subclass class
+//
+///////////////////////////////////////////////////////////////////////////////
+void DatatypeCompiler::gen_subclass
+   (Id id, TyVars tyvars, int unit, int arg, TyOpt opt, TyQual qual, Cons term)
+{
+   match (term)
+   {  ONEcons { name, ty, location, inherit, body, opt = my_opt,
+                qual = cons_qual ... }:
+      {  // header
+         pr ("%^%/%^// class for constructor '%s%V::%s %T'%^%/%^",
+             id, tyvars, name, ty);
+         if (tyvars) pr("%H%+%^", tyvars);
+         pr ("class %s_%S ", id, name);
+         if ((opt & OPTbaseclassless) == 0)
+            pr (": public a_%s%V%s%I ",
+                id, tyvars, (inherit ? ", " : ""), inherit);
+         // contents of body
+         pr ("{\n%^public:%+"
+             "%#%^%b\n", location->begin_line, location->file_name,
+                         ty, name, TYbody);
+
+         // constructor for class
+         gen_class_constructor(id,tyvars,name,unit,arg,opt,ty,true,cons_qual);
+
+         // generate datatype constructor
+         gen_datatype_constructor(id,tyvars,name,unit,arg,opt | my_opt,ty,true,cons_qual);
+
+         // destructor for class
+         gen_class_destructor(id,tyvars,name,ty,qual,opt | my_opt,true);
+
+         // optional methods
+         gen_class_interface(id,tyvars,name,qual,opt,cons_qual);
+
+         if (body) pr ("%^%&", body);
+         pr ("%-%^};\n\n");
+         if (tyvars) pr("%-");
+      }
+   |  _: { /* skip */ }
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the class interface functions.
+//
+///////////////////////////////////////////////////////////////////////////////
+void DatatypeCompiler::gen_class_interface
+   (Id id, TyVars tyvars, Id name, TyQual qual, TyOpt opt, TyQual cons_qual)
+{
+   Id class_name = ((opt & OPTsubclassless) ? "a" : id);
+   Id cons_name  = ((opt & OPTsubclassless) ? id : mangle(name));
+
+   if (qual & QUALcollectable)
+   {  pr ("%^%/"
+          "%^// Method for garbage collection tracing"
+          "%^%/"
+          "%-%^protected:%+"
+          "%^virtual void trace(GC *);\n"
+          "%-%^public:%+"
+         );
+   }
+
+   if (cons_qual & QUALvariable)
+   {  pr ("%^%/"
+          "%^// Method for logical variable manipulation"
+          "%^%/"
+          "%^inline void uninstantiate() { %s = this; }\n", cons_name);
+   }
+
+   if (qual & QUALpersistent)
+   {  pr ("%^%/"
+          "%^// Methods for persistence and object serialization"
+          "%^%/"
+          "%-%^protected:%+"
+          "%^virtual const PObjectType& persist_type_id () const;"
+          "%^virtual Pistream&          persist_read    (Pistream&);"
+          "%^virtual Postream&          persist_write   (Postream&) const;"
+          "%-%^public:%+"
+         );
+
+      Bool need_default_constructor = (opt & OPTsubclassless) || name;
+
+      if (need_default_constructor)
+      {  Id prefix = name ? id : "a";
+         Id suffix = name ? name : id;
+         pr ("%-%^private:%+"
+             "%^%/"
+             "%^// Default constructor used in persistence object factory"
+             "%^%/"
+             "%^friend class PObjectFactory< %s_%S%V >;",
+             prefix, suffix, tyvars);
+         if (name)
+         {  pr ("%^inline %s_%S() : a_%s%V(a_%s%V::tag_%S) {}",
+                prefix, suffix, id, tyvars, id, tyvars, name);
+         } else
+         {  pr ("%^inline %^%a_%s() {}", id);
+         }
+         pr ("%-%^public:%+");
+      }
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a C++ class constructor for a datatype
+//
+///////////////////////////////////////////////////////////////////////////////
+void DatatypeCompiler::gen_class_constructor
+   (Id id, TyVars tyvars, Id name, int unit, int arg, TyOpt opt, Ty ty, Bool def,
+    TyQual qual)
+{  Bool comma = false;
+   Bool has_array = false;
+   Bool interface_only = def && tyvars == #[] && options.save_space;
+   Bool is_array_con = is_array_constructor(name);
+   Bool is_variable  = qual & QUALvariable;
+   Id class_name = ((opt & OPTsubclassless) ? "a" : id);
+   Id cons_name  = ((opt & OPTsubclassless) ? id : mangle(name));
+
+   // constructor header
+   pr ((is_variable ? "%^%s%s%s%s%s%s_%S ()" : "%^%s%s%s%s%s%s_%S %b"),
+       (interface_only ? "" : "inline "),
+       (def ? "" : class_name), (def ? "" : "_"),
+       (def ? "" : cons_name), (def ? "" : "::"),
+       class_name, cons_name, ty, name, TYformal);
+
+   if (interface_only) { pr (";\n"); return; }
+
+   // variant tag binding
+   if (opt & OPTtagless)
+   {  pr ("%^   : ");
+   } else
+   {  pr ("%^   : a_%s%V(a_%s%V::tag_%S)", id, tyvars, id, tyvars, name);
+      comma = true;
+   }
+
+   // array length binding
+   if (is_array_con)
+   {  if (comma) pr (", ");
+      pr ("len_(_x_len_)");
+      comma = true;
+      ty = mkarrayty(ty, IDexp("_x_len_"));
+      has_array = true;
+   }
+
+   // bindings of non-array components
+   if (! is_array_con)
+   match (deref(ty))
+   {  TYCONty(TUPLEtycon, tys):
+      {  int i = 1;
+         for(Tys t = tys; t; t = t->#2) {
+            if (! is_array_ty(t->#1)) {
+               if (comma) pr (", "); pr ("_%i(_x%i)", i, i); comma = true;
+            } else has_array = true;
+            i++;
+         }
+      }
+   |  TYCONty(RECORDtycon (labs,_), tys):
+      {  Ids l; Tys t;
+         for (l = labs, t = tys; l && t; l = l->#2, t = t->#2) {
+            if (! is_array_ty(t->#1)) {
+               if (comma) pr (", "); pr ("%s(_x%s)", l->#1, l->#1);
+               comma = true;
+            } else has_array = true;
+         }
+      }
+   |  ty:
+      {  if (! is_array_ty(ty)) {
+            if (comma) pr (", ");
+            pr ((is_variable ? "%S(this)" : "%S(_x%S)"),name,name);
+         }
+      }
+   }
+
+   // bindings of array components
+   if (has_array) {
+      pr ("%^{\n%+%^int _i_;\n");
+      match (deref(ty))
+      {  TYCONty(TUPLEtycon, tys):
+         {  int i = 1;
+            for(Tys t = tys; t; t = t->#2) {
+               match (t->#1)
+               {  TYCONty(ARRAYtycon (e as (! NOexp)),_):
+                  {  pr ("%^for (_i_ = (%e) - 1; _i_ >= 0; _i_--)\n"
+                         "%^{ _%i[_i_] = _x%i[_i_]; }\n", e, i, i );
+                  }
+               |  _: {}
+               }
+               i++;
+            }
+         }
+      |  TYCONty(RECORDtycon (labs,_), tys):
+         {  Ids l; Tys t;
+            for (l = labs, t = tys; l && t; l = l->#2, t = t->#2) {
+               match (t->#1)
+               {  TYCONty(ARRAYtycon (e as (! NOexp)), _):
+                  {  pr ("%^for (_i_ = (%e) - 1; _i_ >= 0; _i_--)\n"
+                         "%^{ %s[_i_] = _x%s[_i_]; }\n", e, l->#1, l->#1 );
+                  }
+               |  _: {}
+               }
+            }
+         }
+      |  TYCONty(ARRAYtycon (e as (! NOexp)), #[ elem_ty ... _ ]):
+         {  pr ("%^for (_i_ = (%e) - 1; _i_ >= 0; _i_--)"
+                "%^{  typedef %t __TYPE__;", e, elem_ty, "");
+            if (is_array_con)
+               pr ("%^   new (%S + _i_) __TYPE__ (_x%S[_i_]);\n",
+                    name, name );
+            else
+               pr ("%^   %S[_i_] = _x%S[_i_];\n", name, name);
+            pr ("%^}\n");
+         }
+      |  _: { /* skip */ }
+      }
+      pr ("%-%^}\n");
+   } else {
+      pr (" {}\n");
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a C++ class constructor for a datatype
+//
+///////////////////////////////////////////////////////////////////////////////
+void DatatypeCompiler::gen_datatype_constructor
+   (Id id, TyVars tyvars, Id name, int unit, int arg, TyOpt opt, Ty ty, Bool def,
+    TyQual qual)
+{
+   Bool interface_only = def && tyvars == #[] && options.save_space;
+   Bool is_variable  = qual & QUALvariable;
+   Id class_name = ((opt & OPTsubclassless) ? "a" : id);
+   Id cons_name  = ((opt & OPTsubclassless) ? id : mangle(name));
+
+   ///////////////////////////////////////////////////////////////////////////
+   //  Generate a dereference function if the value is represented implicitly
+   //  within the pointer.
+   ///////////////////////////////////////////////////////////////////////////
+   if (opt & OPTunboxed)
+   {  pr("%^%s%s%t deref_%S(const a_%s * x)",
+         ((interface_only || ! def) ? "" : "inline "),
+         (def ? "friend " : ""), ty, "", name, id);
+      if (interface_only) pr (";\n");
+      else {
+         int tag_bits = max_embedded_bits;
+         for (int i = unit; i >= max_embedded_tags; i >>= 1)
+             tag_bits++;
+         pr("%^   { return (%t)((long)x>>(%i+1)); }", ty, "", tag_bits);
+      }
+   }
+
+   // header
+   pr ((is_variable ? "%^%s%sa_%s%V * %S ()" : "%^%s%sa_%s%V * %S %b"),
+       ((interface_only || ! def) ? "" : "inline "),
+       (def ? "friend " : ""),
+       id, tyvars, name, ty, name, TYformal);
+
+   if (interface_only) {
+      pr (";\n");
+   } else {
+      pr ("%^   { return ");
+      if (opt & OPTtaggedpointer) pr ("(a_%s*)((unsigned long)(", id);
+      if (opt & OPTunboxed) {
+         // Unboxed implementation
+
+         int tag_bits = max_embedded_bits;
+         for (int i = unit; i >= max_embedded_tags; i >>= 1)
+             tag_bits++;
+
+         pr ("(a_%s *)(((unsigned long)%b<<(%i+1))|%i)",
+             id, ty, name, TYactual, tag_bits, (1 << tag_bits));
+      } else {
+         // Boxed implementation
+         pr ("new ");
+         if (is_array_constructor(name))
+            pr ("(sizeof(%s_%S%V)+sizeof(%t)*_x_len_) ",
+                class_name, cons_name, tyvars, ty, "");
+         pr ((is_variable ? "%s_%S%V" : "%s_%S%V %b"),
+             class_name, cons_name, tyvars, ty, name, TYactual);
+      }
+      if (opt & OPTtaggedpointer) pr (")|a_%s%V::tag_%S)",id,tyvars,name);
+      pr ("; }\n");
+   }
+
+   // generate extra constructors for array-style datatype constructors
+   if (is_array_constructor(name))
+   {  Tys params = #[];
+      Ids labels = #[];
+      for (int i = 1; i <= options.max_vector_len; i++)
+      {
+         params = #[ ty ... params ];
+         labels = append(labels,#[ index_of(i-1) ]);
+         // header
+         pr ("%^%s%sa_%s%V * %S ",
+             ((interface_only || ! def) ? "" : "inline "),
+             (def ? "friend " : ""),
+             id, tyvars, name);
+         pr ("%b", mkrecordty(labels,params,false), mangle(name), TYformal);
+
+         if (interface_only) {
+            pr (";\n");
+         } else {
+            if (i > 0)
+            {  pr ("%^   { %t_tmp_[%i];", ty, "", i);
+               for (int j = 0; j < i; j++)
+                  pr("%^     _tmp_[%i] = _x_%i;", j, j);
+               pr ("%^     return ");
+            } else {
+               pr ("%^   { return ");
+            }
+            if (opt & OPTtaggedpointer) pr ("(a_%s*)((unsigned long)(", id);
+            // Boxed implementation
+            pr ("new ");
+            if (is_array_constructor(name))
+               pr ("(sizeof(%s_%S%V)+sizeof(%t)*%i) ",
+                   class_name, cons_name, tyvars, ty, "", i);
+            pr ("%s_%S%V (%i,%s)", class_name, cons_name, tyvars, i,
+                 (i > 0 ? "_tmp_" : "0"));
+            if (opt & OPTtaggedpointer) pr (")|a_%s%V::tag_%S)",id,tyvars,name);
+            pr (";%^   }\n");
+         }
+      }
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a C++ class destructor for a datatype
+//
+///////////////////////////////////////////////////////////////////////////////
+void DatatypeCompiler::gen_class_destructor
+   (Id id, TyVars tyvars, Id name, Ty ty, TyQual qual, TyOpt opt, Bool def)
+{
+   if ((qual & QUALvirtualdestr) || (name && is_array_constructor(name)))
+   {
+      Bool interface_only = def && tyvars == #[] && options.save_space;
+      Id class_name = ((opt & OPTsubclassless) || name == 0 ? "a" : id);
+      Id cons_name  = ((opt & OPTsubclassless) || name == 0 ? id : mangle(name));
+
+      // constructor header
+      pr ("%^%s%s%s%s%s%s~%s_%S()",
+          ((interface_only || ! def) ? "" : "inline "),
+          (((qual & QUALvirtualdestr) && def) ? "virtual " : ""),
+          (def ? "" : class_name),
+          (def ? "" : "_"),
+          (def ? "" : cons_name),
+          (def ? "" : "::"),
+          class_name, cons_name
+         );
+      if (interface_only)
+      {  pr (";\n");
+      } else
+      {  if (name && is_array_constructor(name))
+         {  pr ("%^{  for (int _i_ = 0; _i_ < len_; _i_++)"
+                "%^   {  typedef %t __TYPE__;"
+                "%^      (%S+_i_)->~__TYPE__();"
+                "%^   }"
+                "%^}\n",
+                ty, "", name);
+         } else
+         {  pr (" {}\n");
+         }
+      }
+   }
+}

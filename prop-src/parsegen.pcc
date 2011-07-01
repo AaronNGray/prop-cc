@@ -1,0 +1,1138 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the syntax/syntax class constructs of Prop.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include <AD/strings/charesc.h>
+#include <AD/strings/quark.h>
+#include <AD/automata/grammar.h>
+#include <AD/automata/operprec.h>
+#include <AD/automata/lalr1gen.h>
+#include "ir.ph"
+#include "ast.ph"
+#include "parsegen.ph"
+#include "datagen.h"
+#include "hashtab.h"
+#include "type.h"
+#include "list.h"
+#include "options.h"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Instantiate the parser/grammar related datatypes
+//
+///////////////////////////////////////////////////////////////////////////////
+
+instantiate datatype GramExp, List<GramExp>,
+                     BNF, List<BNF>,
+                     ProductionSymbol, List<ProductionSymbol>,
+                     PrecRule, List<PrecRule>,
+                     List< List<ProductionSymbol> >;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor and destructor
+//
+///////////////////////////////////////////////////////////////////////////////
+
+ParserCompiler:: ParserCompiler() {}
+ParserCompiler::~ParserCompiler() {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty printing methods for grammar
+//
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print a production symbol
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, ProductionSymbol sym)
+{
+  match (sym)
+  {
+    TERMsym c:                    {  f << '\'' << print_char(c) << '\''; }
+  | TOKENsym NOcons:              {  f << "<?>"; }
+  | TOKENsym ONEcons{ name ... }: {  f << name; }
+  | NONTERMsym id:                {  f << id; }
+  | POSNONTERMsym i:              {  f << i; }
+  | ACTIONsym a:                  {  f << "{ ... }"; }
+  | TERMSTRINGsym s:              {  f << s; }
+  | TERMREGEXPsym re:             {  f << re; }
+  | PREDICATEsym e:               {  f << '(' << e << ')'; }
+  | PRECsym( ONEcons{name ...}):  {  f << "prec: " << name; }
+  | PRECsym NOcons:               {  f << "prec: ???"; }
+  | ERRORsym():                   {  f << '?'; }
+  | SPECIALsym _:                 {  f << "???"; }
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print a list of production symbols
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, ProductionSymbols P)
+{
+  for (ProductionSymbols l = P; l; l = l->#2)
+  {
+    f << l->#1;
+    if (l->#2)
+      f << " ";
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print a BNF
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, BNF bnf)
+{
+  match (bnf)
+  {
+    BNFrule( id, ty, alts):
+    {
+      f << id;
+      if (ty != NOty)
+        f << ' ' << ty << ' ';
+      f << ':';
+      for_each (ProductionSymbols, p, alts)
+        {  f << '\t' << p << '\n'; }
+    }
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print a list of alternatives
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, BNFs rules)
+{
+  for_each( BNF, rule, rules)
+    f << rule;
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Print a precedence rule
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, PrecRule r)
+{
+  match (r)
+  {
+    PRECrule(assoc,pri,symbols):
+    {
+      match (assoc)
+      {
+        LEFTassoc:  { f << "left: "; }
+      | RIGHTassoc: { f << "right: "; }
+      | NONassoc:   { f << "nonfix: "; }
+      }
+      f << pri << ' ' << symbols << '\n';
+    }
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Print a list of precedence rules
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, List<PrecRule> rules)
+{
+  for_each (PrecRule, r, rules)
+    f << r;
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print a grammar expression
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, GramExp exp)
+{
+  match (exp)
+  {
+    EXPgram( precs, _, rules):
+      { f << precs << rules; }
+  | _:
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to create a syntax class
+//
+///////////////////////////////////////////////////////////////////////////////
+
+SyntaxClass::SyntaxClass( CLASS_TYPE ct, Id id, Inherits i, TyQual q, Decls body)
+    : ClassDefinition( ct, id, #[], add_inherit( "LR1Parser", #[], i), q, body),
+      production_rules(#[]),
+      precedence_rules(#[]),
+      G(0), parserGen(0), prec(0),
+      nonterm_map(string_hash, string_equal),
+      action_map(integer_hash, integer_equal),
+      inner_action_map(integer_hash, integer_equal),
+      line_map  (integer_hash, integer_equal),
+      predicate_map(integer_hash, integer_equal)
+    {
+    }
+SyntaxClass::~SyntaxClass() {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the interface of a parser class
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void SyntaxClass::gen_class_interface (CodeGen& C)
+{
+  C.pr(
+        "%-%^public:%+"
+        "%^%/"
+        "%^// Parser table type definitions"
+        "%^%/"
+        "%^typedef LR1Parser               Super;"
+        "%^typedef Super::Offset           Offset;"
+        "%^typedef Super::State            State;"
+        "%^typedef Super::Rule             Rule;"
+        "%^typedef Super::Symbol           Symbol;"
+        "%^typedef Super::ProductionLength ProductionLength;"
+        "%^typedef Super::ShortSymbol      ShortSymbol;"
+        "%^typedef Super::EquivMap         EquivMap;"
+        "%^enum { INITIAL_STACK_SIZE_ = 256,"
+        "%^       MAX_STACK_SIZE_     = 8192"
+        "%^     };"
+        "%-%^protected:%+"
+        "%^%/"
+        "%^// Semantic value stack"
+        "%^%/"
+        "%^union %s_semantic_stack_type * t__, * bot__;"
+        "%^int stack_size__;"
+        "%^int heap_allocated__;"
+        "%-%^public:%+"
+        "%^%/"
+        "%^// Constructor and parsing method"
+        "%^%/"
+        "%^%s();"
+        "%^virtual void parse();"
+        "%^void action_driver(const Rule);"
+        "%-%^private:%+"
+        "%^void adjust_stack(int);\n"
+        "%^void grow_semantic_stack();",
+        class_name, class_name
+      );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a parser given a grammar expression.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void ParserCompiler::gen_parser(Id id, GramExp e)
+{
+  // if (debug) std::cerr << id << ":\n" << e;
+
+  SyntaxClass * C = (SyntaxClass*)
+      ClassDefinition::lookup_class( ClassDefinition::SYNTAX_CLASS, id);
+  if (C) C->gen_parser( *this, e);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a parser given a grammar expression.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void SyntaxClass::gen_parser( CodeGen& C, GramExp e)
+{
+   initialize();
+   compile_grammar(C, e);
+   cleanup();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to compile a grammar
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void SyntaxClass::compile_grammar( CodeGen& C, GramExp e)
+{
+  match (e)
+  {
+    EXPgram (precs,err,rules):
+    {
+      compile_rules(C, precs, err, rules);
+    }
+  |  _:
+     { bug("SyntaxClass::compile_grammar"); }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Collect the names of the non-terminals
+//  and count the number of productions.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void SyntaxClass::preprocess_grammar ()
+{
+  number_of_productions = 0;
+
+  ////////////////////////////////////////////////////////////////////////////
+  //  Compute the terminal and action encoding
+  ////////////////////////////////////////////////////////////////////////////
+  {
+    for_each(BNF, r, production_rules)
+    {
+      match (r)
+      {
+      BNFrule(id,ty,alts):
+        {
+          for_each ( ProductionSymbols, p, alts)
+          {
+            Bool no_action = true;
+            for_each (ProductionSymbol, s, p)
+            {
+              s->set_loc();
+              match (s)
+              {
+              TOKENsym (cons as ONEcons { tag, name,
+                   alg_ty = DATATYPEty({ qualifiers ...},_) ... }
+                ):
+                {
+                  if ((qualifiers & QUALlexeme) == 0)
+                    error("%Lconstructor %s is not a lexeme\n",name);
+                  if (tag_of(cons) > max_term)
+                    max_term = tag_of(cons);
+                }
+              | ACTIONsym _: { no_action = false; }
+              | _: // skip
+              }
+            }
+            if (ty != NOty && no_action)
+              msg("%!%wmissing synthesized value in production: %s %T:",
+                    r->loc(), id, ty) << p << '\n';
+          }
+        }
+      }
+    }
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  //  Set the error token
+  ////////////////////////////////////////////////////////////////////////////
+  error_term  = ++max_term;
+  max_nonterm = max_term + 1;
+
+  ////////////////////////////////////////////////////////////////////////////
+  //  Compute the non-terminals encoding.
+  ////////////////////////////////////////////////////////////////////////////
+  {
+    for_each(BNF, r, production_rules)
+    {
+      match (r)
+      {
+      BNFrule(id,_,alts):
+        {
+          if (! nonterm_map.contains(id))
+            {
+              max_nonterm++;
+              nonterm_map.insert(id,(HashTable::Value)max_nonterm);
+            }
+          number_of_productions += length(alts);
+        }
+      }
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Translate rules into grammar form.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void SyntaxClass::translate_into_grammar ()
+{
+  int i = 0; // production number
+  min_action = Grammar::First_action;
+  for_each(BNF, r, production_rules)
+  {
+    match (r)
+    {
+    BNFrule(id,ty,alts):
+      {
+        Grammar::NonTerminal A = (Grammar::NonTerminal)nonterm_map[id];
+        symbol_names[A] = id;
+        for_each (ProductionSymbols, p, alts)
+        {
+          int j = 1;
+          int non_terms_or_actions = 0;
+          ty_map[i] = ty;
+          Grammar::Production P =
+              (Grammar::Production)mem_pool.c_alloc
+                (sizeof(Grammar::Symbol) * (length(p) + 2));
+          P[0] = A;
+          for (List<ProductionSymbol> L = p; L; L = L->#2)
+          {
+            ProductionSymbol X = L->#1;
+            X->set_loc();
+            match (X)
+            {
+            TERMsym c:
+              {
+                P[j] = c;
+                if (symbol_names[c] == 0)
+                  symbol_names[c] = #"'" + print_char(c) + #"'";
+              }
+            | NONTERMsym id:
+              {
+                if (! nonterm_map.contains(id))
+                  error("%Lundefined non-terminal %s\n",id);
+                else
+                  P[j] = (Grammar::NonTerminal) nonterm_map[id];
+                ++non_terms_or_actions;
+              }
+            | TOKENsym (cons as ONEcons { tag, name ... }):
+              {
+                P[j] = tag_of(cons);
+                symbol_names[P[j]] = name;
+              }
+            | TOKENsym _: { P[j] = ' '; }
+            | ACTIONsym decls:
+              {
+                P[j] = min_action;
+                action_map.insert( HashTable::Key( min_action), decls);
+                line_map.insert( HashTable::Key( min_action),
+                                HashTable::Value( X->begin_line));
+                if (L->#2 != #[])
+                   inner_action_map.insert( HashTable::Key( min_action),
+                      HashTable::Value( non_terms_or_actions));
+                min_action--;
+                ++non_terms_or_actions;
+              }
+            | ERRORsym():
+              { P[j] = error_term; }
+            | _:
+              { bug("translate_into_grammar()"); }
+            }
+            j++;
+          }
+          P[j] = Grammar::END_PRODUCTION;
+          productions[i++] = P;
+        }
+      }
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to enter the precedence information
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void SyntaxClass::define_operator_precedence ()
+{
+  for_each (PrecRule, r, precedence_rules)
+  {
+  match (r)
+    {
+    PRECrule( assoc, pri, symbols):
+      {
+        OpPrecedence::Associativity a;
+        match (assoc)
+        {
+          LEFTassoc:  { a = OpPrecedence::Left; }
+        | RIGHTassoc: { a = OpPrecedence::Right; }
+        | NONEassoc:  { a = OpPrecedence::None; }
+        }
+        for_each(ProductionSymbol, s, symbols)
+        {
+          match (s)
+          {
+          TERMsym c:
+            {
+              prec->precedence(G->map(c),pri);
+              prec->associativity(G->map(c),a);
+            }
+          | TOKENsym cons:
+            {
+              prec->precedence(G->map(tag_of(cons)),pri);
+              prec->associativity(G->map(tag_of(cons)),a);
+            }
+          | s:
+            {
+              s->set_loc();
+              error("%Lprecedence symbol must be a terminal: ") << s << '\n';
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Add a new reference of a non-terminal
+//
+///////////////////////////////////////////////////////////////////////////////
+
+static void add_use( HashTable& table, Id nonterm, int item_number)
+{
+  HashTable::Entry * e = table.lookup(nonterm);
+  if (e)
+  {
+    List<int> old_uses = (List<int>) table.value(e);
+    table.insert( nonterm, #[item_number ... old_uses]);
+  }
+  else
+  table.insert( nonterm, #[item_number]);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Generate the semantic stack definition
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void SyntaxClass::generate_semantic_stack_definition( CodeGen& C)
+{
+  ////////////////////////////////////////////////////////////////////////////
+  //  Mapping from nonterminal to type
+  ////////////////////////////////////////////////////////////////////////////
+  HashTable nonterm_to_ty(string_hash,string_equal);
+  HashTable nonterm_to_uses(string_hash,string_equal);
+
+  ////////////////////////////////////////////////////////////////////////////
+  //  Generate the semantic stack definition.
+  ////////////////////////////////////////////////////////////////////////////
+  C.pr(
+        "%^%/"
+        "%^// Semantic value stack for syntax class %s"
+        "%^%/"
+        "%^union %s_semantic_stack_type {%+"
+        "%^int dummy;",
+        class_name, class_name
+      );
+
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  //  First, we'll make sure that all productions with the same non-terminal
+  //  have the same synthesized attribute type.
+  //
+  ////////////////////////////////////////////////////////////////////////////
+  for_each (BNF, rl, production_rules)
+  {
+    match (rl)
+    {
+      BNFrule( id, ty, _):
+      {
+        HashTable::Entry * e = nonterm_to_ty.lookup( id);
+        if (e)
+        {
+          Ty last_ty = (Ty) nonterm_to_ty.value( e);
+          if (! ty_equal( ty, last_ty))
+          {
+            rl->set_loc();
+            error("%Lexpecting type '%T' but found '%T'\n", last_ty, ty);
+          }
+        }
+        nonterm_to_ty.insert( id, ty);
+      }
+    }
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  //  Now, we found out all references of all non-terminals.
+  //
+  ////////////////////////////////////////////////////////////////////////////
+  int item_number = 0;
+
+  for_each (BNF, r, production_rules)
+  {
+    match (r)
+    {
+    BNFrule( id, ty, alts):
+      {
+        for_each ( ProductionSymbols, p, alts)
+        {
+          ++item_number;
+          if (ty != NOty)
+            add_use( nonterm_to_uses, id, item_number);
+          for_each ( ProductionSymbol, X, p)
+          {
+            ++item_number;
+            match (X)
+            {
+              NONTERMsym id:
+              {
+                HashTable::Entry * e = nonterm_to_ty.lookup(id);
+                if (e)
+                {
+                  Ty this_ty = (Ty) nonterm_to_ty.value( e);
+                  if (this_ty != NOty)
+                    add_use( nonterm_to_uses, id, item_number);
+                }
+              }
+            |  _: // skip
+            }
+          }
+        }
+      }
+    }
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  //  Then we print out the type definitions for all the synthesized
+  //  attributes.
+  //
+  ////////////////////////////////////////////////////////////////////////////
+  {
+    int i = 0;
+    for_each (BNF, r, production_rules)
+    {
+      match (r)
+      {
+      BNFrule(id,ty,_):
+        {
+          if (ty != NOty)
+          {
+            List<int> uses = (List<int>)nonterm_to_uses[id];
+            if (uses != #[])
+            {
+              C.pr ("%#" "%^typedef %tATTRIBUTE_%i;" "%^ATTRIBUTE_%i ",
+                    r->begin_line, r->file_name, ty, "", i, i);
+              for (List<int> l = uses; l; l = l->#2)
+                { C.pr ("_%i", l->#1); if (l->#2) C.pr(", "); }
+              C.pr (";\n");
+              i++;
+            }
+          }
+        }
+      }
+    }
+  }
+  C.pr( "%-%^};\n\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Generate debugging tables
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void SyntaxClass::generate_debugging_tables( CodeGen& C)
+{
+  C.pr(
+        "%^%/"
+        "%^// Debugging tables for syntax class %s"
+        "%^%/"
+        "\n#ifdef DEBUG_%s",
+        class_name, class_name
+      );
+
+  ////////////////////////////////////////////////////////////////////////////
+  //  Generate the mapping from rule number to source code line number.
+  ////////////////////////////////////////////////////////////////////////////
+
+  C.pr( "%^static const int %s_line[] =%^{%+%^", class_name);
+  {
+    int * line_table = (int *)mem_pool.c_alloc(G->size() * sizeof(int));
+
+    for (Grammar::Action a = Grammar::First_action; a > min_action; a--)
+    {
+      int r = G->rule_of(a);
+      if (r >= 0)
+        line_table[r] = (int)line_map[HashTable::Key(a)];
+    }
+
+    for (int r = 0; r < G->size(); r++)
+    {
+      C.pr ("%i", line_table[r]);
+      if (r < G->size() - 1)
+        C.pr( ", ");
+      if (r % 8 == 7)
+        C.pr( "%^");
+    }
+  }
+  C.pr( "%-%^};\n\n");
+
+  ////////////////////////////////////////////////////////////////////////////
+  //  Generate the mapping from equivalence class number to name.
+  ////////////////////////////////////////////////////////////////////////////
+
+  C.pr( "%^static const char * const %s_symbolname[] =%^{%+%^", class_name);
+
+  {
+    Id * sym_map = (Id *)
+          mem_pool.c_alloc( (G->max_non_terminal() + 1) * sizeof(Id));
+    for (int c = 0; c <= max_nonterm; c++)
+      if (symbol_names[c])
+        sym_map[G->map(c)] = symbol_names[c];
+    for (int i = 0; i <= G->max_non_terminal(); i++)
+    {
+      C.pr( "%s", sym_map[i] ? make_quoted_string( sym_map[i]) : "\"???\"");
+      if (i < G->max_non_terminal())
+        C.pr( ", ");
+      if (i % 8 == 7) C.pr( "%^");
+    }
+  }
+  C.pr( "%-%^};\n\n");
+
+  ////////////////////////////////////////////////////////////////////////////
+  //  Generate the mapping from rule number to production.
+  ////////////////////////////////////////////////////////////////////////////
+
+  {
+    for (int r = 0; r < G->size(); r++)
+    {
+      C.pr( "%^static const DFATables::ShortSymbol %s_rhs_%i[] = { ",
+            class_name, r);
+      int len = G->length(G->rhs(r));
+      for (int i = 0; i < len; i++)
+        C.pr( "%i, ", (int)G->rhs(r)[i]);
+      C.pr( " -1 };");
+    }
+  }
+  {
+    C.pr( "%^static const DFATables::ShortSymbol * %s_rhs[] =%^{%+",
+          class_name);
+
+    for (int r = 0; r < G->size(); r++)
+    {
+      C.pr( "%^%s_rhs_%i", class_name, r);
+      if (r < G->size() - 1)
+        C.pr( ", ");
+    }
+    C.pr( "%-%^};\n\n");
+  }
+  C.pr( "\n#endif\n\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Generate the parser tables
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void SyntaxClass::generate_parser_tables( CodeGen& C)
+{
+  ////////////////////////////////////////////////////////////////////////////
+  //  Generate the parser tables.
+  ////////////////////////////////////////////////////////////////////////////
+
+  C.pr(
+        "%^%/"
+        "%^// Encoded parser tables for syntax class %s"
+        "%^%/",
+        class_name
+      );
+  parserGen->gen_code( C.pr(""), class_name);
+}
+
+void SyntaxClass::generate_action_driver( CodeGen& C)
+{
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  //  Generate the parser driver header.
+  //
+  ////////////////////////////////////////////////////////////////////////////
+  C.pr(
+        "\n"
+        "%^%/"
+        "%^// Parser driver for syntax class %s"
+        "%^%/"
+        "%^inline void %s::action_driver(const Rule _r_)"
+        "%^{\n%+"
+        "%^%s_semantic_stack_type syn_ = t__[0];",
+        class_name, class_name, class_name
+      );
+
+  ////////////////////////////////////////////////////////////////////////////
+  //  Generate the debugging function
+  ////////////////////////////////////////////////////////////////////////////
+
+  C.pr(
+        "\n%^%/"
+        "%^// Tracing code for syntax class %s"
+        "%^%/"
+        "#ifdef DEBUG_%s"
+        "%^{ std::cerr << \"Reducing via rule \" << _r_ << \" at line \""
+        "%^       << %s_line[_r_] << \", \""
+        "%^       << %s_symbolname[%s_lhs[_r_]] << \" <- \";"
+        "%^  for (const DFATables::ShortSymbol * _p_ = %s_rhs[_r_]; *_p_ >= 0; _p_++)"
+        "%^     std::cerr << %s_symbolname[*_p_] << ' ';"
+        "%^  std::cerr << '\\n';"
+        "%^}"
+        "\n#endif\n\n",
+        class_name, class_name, class_name, class_name,
+        class_name, class_name, class_name, class_name, class_name
+      );
+
+  generate_semantic_actions(C);
+
+  C.pr( "%-%^}\n\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate the parse method
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void SyntaxClass::generate_parse_method( CodeGen& C)
+{
+  C.pr(
+        "%^%/"
+        "%^// Parsing method for parser class %s"
+        "%^%/"
+        "%^void %s::parse()"
+        "%^{"
+        "%^  %s_semantic_stack_type stack__[INITIAL_STACK_SIZE_];"
+        "%^  t__ = bot__ = stack__;"
+        "%^  stack_size__ = sizeof(stack__)/sizeof(stack__[0]) - 1;"
+        "%^  heap_allocated__ = 0;"
+        "%^  parser_prefix();"
+        "%^  LR1ParserDriver<%s,(LR1Parser::State)%i> drv;"
+        "%^  drv.driver(*this);"
+        "%^  parser_suffix();"
+        "%^  if (bot__ != stack__) delete [] bot__;"
+        "%^}\n\n",
+        class_name, class_name, class_name,
+        class_name, (int)parserGen->final_state()
+      );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the semantic actions
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void SyntaxClass::generate_semantic_actions( CodeGen& C)
+{
+  ////////////////////////////////////////////////////////////////////////////
+  //  Generate the switch on the reduction rules.
+  ////////////////////////////////////////////////////////////////////////////
+
+  C.pr(
+        "%^%/"
+        "%^// Actions for syntax class %s"
+        "%^%/"
+        "%^t__ -= %s_ncount[_r_];"
+        "%^switch (_r_) {\n%+",
+        class_name, class_name, class_name, class_name
+      );
+
+  ////////////////////////////////////////////////////////////////////////////
+  //  Generate the parsing actions
+  ////////////////////////////////////////////////////////////////////////////
+
+  C.pr(
+        "\n"
+        "#undef to__\n"
+        "#define to__ 0\n"
+      );
+
+  for (Grammar::Action a = Grammar::First_action; a > min_action; a--)
+  {
+    HashTable::Entry * e = inner_action_map.lookup(HashTable::Key(a));
+    if (e)
+    {
+      C.pr(
+            "\n"
+            "#undef to__\n"
+            "#define to__ -%i",
+            (int)(e->v)
+          );
+    }
+
+    C.pr( "%^case %i: {%+%&%-} break;",
+          (int)G->rule_of(a), action_map[HashTable::Key(a)]);
+
+    if (e)
+    {
+      C.pr(
+            "\n"
+            "#undef to__\n"
+            "#define to__ 0\n"
+          );
+    }
+  }
+
+  C.pr(
+        "%-%^}"
+        "%^if (t__ >= bot__ + stack_size__) grow_semantic_stack();"
+        "%^*++t__ = syn_;"
+      );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to initialize the data structures
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void SyntaxClass::initialize()
+{
+  number_of_productions = 0;
+  min_term              = 0;
+  max_term              = 255;
+  error_term            = 255;
+  max_nonterm           = 255;
+  start_symbol          = 0;
+  min_action            = Grammar::First_action;
+  symbol_names          = 0;
+  productions           = 0;
+  ty_map                = 0;
+  G                     = 0;
+  parserGen             = 0;
+  prec                  = 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to cleanup all the data structures
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void SyntaxClass::cleanup()
+{
+  nonterm_map.clear();
+  action_map.clear();
+  inner_action_map.clear();
+  line_map.clear();
+  predicate_map.clear();
+  productions  = 0;
+  symbol_names = 0;
+  ty_map       = 0;
+  delete G;
+  delete parserGen;
+  delete prec;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to compile a set of production rules
+//
+///////////////////////////////////////////////////////////////////////////////
+void SyntaxClass::compile_rules
+   (
+     CodeGen&          C,
+     PrecRules         prec_rules,
+     ShiftReduceErrors expected_errors,
+     BNFs              p_rules
+   )
+{
+  int last_errors = errors;
+
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  //  Initialize all the data structures used
+  //
+  ////////////////////////////////////////////////////////////////////////////
+
+  production_rules = p_rules;
+  precedence_rules = prec_rules;
+
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  // Collect the names of the non-terminals in this grammar
+  //
+  ////////////////////////////////////////////////////////////////////////////
+
+  preprocess_grammar();
+
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  // Translate into grammar form.
+  //
+  ////////////////////////////////////////////////////////////////////////////
+
+  productions  = (Grammar::Production *)mem_pool.c_alloc
+       ( sizeof(Grammar::Production) * number_of_productions);
+  symbol_names = (Id *)mem_pool.c_alloc(sizeof(Id) * (max_nonterm + 1));
+  ty_map       = (Ty *)mem_pool.c_alloc(sizeof(Ty) * number_of_productions);
+  translate_into_grammar();
+  symbol_names[error_term] = "?";
+  if (last_errors < errors)
+    return;
+  if (number_of_productions > 0)
+     start_symbol = productions[0][0];
+
+  ////////////////////////////////////////////////////////////////////////////
+  // Create the grammar and put it into canonical form
+  ////////////////////////////////////////////////////////////////////////////
+  Grammar G0( productions, number_of_productions, min_term, max_term,
+              start_symbol, symbol_names);
+  G = new Grammar( G0.makeCanonical());
+
+  ////////////////////////////////////////////////////////////////////////////
+  // Compile the grammar into tables.
+  ////////////////////////////////////////////////////////////////////////////
+
+  parserGen = new LALR1Gen;
+  prec      = new OpPrecedence( *G);
+  define_operator_precedence();
+  parserGen->compile( *G, *prec);
+
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  // Process errors
+  //
+  ////////////////////////////////////////////////////////////////////////////
+
+  process_parser_errors( expected_errors);
+
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  // Generate a report
+  //
+  ////////////////////////////////////////////////////////////////////////////
+  if (options.generate_report)
+  {
+    std::ostream& log = open_logfile();
+    log << "[Syntax class " << class_name << "]\n";
+    parserGen->print_report( log, options.verbosity) << '\n';
+  }
+
+  gen_class_implementation( C, #[], EXTERNAL_INSTANTIATION);
+}
+
+////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the implementation of the parser class.
+//
+////////////////////////////////////////////////////////////////////////////
+
+void SyntaxClass::gen_class_implementation( CodeGen& C, Tys tys, DefKind k)
+{
+   generate_parser_tables(C);             // encoded tables
+   generate_debugging_tables(C);          // auxiliary tables for debugging
+   generate_semantic_stack_definition(C); // semantic stack definition
+   generate_action_driver(C);             // the action driver
+   generate_parse_method(C);              // the main parse method
+   generate_semantic_stack_adjustment(C); // how to adjust the stack
+   generate_semantic_stack_growth(C);     // how to grow the stack
+   gen_class_constructor( C, tys, k);     // constructor of this class
+}
+
+////////////////////////////////////////////////////////////////////////////
+//
+//  Method to process parser errors
+//
+////////////////////////////////////////////////////////////////////////////#
+
+void SyntaxClass::process_parser_errors( ShiftReduceErrors expected_errors)
+{
+  int sr_conflicts = parserGen->shift_reduce_conflicts();
+  int rr_conflicts = parserGen->reduce_reduce_conflicts();
+
+  if (sr_conflicts > 0 && expected_errors < 0)
+  {
+    msg(
+        expected_errors == -1 ? "%Lwarning: %i%s%s\n" : "%L%w%i%s%s\n",
+        sr_conflicts, " shift/reduce conflicts in syntax class ",
+        class_name
+        );
+  }
+
+  if (expected_errors >= 0 && sr_conflicts != expected_errors)
+  {
+    msg("%L%wexpecting %i shift/reduce conflicts but found %i"
+        " in syntax class %s\n",
+        expected_errors, sr_conflicts, class_name);
+  }
+
+  if (rr_conflicts > 0)
+  {
+    msg("%L%w%i reduce/reduce conflicts in syntax class %s\n",
+         rr_conflicts, class_name);
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+// Generate the semantic stack growing method
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void SyntaxClass::generate_semantic_stack_growth( CodeGen& C)
+{
+  C.pr(
+        "%^void %s::grow_semantic_stack()\n"
+        "%^{%+"
+        "%^int N = (stack_size__ + 1) * 2;"
+        "%^%s_semantic_stack_type * S = new %s_semantic_stack_type [N];"
+        "%^if (N >= LR1Parser::SEMANTIC_STACK_SIZE) "
+        "%^   error_report(\"Warning: semantic stack overflow\");"
+        "%^memcpy(S, bot__, sizeof(%s_semantic_stack_type) * (stack_size__ + 1));"
+        "%^if (heap_allocated__) delete [] bot__;"
+        "%^t__ = S + (t__ - bot__);"
+        "%^bot__ = S;"
+        "%^stack_size__ = N - 1;"
+        "%^heap_allocated__ = 1;"
+        "%-%^}\n\n",
+        class_name, class_name, class_name, class_name
+      );
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the stack adjustment method
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void SyntaxClass::generate_semantic_stack_adjustment(CodeGen& C)
+{
+  C.pr( "%^void %s::adjust_stack(int offset) { t__ += offset; }\n\n",
+        class_name);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the class constructor that initializes all
+//  the parser tables.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void SyntaxClass::gen_class_constructor_initializers( CodeGen& C, Tys, DefKind)
+{
+  Id id = class_name;
+  C.pr(
+        "%^  : Super(%s_base,%s_check,%s_def,%s_defact,%s_next,"
+        "%^          %s_len,%s_ncount,%s_lhs,%s_equiv,%i,%i,%i)",
+        id, id, id, id, id, id, id, id, id,
+        (int)error_term, (int)max_term, (int)max_nonterm
+      );
+}

@@ -1,0 +1,322 @@
+\newfont{\KW}{cmssbx9}
+\newfont{\CF}{cmssq8}
+\documentstyle{article}
+\begin{document}
+{\CF\begin{tabular}{l}
+---{\em ------------------------------------------------------------------------------------------------------------------------------------------------------}\\
+\\
+---{\em   This test implements a rewrite based simplifier for the abstract}\\
+---{\em   syntax of a toy imperative language$.$  }\\
+---{\em }\\
+---{\em   The test is quite elobarate and requires polymorphic datatypes to work }\\
+---{\em   correctly with garbage collection$,$ pretty printing and rewriting$.$ }\\
+---{\em ------------------------------------------------------------------------------------------------------------------------------------------------------}\\
+\\
+\verb.#.include $<$iostream$.$h$>$\\
+\\
+---{\em ------------------------------------------------------------------------------------------------------------------------------------------------------}\\
+\\
+---{\em   The following recursive type equations define the abstract syntax}\\
+---{\em   of our small language$.$}\\
+---{\em   $($ Note$:$ we define our own boolean type because not all C$+$$+$ compilers}\\
+---{\em     have bool built$-$in yet$.$ $)$}\\
+---{\em ------------------------------------------------------------------------------------------------------------------------------------------------------}\\
+\\
+{\KW datatype} List$<$T$>$ $=$ $\verb.#.[$$]$                             ---{\em  a polymorphic list}\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $|$ $\verb.#.[$ T $.$$.$$.$ List$<$T$>$ $]$         \\
+\\
+{\KW and}      BOOL    $=$ False $|$ True                    ---{\em  a boolean type}\\
+\\
+{\KW and}      Exp     $=$ integer $($ int $)$                 ---{\em  integers}\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $|$ real    $($ double $)$              ---{\em  real numbers}\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $|$ string  $($ char $\times$ $)$              ---{\em  strings}\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $|$ boolean $($ BOOL $)$                ---{\em  booleans}\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $|$ binop   $($ BinOp$,$ Exp$,$ Exp $)$     ---{\em  binary op expression}\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $|$ unaryop $($ UnaryOp$,$ Exp $)$        ---{\em  unary op expression }\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $|$ var     $($ Id $)$                  ---{\em  variables}\\
+\\
+{\KW and}      BinOp   $=$ add $|$ sub $|$ mul $|$ divide $|$ mod  ---{\em  binary operators}\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $|$ logical\_and $|$ logical\_or     \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $|$ eq  $|$ ge $|$ le $|$ lt $|$ gt $|$ ne\\
+\\
+{\KW and}      UnaryOp $=$ uminus $|$ logical\_not            ---{\em  unary operators}\\
+\\
+{\KW and}      Stmt    $=$ assign\_stmt $($ Id$,$ Exp $)$                ---{\em  assignments}\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $|$ while\_stmt  $($ Exp$,$ Stmt $)$              ---{\em  while statements}\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $|$ if\_stmt     $($ Exp$,$ Stmt$,$ Stmt $)$        ---{\em  if statements}\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $|$ print\_stmt  $($ Exp $)$                    ---{\em  print statements}\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $|$ block\_stmt  $($ List$<$Decl$>$$,$ List$<$Stmt$>$ $)$ ---{\em  blocks}\\
+\\
+{\KW and}      Type    $=$ primitive\_type $($ Id $)$                  ---{\em  type expressions}\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $|$ pointer\_type   $($ Type $)$\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $|$ array\_type     $\{$ element $:$ Type$,$ bound $:$ Exp $\}$\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $|$ function\_type  $\{$ dom $:$ Type$,$ ran $:$ Type $\}$\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $|$ tuple\_type     $($ List$<$Type$>$ $)$ \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $|$ record\_type    $($ List$<$LabeledType$>$ $)$ \\
+\\
+{\KW and}      Decl    $=$ decl $\{$ name $:$ Id$,$ typ $:$ Type $\}$        ---{\em  declarations}\\
+\\
+{\KW and}  LabeledType $=$ labeled\_type $($Id$,$ Type$)$               ---{\em  labeled types}\\
+\\
+{\KW where} {\KW type} Id    $=$ {\KW const} char $\times$\\
+$;$   \\
+\end{tabular}}
+
+{\CF\begin{tabular}{l}
+---{\em ------------------------------------------------------------------------------------------------------------------------------------------------------}\\
+\\
+---{\em   Refine the implementation of the datatypes$.$}\\
+---{\em   The qualifiers may be also declared in the datatype definition$.$}\\
+---{\em   We qualify the datatypes here so that they won't clutter up}\\
+---{\em   the equations above$.$}\\
+---{\em }\\
+---{\em   All types are declared to be garbage collectable$,$ printable by}\\
+---{\em   the printer method and rewritable$.$}\\
+---{\em ------------------------------------------------------------------------------------------------------------------------------------------------------}\\
+\\
+{\KW refine} List$<$T$>$     $::$ {\KW collectable} {\KW printable} {\KW rewrite}\\
+{\KW and}    BOOL        $::$ {\KW collectable} {\KW printable} {\KW rewrite}\\
+{\KW and}    Exp         $::$ {\KW collectable} {\KW printable} {\KW rewrite}\\
+{\KW and}    BinOp       $::$ {\KW collectable} {\KW printable} {\KW rewrite}\\
+{\KW and}    UnaryOp     $::$ {\KW collectable} {\KW printable} {\KW rewrite}\\
+{\KW and}    Stmt        $::$ {\KW collectable} {\KW printable} {\KW rewrite}\\
+{\KW and}    Type        $::$ {\KW collectable} {\KW printable} {\KW rewrite}\\
+{\KW and}    Decl        $::$ {\KW collectable} {\KW printable} {\KW rewrite}\\
+{\KW and}    LabeledType $::$ {\KW collectable} {\KW printable} {\KW rewrite}\\
+\end{tabular}}
+
+{\CF\begin{tabular}{l}
+---{\em ------------------------------------------------------------------------------------------------------------------------------------------------------}\\
+\\
+---{\em   Specify the pretty printing formats$.$ }\\
+---{\em ------------------------------------------------------------------------------------------------------------------------------------------------------}\\
+\\
+{\KW and} {\KW printable} \\
+\ \ \ \ False          $\Rightarrow$ \verb."false".\\
+\ \ $|$ True           $\Rightarrow$ \verb."true".\\
+\ \ $|$ integer        $\Rightarrow$ \_\\
+\ \ $|$ real           $\Rightarrow$ \_\\
+\ \ $|$ string         $\Rightarrow$ \verb."\"". \_ \verb."\"".\\
+\ \ $|$ var            $\Rightarrow$ \_\\
+\ \ $|$ boolean        $\Rightarrow$ \_\\
+\ \ $|$ binop          $\Rightarrow$ \verb."(". \verb.#.2 \verb.#.1 \verb.#.3 \verb.")".  ---{\em  reorder the arguments}\\
+\ \ $|$ unaryop        $\Rightarrow$ \verb."(". \_ \_\verb.")".\\
+\ \ $|$ add            $\Rightarrow$ \verb." + ".\\
+\ \ $|$ sub            $\Rightarrow$ \verb." - ".\\
+\ \ $|$ mul            $\Rightarrow$ \verb." * ".\\
+\ \ $|$ divide         $\Rightarrow$ \verb." / ".\\
+\ \ $|$ mod            $\Rightarrow$ \verb." mod ".\\
+\ \ $|$ logical\_and    $\Rightarrow$ \verb." and ".\\
+\ \ $|$ logical\_or     $\Rightarrow$ \verb." or ".\\
+\ \ $|$ eq             $\Rightarrow$ \verb." = ".\\
+\ \ $|$ ne             $\Rightarrow$ \verb." <> ".\\
+\ \ $|$ gt             $\Rightarrow$ \verb." > ".\\
+\ \ $|$ lt             $\Rightarrow$ \verb." < ".\\
+\ \ $|$ ge             $\Rightarrow$ \verb." >= ".\\
+\ \ $|$ le             $\Rightarrow$ \verb." <= ".\\
+\ \ $|$ uminus         $\Rightarrow$ \verb."- ".\\
+\ \ $|$ logical\_not    $\Rightarrow$ \verb."not ".\\
+\ \ $|$ assign\_stmt    $\Rightarrow$ \_ \verb." := ". \_ \verb.";".\\
+\ \ $|$ while\_stmt     $\Rightarrow$ \verb."while ". \_ \verb." do". $\{$ \_ $\}$ \verb."end while;".\\
+\ \ $|$ if\_stmt        $\Rightarrow$ \verb."if ". \_ \verb." then". $\{$ \_ $\}$ \verb." else". $\{$ \_ $\}$ \verb."endif;".\\
+\ \ $|$ print\_stmt     $\Rightarrow$ \verb."print ". \_ \verb.";". \\
+\ \ $|$ block\_stmt     $\Rightarrow$ \verb."begin ". $\{$ \_ $/$ \_ $\}$ \verb."end".\\
+\ \ $|$ primitive\_type $\Rightarrow$ \_\\
+\ \ $|$ pointer\_type   $\Rightarrow$ \_ \verb."^".\\
+\ \ $|$ array\_type     $\Rightarrow$ \verb."array ". bound \verb." of ". element \\
+\ \ $|$ function\_type  $\Rightarrow$ dom \verb." -> ". ran\\
+\ \ $|$ decl           $\Rightarrow$ \verb."var ". name \verb." : ". typ \verb.";".\\
+\ \ $|$ labeled\_type   $\Rightarrow$ \_ \verb." : ". \_\\
+\ \ $|$ $\verb.#.[$$]$            $\Rightarrow$ \verb."".\\
+\ \ $|$ $\verb.#.[$$.$$.$$.$$]$         $\Rightarrow$ \_ $/$ \_\\
+\ \ $;$\\
+\end{tabular}}
+
+{\CF\begin{tabular}{l}
+---{\em ------------------------------------------------------------------------------------------------------------------------------------------------------}\\
+\\
+---{\em   Generate the interfaces to instantiated polymorphic datatypes$.$}\\
+---{\em   These are not strictly necessary since the instantiation is in the}\\
+---{\em   same file below$.$  However$,$ in general the 'instantiate extern' declaration}\\
+---{\em   must be placed in the $.$h files for each instance of a polymorphic}\\
+---{\em   datatype$.$}\\
+---{\em ------------------------------------------------------------------------------------------------------------------------------------------------------}\\
+\\
+{\KW instantiate} {\KW extern} {\KW datatype} \\
+\ \ \ List$<$Type$>$$,$ List$<$Stmt$>$$,$ List$<$LabeledType$>$$,$ List$<$Decl$>$$;$\\
+\end{tabular}}
+
+{\CF\begin{tabular}{l}
+---{\em ------------------------------------------------------------------------------------------------------------------------------------------------------}\\
+\\
+---{\em   Now instantiate all the datatypes$.$}\\
+---{\em   As specified in the definition$,$ garbage collector type info and}\\
+---{\em   pretty printers will be generated automatically$.$}\\
+---{\em ------------------------------------------------------------------------------------------------------------------------------------------------------}\\
+\\
+{\KW instantiate} {\KW datatype} Exp$,$ BOOL$,$ BinOp$,$ UnaryOp$,$ Stmt$,$ Type$,$ Decl$,$ LabeledType$,$\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ List$<$Type$>$$,$ List$<$Stmt$>$$,$ List$<$LabeledType$>$$,$ List$<$Decl$>$$;$\\
+\\
+---{\em ------------------------------------------------------------------------------------------------------------------------------------------------------}\\
+\\
+---{\em   Defines the interface of a rewrite class Simplify$.$}\\
+---{\em   All types that are referenced $($directly or indirectly$)$ should be}\\
+---{\em   declared in the interface$.$}\\
+---{\em ------------------------------------------------------------------------------------------------------------------------------------------------------}\\
+\\
+{\KW rewrite} {\KW class} Simplify\\
+\ \ \ $($ Exp$,$ BinOp$,$ BOOL$,$ UnaryOp$,$ Stmt$,$ Type$,$ Decl$,$ LabeledType$,$\\
+\ \ \ \ \ List$<$Decl$>$$,$ List$<$Stmt$>$$,$ List$<$Type$>$$,$ List$<$LabeledType$>$\\
+\ \ \ $)$\\
+$\{$\\
+{\KW public}$:$\\
+\ \ \ Simplify$($$)$ $\{$$\}$\\
+\ \ \ ---{\em  Method to print an error message }\\
+\ \ \ void error$(${\KW const} char message$[$$]$$)$ $\{$ cerr $<$$<$ message $<$$<$ \verb.'\n'.$;$ $\}$\\
+$\}$$;$\\
+\end{tabular}}
+
+{\CF\begin{tabular}{l}
+---{\em ------------------------------------------------------------------------------------------------------------------------------------------------------}\\
+\\
+---{\em   Now defines the rewrite rules$.$  These rules will be compiled into }\\
+---{\em   efficient pattern matching code by the translator$.$  A real life }\\
+---{\em   system will probably have many more rules than presented here$.$}\\
+---{\em   $($A machine code generator usually needs a few hundred rules$)$}\\
+---{\em   Currently there are about 60 rules in this class$.$}\\
+---{\em ------------------------------------------------------------------------------------------------------------------------------------------------------}\\
+\\
+{\KW rewrite} Simplify\\
+$\{$  \\
+\ \ \ ---{\em  Type coercion rules from integer $\rightarrow$ real}\\
+\ \ \ binop$($some\_op$,$ integer x$,$ real y$)$$:$ binop$($some\_op$,$real$($x$)$$,$real$($y$)$$)$\\
+$|$  binop$($some\_op$,$ real x$,$ integer y$)$$:$ binop$($some\_op$,$real$($x$)$$,$real$($y$)$$)$\\
+\\
+\ \ \ ---{\em  Constant folding rules for integers and reals$.$}\\
+$|$  binop$($add$,$    integer x$,$ integer y$)$$:$ integer$($x $+$ y$)$\\
+$|$  binop$($sub$,$    integer x$,$ integer y$)$$:$ integer$($x $-$ y$)$\\
+$|$  binop$($mul$,$    integer x$,$ integer y$)$$:$ integer$($x $\times$ y$)$\\
+$|$  binop$($divide$,$ integer x$,$ integer 0$)$$:$ $\{$ error$($\verb."division by zero".$)$$;$ $\}$\\
+$|$  binop$($divide$,$ integer x$,$ integer y$)$$:$ integer$($x $/$ y$)$\\
+$|$  binop$($mod$,$    integer x$,$ integer 0$)$$:$ $\{$ error$($\verb."modulo by zero".$)$$;$ $\}$\\
+$|$  binop$($mod$,$    integer x$,$ integer y$)$$:$ integer$($x $\%$ y$)$\\
+$|$  binop$($add$,$    real x$,$    real y$)$$:$    real$($x $+$ y$)$\\
+$|$  binop$($sub$,$    real x$,$    real y$)$$:$    real$($x $-$ y$)$\\
+$|$  binop$($mul$,$    real x$,$    real y$)$$:$    real$($x $\times$ y$)$\\
+$|$  binop$($divide$,$ real x$,$    real 0$.$0$)$$:$  $\{$ error$($\verb."division by zero".$)$$;$ $\}$\\
+$|$  binop$($divide$,$ real x$,$    real y$)$$:$    real$($x $/$ y$)$\\
+$|$  unaryop$($uminus$,$ integer x$)$$:$          integer$($$-$x$)$\\
+$|$  unaryop$($uminus$,$ real    x$)$$:$          real$($$-$x$)$\\
+\\
+---{\em  Constant folding rules for relational operators}\\
+$|$  binop$($eq$,$  integer x$,$ integer y$)$$:$    boolean$($$($BOOL$)$$($x $==$ y$)$$)$\\
+$|$  binop$($ne$,$  integer x$,$ integer y$)$$:$    boolean$($$($BOOL$)$$($x $\ne$ y$)$$)$\\
+$|$  binop$($gt$,$  integer x$,$ integer y$)$$:$    boolean$($$($BOOL$)$$($x $>$ y$)$$)$\\
+$|$  binop$($lt$,$  integer x$,$ integer y$)$$:$    boolean$($$($BOOL$)$$($x $<$ y$)$$)$\\
+$|$  binop$($ge$,$  integer x$,$ integer y$)$$:$    boolean$($$($BOOL$)$$($x $\ge$ y$)$$)$\\
+$|$  binop$($le$,$  integer x$,$ integer y$)$$:$    boolean$($$($BOOL$)$$($x $\le$ y$)$$)$\\
+$|$  binop$($eq$,$  real x$,$    real y$)$$:$       boolean$($$($BOOL$)$$($x $==$ y$)$$)$\\
+$|$  binop$($ne$,$  real x$,$    real y$)$$:$       boolean$($$($BOOL$)$$($x $\ne$ y$)$$)$\\
+$|$  binop$($gt$,$  real x$,$    real y$)$$:$       boolean$($$($BOOL$)$$($x $>$ y$)$$)$\\
+$|$  binop$($lt$,$  real x$,$    real y$)$$:$       boolean$($$($BOOL$)$$($x $<$ y$)$$)$\\
+$|$  binop$($ge$,$  real x$,$    real y$)$$:$       boolean$($$($BOOL$)$$($x $\ge$ y$)$$)$\\
+$|$  binop$($le$,$  real x$,$    real y$)$$:$       boolean$($$($BOOL$)$$($x $\le$ y$)$$)$\\
+\\
+---{\em  Constant folding rules for boolean operators}\\
+$|$  binop$($logical\_and$,$ boolean x$,$ boolean y$)$$:$  boolean$($$($BOOL$)$$($x $\land$ y$)$$)$\\
+$|$  binop$($logical\_or$,$  boolean x$,$ boolean y$)$$:$  boolean$($$($BOOL$)$$($x $\lor$ y$)$$)$\\
+$|$  unaryop$($logical\_not$,$ boolean x$)$$:$           boolean$($$($BOOL$)$$($$!$ x$)$$)$\\
+\\
+---{\em  Simple algebraic laws for integers}\\
+$|$  binop$($add$,$ integer 0$,$ x        $)$$:$  x\\
+$|$  binop$($add$,$ x$,$         integer 0$)$$:$  x\\
+$|$  binop$($sub$,$ x$,$         integer 0$)$$:$  x\\
+$|$  binop$($mul$,$ integer 0$,$ x        $)$$:$  integer$($0$)$\\
+$|$  binop$($mul$,$ x$,$         integer 0$)$$:$  integer$($0$)$\\
+$|$  binop$($mul$,$ integer 1$,$ x        $)$$:$  x\\
+$|$  binop$($mul$,$ x$,$         integer 1$)$$:$  x\\
+$|$  binop$($divide$,$ x$,$      integer 1$)$$:$  x\\
+\\
+---{\em  Simple algebraic laws for reals}\\
+$|$  binop$($add$,$ real 0$.$0$,$ x        $)$$:$  x\\
+$|$  binop$($add$,$ x$,$         real 0$.$0$)$$:$  x\\
+$|$  binop$($sub$,$ x$,$         real 0$.$0$)$$:$  x\\
+$|$  binop$($mul$,$ real 0$.$0$,$ x        $)$$:$  real$($0$.$0$)$\\
+$|$  binop$($mul$,$ x$,$         real 0$.$0$)$$:$  real$($0$.$0$)$\\
+$|$  binop$($mul$,$ real 1$.$0$,$ x        $)$$:$  x\\
+$|$  binop$($mul$,$ x$,$         real 1$.$0$)$$:$  x\\
+$|$  binop$($divide$,$ x$,$      real 1$.$0$)$$:$  x\\
+---{\em  more $.$$.$$.$}\\
+\\
+---{\em  Simple strength reduction $($assume CSE will be applied$)$}\\
+$|$  binop$($mul$,$ integer 2$,$ x$)$$:$  binop$($add$,$x$,$x$)$\\
+$|$  binop$($mul$,$ x$,$ integer 2$)$$:$  binop$($add$,$x$,$x$)$\\
+---{\em  more $.$$.$$.$}\\
+\\
+---{\em  Simple boolean identities}\\
+$|$  binop$($logical\_and$,$ boolean False$,$ \_$)$$:$ boolean$($False$)$\\
+$|$  binop$($logical\_and$,$ boolean True$,$ b$)$$:$  b\\
+$|$  binop$($logical\_and$,$ \_$,$ boolean False$)$$:$ boolean$($False$)$\\
+$|$  binop$($logical\_and$,$ b$,$ boolean True$)$$:$  b\\
+$|$  binop$($logical\_or$,$  boolean True$,$ \_$)$$:$  boolean$($True$)$\\
+$|$  binop$($logical\_or$,$  boolean False$,$ b$)$$:$ b\\
+$|$  binop$($logical\_or$,$  \_$,$ boolean True$)$$:$  boolean$($True$)$\\
+$|$  binop$($logical\_or$,$  b$,$ boolean False$)$$:$ b\\
+---{\em  more $.$$.$$.$}\\
+\\
+---{\em  The following rules eliminate unreachable statements$.$ }\\
+$|$  if\_stmt$($boolean True$,$ a$,$ \_$)$$:$          a\\
+$|$  if\_stmt$($boolean False$,$ \_$,$ b$)$$:$         b\\
+$|$  $\verb.#.[$while\_stmt$($boolean False$,$ \_$)$ $.$$.$$.$ continuation$]$$:$ continuation\\
+---{\em  more $.$$.$$.$}\\
+$\}$$;$\\
+\end{tabular}}
+
+{\CF\begin{tabular}{l}
+---{\em ------------------------------------------------------------------------------------------------------------------------------------------------------}\\
+\\
+---{\em   The main program$.$}\\
+---{\em   We'll test it with a simple program$.$}\\
+---{\em ------------------------------------------------------------------------------------------------------------------------------------------------------}\\
+\\
+int main$($$)$\\
+$\{$  \\
+\ \ \ ---{\em  Instantiate a rewriting object$.$}\\
+\ \ \ Simplify simplify$;$\\
+\\
+\ \ \ ---{\em  The input is the following block$:$}\\
+\ \ \ ---{\em }\\
+\ \ \ ---{\em   var x $:$ int$;$}\\
+\ \ \ ---{\em   var y $:$ int$;$}\\
+\ \ \ ---{\em   var z $:$ array $[$10 $\times$ 30$]$ of int$;$}\\
+\ \ \ ---{\em   begin}\\
+\ \ \ ---{\em      x $=$ 0 $+$ y $\times$ 1$;$}\\
+\ \ \ ---{\em      while $($1 $<$$>$ 1$)$ y $:$$=$ y $+$ 1$;$}\\
+\ \ \ ---{\em      print $($not false$)$$;$}\\
+\ \ \ ---{\em   end}\\
+\ \ \ ---{\em }\\
+\ \ \ Stmt prog $=$ \\
+\ \ \ \ \ \ block\_stmt$($ $\verb.#.[$ decl$($\verb."x".$,$ primitive\_type$($\verb."integer".$)$$)$$,$\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ decl$($\verb."y".$,$ primitive\_type$($\verb."integer".$)$$)$$,$\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ decl$($\verb."z".$,$ array\_type$($primitive\_type$($\verb."integer".$)$$,$\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ binop$($mul$,$integer$($10$)$$,$ integer$($30$)$$)$\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $)$\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $)$\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $]$$,$\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $\verb.#.[$\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ assign\_stmt$($\verb."x".$,$ \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ binop$($add$,$integer$($0$)$$,$\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ binop$($mul$,$var$($\verb."y".$)$$,$integer$($1$)$$)$$)$$)$$,$\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ while\_stmt$($binop$($ne$,$ integer$($1$)$$,$ integer$($1$)$$)$$,$ \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ assign\_stmt$($\verb."y".$,$ \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ binop$($add$,$var$($\verb."y".$)$$,$integer$($1$)$$)$$)$$)$$,$\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ print\_stmt$($unaryop$($logical\_not$,$boolean$($False$)$$)$$)$\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $]$\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ $)$$;$\\
+\ \ \ cout $<$$<$ \verb."Before:\n". $<$$<$ prog $<$$<$ \verb."\n\n".$;$\\
+\ \ \ simplify$($prog$)$$;$\\
+\ \ \ cout $<$$<$ \verb."After:\n".  $<$$<$ prog $<$$<$ \verb."\n".$;$\\
+\ \ \ {\KW return} 0$;$\\
+$\}$\\
+\end{tabular}}
+\end{document}

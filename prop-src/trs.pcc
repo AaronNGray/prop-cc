@@ -1,0 +1,473 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  These are the routines for building the data structure
+//  for partial evaluting a TRS
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include <string.h>
+#include "trs.ph"
+#include "ir.ph"
+#include "ast.ph"
+#include "type.h"
+#include "list.h"
+#include "matchcom.h"
+#include "datagen.h"
+#include "rwgen.h"
+#include "funmap.h"
+#include "setlgen.h"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructors for represents a term
+//
+///////////////////////////////////////////////////////////////////////////////
+
+instantiate datatype Term;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor for TRS
+//
+///////////////////////////////////////////////////////////////////////////////
+
+TRS::TRS( RewritingCompiler& C)
+    : compiler(C), Fmap(*C.Fmap), treeauto(*C.Fmap->tree_gen),
+      count_redex(false)
+{
+  MatchRules rules = Fmap.bottomup_rules;
+  number_of_rules  = length(rules);
+  rule_map    = new MatchRule [number_of_rules];
+  guard_map   = new Exp       [number_of_rules];
+  lhs_map     = new Term      [number_of_rules];
+  rhs_map     = new Term      [number_of_rules];
+  num_var_map = new int       [number_of_rules];
+  var_map     = new Exp *     [number_of_rules];
+  var_pat_map = new Pat *     [number_of_rules];
+  residue_map = new Residues *[number_of_rules];
+  literal_map = new Literal   [Fmap.G.functors()];
+  optimized_map = new Exp     [number_of_rules];
+
+  clear_statistics();
+
+  int i = 0;
+  for_each( MatchRule, r, rules)
+  {
+  match (r)
+    {
+    MATCHrule(_,pat,guard,exp,action):
+      {
+        if (r->rule_number != i)
+          bug("%LTRS::TRS()");
+        rule_map[i]  = r;
+        guard_map[i] = guard;
+        make_lhs( i, pat);
+
+        match (action)
+          {
+            #[MARKEDdecl( _, REPLACEMENTdecl( exp,_))]:
+              { make_rhs( i, exp); }
+          | _:
+              { rhs_map[i] = OPAQUEterm( action); }
+          }
+      }
+    }
+    i++;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Destructor for TRS
+//
+///////////////////////////////////////////////////////////////////////////////
+
+TRS::~TRS()
+{
+  delete [] rule_map;
+  delete [] guard_map;
+  delete [] lhs_map;
+  delete [] rhs_map;
+  delete [] num_var_map;
+  delete [] var_map;
+  delete [] var_pat_map;
+  delete [] residue_map;
+  delete [] literal_map;
+  delete [] optimized_map;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to determine if any expression is a pattern variable.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool is_pattern_var( Exp exp)
+{
+  match while (exp)
+  {
+    SELECTORexp( IDexp "redex", _, _):
+      { return true; }
+  | DOTexp( SELECTORexp( IDexp "redex", _, _), _):
+      { return true; }
+  | DOTexp( SELECTORexp( e, _, _), _):
+      { exp = e; }
+  | SELECTORexp( e, _, _):
+      { exp = e; }
+  | _:
+      { return false; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to create the lhs
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void TRS::make_lhs( Rule r, Pat pat)
+{
+  num_vars = 0;
+  lhs_map[r] = make_term(pat);
+
+  num_var_map[r] = num_vars;
+  var_map[r]     = (Exp*) mem_pool.m_alloc( sizeof(Exp)*num_vars);
+  var_pat_map[r] = (Pat*) mem_pool.m_alloc( sizeof(Pat)*num_vars);
+  residue_map[r] = (Residues*) mem_pool.c_alloc( sizeof(Residues)*num_vars);
+  optimized_map[r] = NOexp;
+
+  memcpy( var_map[r], vars, sizeof(Exp)*num_vars);
+  memcpy( var_pat_map[r], var_pats, sizeof(Pat)*num_vars);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to create the lhs for rule r
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Term TRS::make_term( Pat pat)
+{
+  match while (pat)
+  {
+    MARKEDpat( _, p):
+    { pat = p; }
+  | ASpat( _, p, _, _):
+    { pat = p; }
+  | IDpat _:
+    { return make_term_var( pat, pat->selector); }
+  | APPpat( CONSpat C, TUPLEpat ps):
+    { return make_term( pat, C, ps); }
+  | APPpat( CONSpat C, p):
+    { return make_term( pat, C, #[p]); }
+  | CONSpat C:
+    { return make_term( pat, C, #[]); }
+  | LISTpat { cons, nil, head = #[], tail = NOpat }:
+    { return make_term( pat, nil, #[]); }
+  | LISTpat { cons, nil, head = #[], tail }:
+    { pat = tail; }
+  | LISTpat { cons, nil, head = #[h ... t], tail }:
+    {
+      Pat tl_pat = LISTpat'{cons = cons, nil = nil, head = t, tail = tail};
+	  tl_pat->ty = pat->ty;
+	  return make_term(pat,cons,#[h,tl_pat]);
+    }
+  | LITERALpat l | Fmap.literal_map.contains(l):
+    {
+      Functor f = Fmap.literal_map[l];
+	  literal_map[f] = l;
+	  return CONSterm(f,NOcons,0,0);
+    }
+  | pat:
+    { return PATterm(pat); }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to create the lhs for rule r
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Term TRS::make_term( Pat pat, Cons cons, Pats pats)
+{
+  int n       = length(pats);
+  FunctorTable::Entry * E = Fmap.type_map.lookup( pat->ty);
+  if (E == 0)
+    { return PATterm(pat); }
+  match (cons->alg_ty)
+  {
+  DATATYPEty ({ unit ... }, _):
+    {
+      Functor f = Fmap.type_map.value(E) + cons->tag +
+	       (cons->ty == NOty ? 0 : unit);
+	  return CONSterm( f, cons, n, make_term( pats));
+    }
+  |  _:
+    { bug("TRS::make_term"); return PATterm( pat); }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to create the lhs for rule r
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Term * TRS::make_term( Pats pats)
+{
+  int n = length( pats);
+  Term * args = (Term *) mem_pool.m_alloc( sizeof( Term) * n);
+  int i = 0;
+  for_each( Pat, p, pats)
+    args[i++] = make_term(p);
+  return args;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Return the type of an expression
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Ty type_of( Exp e)
+{
+  return type_of( e, Env());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to create the rhs for rule r
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void TRS::make_rhs( Rule r, Exp exp)
+{
+  type_of( exp);
+  rhs_map[r] = make_term( exp);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to create the rhs
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Term TRS::make_term(Exp exp)
+{
+  Exp law_exp;
+  match while (exp)
+  {
+    MARKEDexp( _, e):
+    { exp = e; }
+  | IDexp id:
+    { return make_term( exp, id, #[]); }
+  | CONSexp( cons, #[], NOexp):
+    { return make_term( exp, cons->name, #[]); }
+  | CONSexp( cons, #[], TUPLEexp es):
+    { return make_term( exp, cons->name, es); }
+  | CONSexp( cons,#[],e):
+    { return make_term( exp, cons->name, #[e]); }
+  | LISTexp( cons, nil, #[h], t):
+    {
+      Exp nil_exp = t == NOexp ? CONSexp( nil, #[], NOexp) : t;
+      nil_exp->ty = exp->ty;
+      return make_term( exp, cons->name, #[ h, nil_exp]);
+    }
+  | LISTexp( cons, nil, #[h ... t], tail):
+    {
+      Exp e2 = LISTexp(cons, nil, t, tail);
+      e2->ty = exp->ty;
+      return make_term(exp,cons->name,#[h,e2]);
+    }
+  | APPexp( IDexp id, TUPLEexp es):
+    {
+      law_exp = DatatypeCompiler::lookup_law( id, es);
+      if (law_exp == NOexp)
+        return make_term( exp, id, es);
+      type_of( law_exp);
+      exp = law_exp;
+    }
+  | APPexp( IDexp id, e):
+    {
+      law_exp = DatatypeCompiler::lookup_law(id,#[e]);
+      if (law_exp == NOexp)
+        return make_term(exp,id,#[e]);
+      type_of(law_exp);
+      exp = law_exp;
+    }
+  | LITERALexp l | Fmap.literal_map.contains(l):
+    { return CONSterm( Fmap.literal_map[l], 0, 0, 0); }
+  |  exp | is_pattern_var(exp):
+    { return make_term_var( NOpat, exp); }
+  |  exp:
+    { return CODEterm( exp); }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to create the rhs
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Term TRS::make_term( Exp exp, Id id, Exps exps)
+{
+  int n = length( exps);
+  Cons cons = find_cons( id);
+  if (cons == NOcons)
+    { return CODEterm( exp); }
+  FunctorTable::Entry * E = Fmap.type_map.lookup( exp->ty);
+  if (E == 0)
+    { return CODEterm( exp); }
+  match (cons->alg_ty)
+  {
+  DATATYPEty({ unit ... },_):
+    {
+      Functor f = Fmap.type_map.value(E) + cons->tag +
+			 (cons->ty == NOty ? 0 : unit);
+	  return CONSterm( f, cons, n, make_term( exps));
+    }
+  | _:
+    { bug("TRS::make_term"); return CODEterm(exp); }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to create the term variable
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Term TRS::make_term_var(Pat pat, Exp exp)
+{
+  for (int i = 0; i < num_vars; i++)
+  {
+    if ( equal( exp, vars[i]))
+      return VARterm(i,var_pats[i],vars[i]);
+  }
+  if (pat == NOpat)
+    return CODEterm(exp);
+  if (num_vars == MAX_VARS)
+     bug("%LTRS::make_term_var() too many variables");
+  vars[num_vars] = exp;
+  var_pats[num_vars] = pat;
+  return VARterm( num_vars++, pat, exp);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to create the term from a list of expressions
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Term * TRS::make_term( Exps exps)
+{
+  int n = length( exps);
+  Term * args = (Term *)mem_pool.m_alloc( sizeof( Term) * n);
+  int i = 0;
+  for_each( Exp, e, exps)
+    args[i++] = make_term( e);
+  return args;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print a term
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void TRS::print( std::ostream& s, Term term) const
+{
+  match (term)
+  {
+  CONSterm(f,cons,2,args) | is_list_constructor(cons):
+    {
+      s << '#' << cons->name[1];
+	  Term t = term;
+	  Id comma = "";
+	  match while (t)
+	  {
+	  CONSterm( g, cons2, 2, args) | g == f:
+	    {  s << comma; print( s, args[0]); t = args[1]; comma = ", "; }
+	  }
+	  match (t)
+	  {
+	  CONSterm( g, nil, 0, args)
+	           | cons && is_list_constructor(nil): // skip
+	  | _:
+        { s << comma; print( s, t); }
+	  }
+	  s << cons->name[5];
+    }
+  | CONSterm(f,cons,arity,args):
+    {
+      s << (cons != NOcons ? cons->name : Fmap.G.functor_name(f));
+      if (arity > 0)
+      {
+        s << '(';
+        for (int i = 0; i < arity; i++)
+        {
+           print(s,args[i]);
+           if (i < arity - 1)
+             s << ", ";
+        }
+        s << ')';
+      }
+    }
+  | VARterm(v,pat,_):
+    { s << pat; }
+  | CODEterm(exp):
+    {
+      Bool save = pretty_print_exp;
+      pretty_print_exp = true;
+      s << "[[" << exp << "]]";
+      pretty_print_exp = save;
+      }
+  | OPAQUEterm _:
+    { s << "..."; }
+  | PATterm pat:
+    { s << "[[" << pat << "]]"; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print a TRS
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void TRS::print( std::ostream& s) const
+{
+  s << "\n\nBottom-up term rewriting system:\n";
+  Bool save = pretty_print_exp;
+  pretty_print_exp = true;
+
+  for (Rule r = 0; r < number_of_rules; r++)
+  {
+    MatchRule rule = rule_map[r];
+    s << "line " << rule->begin_line << ": ";
+    print(s,lhs_map[r]);
+
+    if (guard_map[r] != NOexp)
+      s << " | " << guard_map[r];
+    s << ":\n\t";
+    print( s, rhs_map[r]);
+    s << '\n';
+
+    for (int i = 0; i < num_var_map[r]; i++)
+    {
+      Pat pat_var = var_pat_map[r][i];
+      Ty pat_ty   = pat_var->ty;
+	  s << "\tvariable " << pat_var << " : " << pat_ty;
+      if (! compiler.has_index( pat_ty))
+        s << " has no index";
+	  s << '\n';
+    }
+    s << '\n';
+  }
+  s << '\n';
+  pretty_print_exp = save;
+}

@@ -1,0 +1,60 @@
+/////////////////////////////////////////////////////////////////////////////
+//  This program demonstrates the use of attribute evaluation in Prop's
+//  rewrite class.
+/////////////////////////////////////////////////////////////////////////////
+
+#include <iostream.h>
+
+/////////////////////////////////////////////////////////////////////////////
+//  The datatype EXP represents a simple expression (with pretty printing.)
+/////////////////////////////////////////////////////////////////////////////
+datatype EXP :: rewrite
+	     = num (int)       => _
+             | add (EXP, EXP)  => "(" _ " + " _ ")"
+             | sub (EXP, EXP)  => "(" _ " - " _ ")"
+             | mul (EXP, EXP)  => "(" _ " * " _ ")"
+             | div (EXP, EXP)  => "(" _ " / " _ ")"
+             ;
+
+/////////////////////////////////////////////////////////////////////////////
+//  The rewrite class Eval involves the transformation of datatype
+//  EXP into integers.
+/////////////////////////////////////////////////////////////////////////////
+rewrite class Eval (EXP : int) :: treeparser {};
+
+/////////////////////////////////////////////////////////////////////////////
+//  Now, here are the rules.  Pattern variables of the form '$x' refer
+//  to synthesized attributes.  (Normal pattern variables of the
+//  form 'x' still refer to the components of a term.)
+//
+//  Notice that nested attributes and guards on attribute values 
+//  are both allowed.  (The nested attribute rule is contrived.)
+/////////////////////////////////////////////////////////////////////////////
+rewrite Eval {
+   num (x as _):               { ## = x; }
+|  add (x as _, y as _):       { ## = #x + #y; }
+|  sub (x as _, y as _):       { ## = #x - #y; }
+// |  mul (x, add(y,z)):       { ## = $x * (#y + #z); } // nested attributes
+|  mul (x as _, y as _):       { ## = #x * #y; }
+|  div (x as _, y as _) where (#y != 0): { ## = #x / #y; }       
+|  div (x as _, y as _):       { cerr << "Division by zero\n"; ## = 0; }  
+};
+
+/////////////////////////////////////////////////////////////////////////////
+//  Generate the implementation of the datatype. 
+/////////////////////////////////////////////////////////////////////////////
+instantiate datatype EXP;
+
+/////////////////////////////////////////////////////////////////////////////
+//  Test the rewriting rules.
+/////////////////////////////////////////////////////////////////////////////
+int main()
+{  // Instantiate a rewriting class.
+   Eval eval;
+
+   //  e = (1 + 2) * (5 - 3)
+   EXP e = mul(add(num(1), num(2)), sub(num(5),num(3)));
+  
+   cout << e << " = " << eval(e) << '\n'; 
+   return 0;
+}

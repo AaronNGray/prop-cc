@@ -1,0 +1,153 @@
+#include "willard-ast.ph"
+#include "parser.ph"
+#include "paige.ph"
+#include <AD/strings/quark.h>
+
+datatype Tokens :: lexeme =
+   "true" | "false" | "in" | "and" | "or" | "not" 
+|  "forall" | "exists" | "let" | "end"
+|  "{" | "}" | "/" | "*" | "+" | "-" | "(" | ")" | "[" | "]"
+|  "=" | "/=" | "<" | ">" | "<=" | ">=" | "|" | "#"
+|  "," | ";" | ":" | "."
+|  INTEGER /\-?[0-9]+/
+|  IDENT   /[a-zA-Z_][a-zA-Z_0-9\-]*/
+;
+
+//
+//  Method to get a token from the lexer stream
+//
+int QueryParser::get_token()
+{  matchscan while (lexbuf)
+   {  lexeme class Tokens: { return ?lexeme; }
+   |  /[\t ]+/:            // skip spaces
+   |  /(\/\/.*|\-\-.*)?\n/: { line_no++; }
+   }
+   return EOF;
+}
+
+//
+//  Method to create a nested definition
+//
+Exp make_defs (Exp (*f)(Ids,Exps,Exp), List<.[Ids,Exps]> defs, Exp e)
+{  match (defs) of
+      #[]:              { return e; }
+   |  #[.(x,e1) ... t]: { return f(x,e1,make_defs(f,t,e)); }
+   end match;
+}
+
+//
+//
+//  This is our parser
+//
+syntax QueryParser
+{
+
+left: 3 "#" ;
+left: 4 "*" "/" ;
+left: 5 "+" "-" ;
+left: 6 "=" "/=" "<" ">" "<=" ">=";
+left: 7 "not" ;
+left: 8 "and" ;
+left: 9 "or" ;
+left: 10 "in" ; 
+left: 11 "forall" "exists" ".";
+
+top:	exp { query = $1; }
+;
+
+exp Exp:	
+	"{" exp ":" generators "}"	   
+		{ $$ = make_defs(GENERATOR,$4,$2); }
+|	"{" exp ":" generators "|" exp "}" 
+		{ $$ = make_defs(GENERATOR,$4,GUARD($6,$2)); }
+|	exp "+" exp	{ $$ = OP("+",#[$1,$3]); }
+|	exp "-" exp	{ $$ = OP("-",#[$1,$3]); }
+|	exp "*" exp	{ $$ = OP("*",#[$1,$3]); }
+|	exp "/" exp	{ $$ = OP("/",#[$1,$3]); }
+|	exp "=" exp	{ $$ = OP("=",#[$1,$3]); }
+|	exp "/=" exp	{ $$ = OP("/=",#[$1,$3]); }
+|	exp "<" exp	{ $$ = OP("<",#[$1,$3]); }
+|	exp ">" exp	{ $$ = OP(">",#[$1,$3]); }
+|	exp "<=" exp	{ $$ = OP("<=",#[$1,$3]); }
+|	exp ">=" exp	{ $$ = OP(">=",#[$1,$3]); }
+|	exp "and" exp	{ $$ = OP("and",#[$1,$3]); }
+|	exp "or" exp	{ $$ = OP("or",#[$1,$3]); }
+|	exp "in" exp	{ $$ = OP("in",#[$1,$3]); }
+|	"not" exp	{ $$ = OP("not",#[$2]); }
+|	"#" exp		{ $$ = Count($2); }
+|	"(" exp ")"	{ $$ = $2; }
+|	literal		{ $$ = LIT($1); }
+|	id		{ $$ = ID($1); }
+|	id "(" exps ")" { $$ = APP($1,$3); }
+|	"[" exps "]"	{ $$ = TUPLE($2); }
+|	"forall" id "in" id "." exp    { $$ = FORALL($2,ID($4),$6); }
+|	"exists" id "in" id "." exp    { $$ = EXISTS($2,ID($4),$6); }
+|	"let" defs "in" exp "end" { $$ = PaigeGoyal::make_let($2.ids,$2.exps,$4); }
+;
+
+exps Exps:	exp		{ $$ = #[ $1 ]; }
+|		exp "," exps 	{ $$ = #[ $1 ... $3 ]; }
+;
+
+literal Literal:	integer	{ $$ = INT($1); }
+|			boolean	{ $$ = BOOL($1); }
+;
+
+generators List<.[Ids,Exps]>:	
+	rvar "in" range			{ $$ = #[.($1,$3)]; }
+|	rvar "in" range "," generators	{ $$ = #[.($1,$3) ... $5]; }
+;
+
+rvar Ids:	id		{ $$ = #[$1]; }
+|		"[" ids "]"	{ $$ = $2; }
+;
+
+ids Ids:	id		{ $$ = #[$1]; }
+|		id "," ids	{ $$ = #[$1 ... $3]; }
+;
+
+defs {ids : Ids, exps : Exps}:	
+		id "=" exp		{ $$.ids = #[$1]; $$.exps =#[$3]; }
+|		id "=" exp "," defs	{ $$.ids  = #[$1 ... $5.ids]; 
+					  $$.exps = #[$3 ... $5.exps]; 
+					}
+;
+
+range Exps:	id		{ $$ = #[ID($1)]; }
+|		"[" ranges "]"	{ $$ = $2; }
+;
+
+ranges Exps:	id		{ $$ = #[ID($1)]; }
+|		id "," ranges	{ $$ = #[ID($1) ... $3]; }
+;
+
+integer int:	INTEGER	{ $$ = atol(lexbuf.text()); }
+;
+
+boolean Bool:	"true"	{ $$ = true; }
+|		"false" { $$ = false; }
+;
+
+id Id:		IDENT	{ $$ = Quark(lexbuf.text()); }
+;
+
+};
+
+
+//
+//  This is our parser driver routine
+//
+Exp QueryParser::read()
+{  query = ID("x");
+   line_no = 1;
+   parse();
+   return query;
+}
+
+//
+//  This is the parser error handler
+//
+QueryParser::ErrorAction QueryParser::error_report(const char message[])
+{  cerr << line_no << ": " << message << " near: " << lexbuf.text() << '\n';
+   return Retry;
+}

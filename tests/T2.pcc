@@ -1,0 +1,22 @@
+datatype Exp = INT int        => _
+	     | ADD (Exp, Exp) => _ "+" _
+	     | SUB (Exp, Exp) => _ "-" _
+	     | MUL (Exp, Exp) => _ "*" _
+	     | DIV (Exp, Exp) => _ "/" _ 
+	     ;
+
+graphtype Foo 
+( nodes: Node Exp 
+  edges: edge Node -> Node
+)
+{
+};
+
+instantiate datatype Exp;
+
+graphrewrite Transform (e : Exp)
+{
+   ADD(x,y), ADD(x,y)
+   ------------------
+   INT(1);
+};

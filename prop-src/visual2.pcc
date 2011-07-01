@@ -1,0 +1,159 @@
+//////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the datatype definitions layout generator
+//  for visualizing datatype definitions using vcg.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+#include <AD/strings/quark.h>
+#include "ir.ph"
+#include "type.h"
+#include "classdef.h"
+#include "datatype.h"
+#include "hashtab.h"
+#include "visualize.h"
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  This method visualizes all the class definitions.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void PropVisualizer::visualize_datatype_definitions()
+{
+  const char * Datatypes = "All datatypes definitions";
+
+  begin_node(Datatypes);
+  label     (Datatypes);
+  end_node  (Datatypes);
+
+  for ( HashTable::Entry * e = ClassDefinition::defined_classes.first();
+        e != 0; e = ClassDefinition::defined_classes.next(e))
+  {
+    ClassDefinition * C = (ClassDefinition *)(e->v);
+    C->visualize(*this);
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  This method a particular class definitions.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void ClassDefinition::visualize(PropVisualizer& v)
+{
+  v . begin_node (class_name);
+  v . add_label  ("%s %s", class_type_name[class_type], class_name);
+  v . make_label ();
+  v . end_node   (class_name);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  This method visualizes a datatype hierarchy.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::visualize(PropVisualizer& v)
+{
+  v . begin_node (datatype_name);
+  v . add_label  ("datatype %s%V\n", datatype_name, parameters);
+  v . add_label  ("(\"%s\" line %i)\n", file_name, begin_line);
+  for (int i = 0; i < arity; i++)
+  {
+    Cons c = constructor_terms[i];
+    v . add_label(" %s\n", constructor_terms[i]->name);
+  }
+  v . make_label ();
+
+  int offset = 2;
+
+  // Make a node for each of the constructors.
+  for (int i = 0; i < arity; i++)
+  {
+    Cons c = constructor_terms[i];
+    if (c->ty == NOty) // unit constructors
+    {
+      v . begin_node(c->name);
+      v . label(c->name);
+      v . end_node(c->name);
+    }
+    v . begin_edge(datatype_name, c->name);
+    v . color (VCG::darkblue);
+    v . arrowcolor (VCG::red);
+    v . thickness (4);
+    //v . anchor(offset + i + 1);
+    v . end_edge(datatype_name, c->name);
+  }
+
+  v . end_node (datatype_name);
+
+  // Argument constructors
+
+  // Generate the only argument
+  if (cons != NOcons)
+    DatatypeClass::visualize(v);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  This method visualizes a datatype subclass
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::visualize( PropVisualizer& v)
+{
+  v . begin_node (constructor_name);
+  v . add_label  ("%s\n", constructor_name);
+
+  // Print each type on a single line
+  int anchor = 2;
+
+  match (cons->ty)
+  {
+  TUPLEty tys:
+    {
+    for_each(Ty, t, tys)
+      { v . add_type(constructor_name,0,t,anchor++); }
+    }
+  | RECORDty (labels,_,tys):
+    {
+    Ids ls; Tys ts;
+    for(ls = labels, ts = tys; ls && ts; ls = ls->#2, ts = ts->#2)
+    {
+      v . add_type(constructor_name,ls->#1, ts->#1,anchor++); }
+    }
+  | ty:
+    { v . add_type(constructor_name,0,ty,anchor); }
+  }
+
+  v . make_label ();
+  v . end_node   (constructor_name);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  This method adds a type component for a datatype constructor
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void PropVisualizer::add_type( Id cons_name, Id label, Ty ty, int anch)
+{
+  add_label("  ");
+  if (label != 0) add_label("%s : ", label);
+  add_label("%T\n", ty);
+
+  // Create a has-a edge
+  match (deref_all(ty))
+  {
+  DATATYPEty ({ id ... }, _):
+    {
+    // begin_edge(cons_name,id);
+    // color (lightgreen);
+ // anchor(anch);
+ // end_edge(cons_name,id);
+    }
+  |  _: // skip
+  }
+}

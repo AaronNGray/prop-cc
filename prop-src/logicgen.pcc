@@ -1,0 +1,236 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the constraint compiler.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include <AD/strings/quark.h>
+#include "ir.ph"
+#include "ast.ph"
+#include "constraint.ph"
+#include "wam.ph"
+#include "type.h"
+#include "hashtab.h"
+#include "datagen.h"
+#include "logicgen.ph"
+#include "pat.ph"
+#include "datatype.ph"
+#include "list.h"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method for generating the interface methods for a logic
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::generate_logic_interface( CodeGen&) {}
+void DatatypeClass::generate_logic_implementation( CodeGen&, Tys, DefKind) {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor for the constraint compiler implementation
+//
+///////////////////////////////////////////////////////////////////////////////
+
+ConstraintCompilerInternal::ConstraintCompilerInternal( Id id)
+   : class_name(id),
+     rule_map     (string_hash,string_equal),
+     typing_map   (string_hash,string_equal),
+     instness_map (string_hash,string_equal),
+     det_map      (string_hash,string_equal)
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Destructor for the constraint compiler implementation
+//
+///////////////////////////////////////////////////////////////////////////////
+
+ConstraintCompilerInternal::~ConstraintCompilerInternal() {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to compile a set of constraint rules
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void ConstraintCompiler::compile_ruleset (Id id, ConstraintSet rule_set)
+{
+  ConstraintCompilerInternal G(id);
+  internal = &G;
+
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  //  Rules by kind.
+  //
+  ////////////////////////////////////////////////////////////////////////////
+
+  ConstraintRules                rules          = #[];
+  List<.[Id, Ty]>                typing_rules   = #[];
+  List<.[Id, Pat]>               instness_rules = #[];
+  List<.[Id, Pats, Determinism]> det_rules      = #[];
+
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  //  Partition the rules by kind.
+  //
+  ////////////////////////////////////////////////////////////////////////////
+
+  match (rule_set) of
+    CONSTRAINTset defs:
+    {
+      ConstraintDefs ds = defs;
+      match while (ds) of
+        #[ one ... rest ]:
+        {
+          match (one) of
+            CONSTRAINTruledef r:    { rules = #[r ... rules];  }
+          | CONSTRAINTtype( id, ty):
+              { typing_rules = #[.( id, ty) ... typing_rules]; }
+          | CONSTRAINTinstness( id, pat):
+              { instness_rules = #[.(id,pat) ... instness_rules]; }
+          | CONSTRAINTdet( id, pats, det):
+              { det_rules = #[.( id, pats, det) ... det_rules]; }
+          end match;
+          ds = rest;
+        }
+      end match;
+    }
+  end match;
+
+  rules          = rev( rules);
+  typing_rules   = rev( typing_rules);
+  instness_rules = rev( instness_rules);
+  det_rules      = rev( det_rules);
+
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  //  Process each kind of rules.
+  //
+  ////////////////////////////////////////////////////////////////////////////
+
+  process_typing_rules( id, typing_rules);
+  process_ruleset( id, rules);
+
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  //  Translate the rules into constraint abstract machine instructions.
+  //
+  ////////////////////////////////////////////////////////////////////////////
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to add a predicate : type judgement into the typing map.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void ConstraintCompiler::add_predicate_type( Id id, Ty ty)
+{
+  HashTable::Entry * e = internal->typing_map.lookup(id);
+  if (e)
+  {
+    Ty old_ty = Ty(internal->typing_map.value(e));
+    if ( !unify( ty, old_ty))
+      error( "%Lpredicate %s: expecting type %T but found %T\n",
+             id, old_ty, ty);
+  }
+  else
+    internal->typing_map.insert( id, ty);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to process the typing rules.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void ConstraintCompiler::process_typing_rules( Id id, List<.[Id,Ty]> typing_rules)
+{
+  match while (typing_rules)
+   {
+   #[.(id,ty) ... rest]:
+      {
+        add_predicate_type( id, ty);
+        typing_rules = rest;
+      }
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to partition a set of constraint rules by functor name and type.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void ConstraintCompiler::process_ruleset( Id id, ConstraintRules rules)
+{
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  //   Perform type checking on each of the rule.
+  //
+  ////////////////////////////////////////////////////////////////////////////
+  for_each (ConstraintRule, r, rules)
+  {
+    match (r)
+    {
+    CONSTRAINTrule { id, pat, body, ty }:
+      {
+        r->set_loc();
+
+        // Lookup entry
+
+        HashTable::Entry * e = internal->rule_map.lookup(id);
+
+        // Infer the type of pattern.
+
+        ty = mkfunty( type_of(pat), mktypety());
+        add_predicate_type( id, ty);
+
+        // Insert into the type
+
+        if (e) // append rule
+        {
+          ConstraintRules old_rules = ConstraintRules(e->v);
+          match (old_rules) of
+            #[ CONSTRAINTrule { ty = old_ty ... } ... _ ]:
+            {
+              if (! unify( ty, old_ty))
+                error( "%Ltype mismatch in rule %s%p\n"
+                       "%Lexpecting %T but found %T\n",
+                       id, pat, old_ty, ty);
+            }
+          | _: // skip
+          end match;
+          internal->rule_map.insert( id, #[r ... old_rules]);
+        }
+        else // insert new rule
+          internal->rule_map.insert( id, #[r]);
+      }
+    }
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  //  Makes sure all the rules have all the type information annotated.
+  //
+  ////////////////////////////////////////////////////////////////////////////
+  for_each (ConstraintRule, R, rules)
+  {
+    match (R)
+    {
+    CONSTRAINTrule { id, pat, body, ty }:
+      {
+        R->set_loc();
+        // Check to make sure it has all the type information.
+        if ( !is_ground(ty))
+          error( "%Lmissing type info in rule: %s%p : %T\n", id, pat, ty);
+        pat = unifier_of(pat);
+        debug_msg( "%s %p :- ...\n", id, pat);
+      }
+    }
+  }
+}

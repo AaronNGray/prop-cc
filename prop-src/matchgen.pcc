@@ -1,0 +1,1301 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the backend for pattern matching,
+//  string matching, and lexical scanning constructs.  C++ code is
+//  emitted in this file.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <limits>
+#include <iostream>
+#include <strstream>
+#include <AD/contain/bitset.h>
+#include <AD/automata/lexergen.h>
+#include <AD/strings/charesc.h>
+#include <AD/memory/mempool.h>
+#include <AD/sort/heapsort.h>
+#include <AD/sort/heapsrt2.h>
+#include "ir.ph"
+#include "ast.ph"
+#include "matchcom.ph"
+#include "type.h"
+#include "labelgen.h"
+#include "hashtab.h"
+#include "config.h"
+#include "options.h"
+#include "list.h"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Class to mark the current rule.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+MarkCurrentRule::MarkCurrentRule(MatchRule& c, MatchRule n)
+    : current_rule(c), old_rule(c) { c = n; }
+
+MarkCurrentRule::~MarkCurrentRule() { current_rule = old_rule; }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to extract the line number of the current rule
+//
+///////////////////////////////////////////////////////////////////////////////
+
+int MatchCompiler::current_rule_line() const
+{
+  if (current_rule == 0)
+    bug( "MatchCompiler::current_rule_line()\n");
+  return current_rule->begin_line;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to extract the text of the current rule
+//
+///////////////////////////////////////////////////////////////////////////////
+
+const char * MatchCompiler::current_rule_text() const
+{
+  if (current_rule == 0)
+    bug( "MatchCompiler::current_rule_text()\n");
+  char buffer[4096];
+  std::ostrstream stream(buffer,sizeof(buffer));
+  std::ostream& s = stream;
+  s << current_rule << std::ends;
+  buffer[sizeof(buffer)-1] = '\0';
+  return make_quoted_string(buffer);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Current index map.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+HashTable * current_index_map = 0;
+Bool        merge_match       = true;  // should we merge the DFAs?
+Id          current_failure   = 0;     // jump label for failure
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Is the expression simple?
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool is_simple_exp( Exp exp)
+{
+  match while (exp)
+  {
+    IDexp _ || LITERALexp _: { return true; }
+  | MARKEDexp(_,e):          { exp = e; }
+  | _:                       { return false; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate match variable bindings for complex match expressions.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void compute_match_variables( MatchExps exps)
+{
+  static LabelGen vars("_V");
+  for_each (MatchExp, me, exps)
+  {
+    match (me)
+    {
+    MATCHexp(e,mv) | mv == 0 && ! is_simple_exp(e):
+      { mv = vars.new_label(); }
+    | _: { /* skip */ }
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate pattern matching code from a match dag
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void MatchCompiler::gen( Match mt, MatchOptions match_options, Ty match_ty)
+{
+   if (mt == FAILmatch)
+   {
+      if (current_failure)
+        pr ( "%? goto %s; ", current_failure);
+      return;
+   }
+
+   // check for duplicates
+
+   if (mt->label)
+   {
+     pr( "%? goto %s; ", mt->label);
+     gotos++;
+     return;
+   }
+   if (mt->shared > 1)
+   {
+     goto_labels++;
+     pr( "%^%s:; ", mt->label = labels.new_label());
+   }
+
+   match (mt)
+   {
+   FAILmatch:                                 // skip
+   | SUCCESSmatch( _, r as MATCHrule( _, _, _, _, decls)):
+     {
+       MarkCurrentRule mark( current_rule, r);
+       pr ("%&", decls);
+     }
+   | COSTmatch( n, _, set, rules):
+     { gen_cost_success_match( n, set, rules); }
+   | TREECOSTmatch( m, set, rules):
+     { gen_treecost_match( m, set, rules); }
+   | TREELABELmatch( m, t1, t2, i):
+     { gen_treelabel_match( m, t1, t2, i); }
+   | SUCCESSESmatch( n, set, rules):
+     {
+       if (current_options & MATCHwithtreecost)
+         gen_treecost_match( FAILmatch, set, rules);
+       else
+         gen_success_match( n, set, rules);
+     }
+   | RANGEmatch( pos, e, lo, hi, a, b):
+     { gen_range_match( pos, e, lo, hi, a, b, mt); }
+   | GUARDmatch( e, a, b):
+     {  ifs++; pr ("%^if (%E) {%+%^%m%-%?} else {%+%^%m%-%?}\n", e, a, b); }
+   | CONSmatch( _,e,ty,
+       DATATYPEty({ view_match, id, terms, qualifiers, opt ... }, _), n, m, d)
+       | qualifiers & QUALview:
+     { gen_view_match( id, e, view_match, n, terms, m, d,
+                       opt, qualifiers & QUALextensible); }
+   | CONSmatch ( _, e, ty,
+       DATATYPEty({ id, unit, arg = 0, terms, qualifiers, opt ... }, _), n, m, d):
+     { gen_switch( id, e, ty, unit, terms, m, d, mt->shared,
+                   false, false, opt, qualifiers & QUALextensible); }
+   | CONSmatch( _, e, ty,
+       DATATYPEty({ id, unit = 0, arg, terms, qualifiers, opt ... },_),n,m,d):
+     { gen_switch( id, e, ty, arg, terms, m, d, mt->shared,
+                   false, true, opt, qualifiers & QUALextensible); }
+   | CONSmatch ( _, e, ty,
+       DATATYPEty({ id, unit, arg, terms, opt, qualifiers ... },_),n,m,d):
+     {
+       ifs++;
+       pr ((unit > 1 ? "%^if (boxed(%e)) {%+" : "%^if (%e) {%+"), e);
+       gen_switch( id, e, ty, arg, terms + unit, m + unit, d, mt->shared,
+                   true, true, opt, qualifiers & QUALextensible);
+       pr ( "%-%?} else {%+");
+       gen_switch( id, e, ty, unit, terms, m, d, mt->shared,
+                   true, false, opt, qualifiers & QUALextensible);
+       pr ( "%-%?}\n");
+     }
+   | LITERALmatch(_,e,l as [BOOLlit _ || INTlit _ || CHARlit _], n, a, b):
+     {
+       Bool is_boolean;
+       match (l[0])
+       {
+       BOOLlit _:    { is_boolean = true; }
+       |  _:         { is_boolean = false; }
+       }
+       switches++;
+       pr ( "%^switch (%e) {\n%+", e);
+       for (int i = 0; i < n; )
+       {
+         int j;
+         for (j = i+1; j < n; j++) if (a[i] != a[j]) break;
+         int k = i;
+         if (is_boolean && j == n && n == 2)
+         {
+           pr ("%^default:"); i = n;
+         }
+         else
+         {
+           for ( ; i < j; i++)
+           {
+             pr ("%^case %l:", l[i]);
+             if (i != j - 1)
+               pr ("\n");
+           }
+         }
+         pr(" {%+%m%-%?} break;\n", a[k]);
+       }
+       if (! is_boolean || n < 2) pr ("%^default: {%+%m%-%?}", b);
+       pr("%-%^}\n");
+     }
+   | LITERALmatch( _, e, l as [REALlit _ || STRINGlit _], n, a, b):
+     { gen_binary_search_on_literals( e, n, l, a, b); }
+   | LITERALmatch(_,e,l as [REGEXPlit _], n, a, b):
+     { if (options.generate_report) open_logfile() << mt << '\n';
+       gen_regexp_match( e, n, l, a, b, match_options, match_ty);
+     }
+   | LITERALmatch(_,e,l as [QUARKlit _], n, a, b):
+     { gen_quark_match( e, n, l, a, b, match_options); }
+   | _:
+     { bug ("gen(Match)"); }
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a bitmap of all the successful matching rules.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void MatchCompiler::gen_success_match( int n, const BitSet *set, MatchRules)
+{
+  pr(
+      "%^{%+  static const unsigned char matched_set__[%i] =\n%^{  %+",
+      (n + 7) / 8
+    );
+  for( int i = 0; i < (n + 7) / 8; i++)
+  {
+    if (i > 0)
+      pr (", ");
+    if (i != 0 && (i % 8) == 0)
+      pr ("%^");
+    pr ("%i ", (int) set->byte(i));
+  }
+  pr(
+      "%-};\n"
+      "%^m__ = matched_set__;\n"
+      "%-%^}\n"
+    );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate code for cost minimalization.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void MatchCompiler::gen_cost_success_match( int n, const BitSet *set,
+                                            MatchRules rules)
+{
+  int rule_no = 0;
+  match while (rules)
+  {
+  #[ one ... rest ]:
+    {
+      if ((*set)[rule_no])
+      {
+        match (one)
+        {
+        MATCHrule (_,_,_,cost,_):
+          {
+            match (cost)
+            {
+               NOcost:
+            |  INTcost c:
+            |  EXPcost e:
+            }
+          }
+        }
+      }
+      rules = rest;
+      rule_no++;
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a switch statement for pattern matching.
+//  This method is responsible for generating optimized code for a one-level
+//  match using C++'s "switch" statement.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void MatchCompiler::gen_switch
+   (Id id, Exp e, Ty ty, int n, Cons terms[], Match m[], Match def, int shared,
+    Bool variant, Bool boxed, TyOpt optimizations, Bool is_refutable)
+{
+  if (n == 1)          // only one arm
+     gen(m[0]);
+  else if (n == 2)   // two arms, use "if"
+  {
+    if (m[0] == m[1])
+    {
+      merges++;
+      if (m[0] != FAILmatch)
+        m[0]->shared -= shared;
+      gen(m[0]);
+    }
+    else
+    {
+       ifs++;
+       Id prefix, suffix;
+       if (boxed)
+       {
+         if (optimizations & OPTtaggedpointer)
+         {
+           prefix = "untagp(";
+           suffix = ")";
+         }
+         else
+         {
+           prefix = "";
+           suffix = "->tag__";
+         }
+       }
+       else
+         prefix = suffix = "";
+
+       pr( "%^if (%s%e%s) {%+%^%m%-%?} else {%+%^%m%-%?}\n",
+           prefix, e, suffix, m[1], m[0]);
+    }
+  }
+  else
+  {
+    /////////////////////////////////////////////////////////////////////////
+    //  The following is the general case for handling n-ary branches.
+    /////////////////////////////////////////////////////////////////////////
+
+    int i, j;
+
+    /////////////////////////////////////////////////////////////////////////
+    // If all n branches are the same, eliminate the match
+    /////////////////////////////////////////////////////////////////////////
+
+    for (i = n - 1; i > 0; i--) if (m[i] != m[i-1]) break;
+    if (i == 0)
+    {
+      if (m[0] != FAILmatch)
+        m[0]->shared -= (n-1) * shared;
+      merges++; gen(m[0]); return;
+    }
+
+    switches++;
+    Id prefix, suffix;
+
+    /////////////////////////////////////////////////////////////////////////
+    // Generate the "switch" expression.
+    /////////////////////////////////////////////////////////////////////////
+
+    if (boxed)
+    {
+      if (optimizations & OPTtaggedpointer)
+      {
+        prefix = "untagp(";
+        suffix = ")";
+      }
+      else
+      {
+        prefix = "";
+        suffix = "->tag__";
+      }
+    }
+    else
+    {
+      if (variant)
+      {
+        prefix = "(int)";
+        suffix = "";
+      }
+      else
+      prefix = suffix = "";
+    }
+
+    pr ("%^switch (%s%e%s) {\n%+", prefix, e, suffix);
+
+    /////////////////////////////////////////////////////////////////////////
+    //  Partition the arms of the matches into alternatives with the
+    //  same actions.  Sort the partitions in increasing sizes.
+    /////////////////////////////////////////////////////////////////////////
+
+    struct ConsMatch
+    {
+      Cons term;
+      Match action;
+      int tag;
+    };
+
+    struct MatchPartition
+    {
+      int count;
+      Conses terms;
+      Match action;
+      int first_tag;
+    };
+
+    ConsMatch *sorted =
+            (ConsMatch *) mem_pool.c_alloc( sizeof( ConsMatch) * n);
+    MatchPartition *parts =
+            (MatchPartition *)mem_pool.c_alloc( sizeof( MatchPartition) * n);
+
+    int number_of_parts = 0;
+    {
+      for (i = 0; i < n; i++)
+      {
+        sorted[i].term      = terms[i];
+        sorted[i].action    = m[i];
+        if (terms[i] != NOcons)
+          sorted[i].tag = terms[i]->tag;
+      }
+
+      // sort branches according the actions
+
+      heapSort( ConsMatch, sorted, n,
+                (key.action < sorted[i].action ||
+                key.action == sorted[i].action &&
+                key.tag < sorted[i].tag));
+
+      // partition each branch by action
+
+      for (i = n - 1; i >= 0; i--)
+      {
+        if (i == n-1 || sorted[i].action != sorted[i+1].action)
+        {
+          parts[number_of_parts].terms  = #[sorted[i].term];
+          parts[number_of_parts].action = sorted[i].action;
+          parts[number_of_parts].count  = 1;
+          parts[number_of_parts].first_tag = sorted[i].tag;
+          number_of_parts++;
+        }
+        else
+        {
+          parts[number_of_parts-1].terms =
+              #[sorted[i].term ... parts[number_of_parts-1].terms];
+          parts[number_of_parts-1].count++;
+          if (parts[number_of_parts-1].first_tag > sorted[i].tag)
+            parts[number_of_parts-1].first_tag = sorted[i].tag;
+        }
+      }
+
+      // Sort partitions in order of frequency; so that
+      // the most frequent case becomes the "default" inside
+      // the "switch" statement.
+      heapSort( MatchPartition, parts, number_of_parts,
+                (key.count < parts[i].count ||
+                key.count == parts[i].count &&
+                key.first_tag < parts[i].first_tag));
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    // Generate the arms of the "switch".
+    // We try to combine the arms that are the same together into
+    // one rule to help the compiler.
+    /////////////////////////////////////////////////////////////////////////
+    for (i = 0; i < number_of_parts; i++)
+    {
+      if (i == number_of_parts - 1)
+        pr( "%^default:");
+      else
+      {
+        Conses tags = parts[i].terms;
+        match while (tags)
+        {
+        #[ one ... rest ]:
+          {
+            pr( "%^case %*:", one, false);
+            if (rest != #[])
+              pr( "\n");
+            tags = rest;
+          }
+        }
+      }
+      if (parts[i].action != FAILmatch)
+        parts[i].action->shared -= (parts[i].count - 1) * shared;
+      pr( " {%+%?%m%?} break;\n%-", parts[i].action);
+    }
+
+    pr( "%-%^}\n");
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate binary search for testing literals
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void MatchCompiler::gen_binary_search_on_literals
+   (Exp e, int n, Literal l[], Match m[], Match d)
+{
+  if (n <= 4)
+  {
+    /////////////////////////////////////////////////////////////////////////
+    //  Generate linear tests for simple literal tests.
+    /////////////////////////////////////////////////////////////////////////
+    for (int i = 0; i < n; i++)
+    {
+       ifs++;
+       if (i > 0)
+         pr( "%^else ");
+       else
+         pr( "%^");
+       pr( "if (%=(%e,%l)) {%m}\n", l[i], e, l[i], m[i]);
+    }
+    if (d != FAILmatch)
+      pr( "%^else {%m}\n", d);
+    else if (current_failure)
+      pr( "%^else goto %s;\n", current_failure);
+  }
+  else
+  {
+    /////////////////////////////////////////////////////////////////////////
+    //  Generate binary search for tests containing many alternatives.
+    /////////////////////////////////////////////////////////////////////////
+    int k = (n+1)/2;
+    ifs++;
+    pr( "%^if (%<(%e,%l)) {\n%+", l[k], e, l[k]);
+    gen_binary_search_on_literals( e, k, l, m, d);
+    pr( "%-%^} else {\n%+");
+    gen_binary_search_on_literals( e, n-k, l+k, m+k, d);
+    pr( "%-%^}\n");
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate range matching
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void MatchCompiler::gen_range_match
+   (Pos pos, Exp e, int lo, int hi, Match a, Match b, Match m)
+{
+  if (lo == hi)
+  {
+    switches++;
+    pr( "%^switch (%e) {%+",e);
+    match while (m)
+    {
+    RANGEmatch (p, e, low, high, a, b) | low == high && pos_equal(pos,p):
+      { pr( "%^case %i: {%+%m%-%?} break;", low, a); m = b; }
+    }
+    pr( "%^default: {%+%m%-%?}" "%-%^}\n", m);
+  }
+  else
+  {
+    ifs++;
+    if (lo == 0)
+      pr ( "%^if (%e <= %i) {%+%^%m%-%?} else {%+%^%m%-%?}\n", e, hi, a, b);
+    else if (hi == INT_MAX)
+       pr( "%^if (%e >= %i) {%+%^%m%-%?} else {%+%^%m%-%?}\n", e, lo, a, b);
+    else
+       pr( "%^if (%i <= %e && %e <= %i) {%+%^%m%-%?} else {%+%^%m%-%?}\n",
+           lo, e, e, hi, a, b);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate view matching
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void MatchCompiler::gen_view_match
+   (Id id, Exp e, Exp view_match, int n, Cons terms [], Match m[], Match d,
+    TyOpt opt, TyQual qual)
+{
+  if (view_match != NOexp)
+  {
+    switches++;
+    pr( "%^switch (%e) {%+", subst( view_match, &e));
+    for (int i = 0; i < n; i++)
+      pr( "%^case %e: {%+%m%-%?} break;", terms[i]->view_predicate, m[i]);
+    pr( "%-%^}\n");
+  }
+  else
+  {
+    int i;
+    for (i = 0; i < n; i++)
+    {
+      int j;
+      for (j = i + 1; j < n; j++)
+        if (m[i] != m[j])
+          break;
+      if (j == n)
+        break;
+      Exp predicate_fun = terms[i]->view_predicate;
+      Exp predicate     = subst(predicate_fun,&e);
+      ifs++;
+      pr( "%^%sif (%e) {%+%^%m%-%?} ", (i > 0 ? "else " : ""), predicate, m[i]);
+    }
+    if (i < n)
+      pr( "%^%s{%+%^%m%-%?}\n", (i > 0 ? "else " : ""), m[i]);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate regular expression matching as a DFA.
+//
+///////////////////////////////////////////////////////////////////////////////
+void MatchCompiler::gen_regexp_match
+   (Exp e, int n, Literal l[], Match m[], Match d,
+    MatchOptions options, Ty match_ty)
+{
+  LexerGen lexerGen;
+  const char ** regexps = (const char **)mem_pool[n * sizeof(const char *)];
+  const char ** contexts = 0;
+
+  ////////////////////////////////////////////////////////////////////////////
+  //  If we have a match type, locate the set of contexts.
+  ////////////////////////////////////////////////////////////////////////////
+  if (options & MATCHscanner)
+  {
+    match (deref_all(match_ty))
+    {
+      NOty: // skip
+    | DATATYPEty({ terms, unit ... },_):
+        {
+          contexts = (const char **)mem_pool[(unit+1)*sizeof(const char *)];
+          if (unit <= 1)
+            msg("%L%wdatatype has less than 2 unit constructors for contexts");
+          for (int i = 1; i < unit; i++)
+          {
+            match (terms[i])
+            {
+              ONEcons { name ... }: { contexts[i-1] = name; }
+            |  _: // skip
+            }
+          }
+          contexts[unit-1] = 0;
+        }
+    | _:
+      { error ("%Lillegal context type: %T\n", match_ty); }
+    }
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  //  Allocate a regexp array
+  ////////////////////////////////////////////////////////////////////////////
+  for (int i = 0; i < n; i++)
+  {
+    match (l[i])
+    {
+    REGEXPlit re:
+      {
+        int len           = strlen(re);
+         char * regexp     = str_pool(re+1,len-1);
+         regexp[len-2]     = '\0';
+         regexps[i]        = regexp;
+      }
+      |  _: { bug("gen_regexp_match"); }
+    }
+  }
+
+  int opt = LexerGen::None;
+  if (options & MATCHscanner)
+  {
+    opt |= LexerGen::Backtracking;
+    debug_msg("%Lgenerating backtracking scanner\n");
+  }
+  if (options & MATCHcaseinsensitive)
+    opt |= LexerGen::CaseInsensitive;
+
+  lexerGen.compile( n, regexps, contexts, 255, opt);
+
+  if (! lexerGen.ok())
+    error( "%L%s in: %l\n", lexerGen.error_message(), l[lexerGen.bad()]);
+  else
+  {
+    /////////////////////////////////////////////////////////////////////////
+    //  Generate the action code
+    /////////////////////////////////////////////////////////////////////////
+    Id id = vars.new_label();
+    pr ("%^{\n%+");
+    lexerGen.gen_code(*output, id);
+    switches++;
+    pr(
+        "%^static const RegexMatch %s"
+        "%^                ( %s_base,"
+        "%^                  %s_check,"
+        "%^                  %s_def,"
+        "%^                  %s_next,"
+        "%^                  %s_accept_rule,"
+        "%^                  %s_equiv_classes );\n",
+        id, id, id, id, id, id, id
+      );
+    Id rule_binding = "";
+    if (options & MATCHlexemepat)
+    {
+      pr( "%^int rule__;");
+      rule_binding = "rule__ = ";
+    }
+    if (options & MATCHscanner)
+      pr(
+          "%^const char * next = 0;\n"
+          "%^switch(%s%s.MatchText(RegexMatch::start_state,%e,next)) {%+",
+          rule_binding, id, e
+        );
+    else
+      pr( "%^switch(%s%s.MatchText(%e)) {%+", rule_binding, id, e);
+
+    for (int i = 0; i < n; i++)
+      pr( "%^case %i: {%+%m%-%?} break;", i+1, m[i]);
+    pr( "%^default: {%+%m%-%?}", d);
+    pr( "%-%^}\n"
+        "%-%^}\n");
+
+    /////////////////////////////////////////////////////////////////////////
+    //  Generate a report
+    /////////////////////////////////////////////////////////////////////////
+    if (::options.generate_report)
+      lexerGen.print_report( open_logfile());
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate quark pattern matching
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void MatchCompiler::gen_quark_match
+   (Exp e, int n, Literal l[], Match m[], Match d, MatchOptions options)
+{
+  for (int i = 0; i < n; i++)
+  {
+    ifs++;
+    pr( "%^%sif (%e == %l) {%+%^%m%-%?} ",
+        (i > 0 ? "else " : ""), e, l[i], m[i]);
+  }
+  pr( "%^%s{%+%^%m%-%?}\n", (n > 0 ? "else " : ""), d);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to translate and merge a set of patterns
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Match MatchCompiler::trans_merge
+   (int n, MatchRules rules, int match_options, Cost * costs)
+{
+  Match m = FAILmatch;
+  int rule_no = 0;
+  for_each ( MatchRule, r, rules)
+  {
+    match (r)
+    {
+    MATCHrule( _, pat, guard, cost, decls):
+      {
+        if (! r->is_chain_rule)
+        {
+          Match rhs;
+          if (match_options & (MATCHall | MATCHwithcost))
+          {
+            BitSet * set = new (mem_pool,n) BitSet;
+            set->add( rule_no);
+            if (costs && ! (match_options & MATCHwithtreecost))
+              rhs = COSTmatch( n, costs, set, rules);
+            else
+              rhs = SUCCESSESmatch( n, set, rules);
+          }
+          else
+          {
+            r->used = false;
+            rhs = SUCCESSmatch(rule_no,r);
+          }
+          if (guard != NOexp)
+            rhs = GUARDmatch( guard, rhs, FAILmatch);
+          rhs = trans(pat, POSzero, false, rhs, FAILmatch);
+          debug_msg("%r => %M\n", r, rhs);
+          m = merge (m, rhs);
+        }
+        rule_no++;
+      }
+    }
+  }
+  return m;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to translate but do not merge a set of patterns.
+//  Use Wadler's algorithm.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Match MatchCompiler::trans_no_merge
+   (int n, int rule_no, MatchRules rules, int match_options, Cost * costs)
+{
+  if (rules == #[])
+    return FAILmatch;
+  else
+  {
+    match (rules->#1)
+    {
+    r as MATCHrule( _, pat, guard, cost, decls):
+      {
+        Match rhs;
+        if (match_options & (MATCHall | MATCHwithcost)) {
+           BitSet * set = new (mem_pool,n) BitSet;
+           set->add(rule_no);
+           if (costs)
+             rhs = COSTmatch( n, costs, set, rules);
+           else
+             rhs = SUCCESSESmatch( n, set, rules);
+        }
+        else
+        {
+           r->used = false;
+           rhs = SUCCESSmatch( rule_no, r);
+        }
+        Match no =
+           trans_no_merge( n, rule_no+1, rules->#2, match_options, costs);
+        if (guard != NOexp)
+          rhs = GUARDmatch( guard, rhs, no);
+        return trans( pat, POSzero, false, rhs, no);
+      }
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Instrument the matching code if tracing is on
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void MatchCompiler::instrument_trace(MatchRules rules)
+{
+  for_each ( MatchRule, r, rules)
+  {
+    match (r)
+    {
+    MATCHrule( id, pat, guard, cost, action):
+      {
+        char buffer[4096];
+        std::ostrstream stream( buffer, sizeof(buffer));
+        std::ostream& s = stream;
+        s << r << std::ends;
+        action =
+          #[ EXPdecl(
+               APPexp( IDexp("PROP_TRACE"),
+                 TUPLEexp(#[
+                   LITERALexp( STRINGlit( make_quoted_string( buffer))),
+                   LITERALexp( STRINGlit( make_quoted_string( r->file_name))),
+                   LITERALexp( INTlit( r->begin_line))
+                 ]))),
+             OPAQUEdecl(";") ...
+             action
+          ];
+      }
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Compute the match dag from a set of pattern matching rules.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Match MatchCompiler::match_of
+   (int n, MatchRules rules, MatchOptions match_options)
+{
+  Match m;
+
+  ////////////////////////////////////////////////////////////////////////////
+  //  Save the last index map.
+  ////////////////////////////////////////////////////////////////////////////
+
+  HashTable * last_index_map = current_index_map;
+
+  ////////////////////////////////////////////////////////////////////////////
+  //  Create index map for this pattern set if necessary.
+  ////////////////////////////////////////////////////////////////////////////
+
+  if (options.adaptive_matching)
+  {
+    debug_msg( "Creating index map\n");
+    current_index_map = new HashTable(pos_hash, pos_equal, 129);
+    indexing( rules, *current_index_map);
+    debug_msg( "Finished indexing\n");
+  }
+  else
+    current_index_map = 0;
+
+  ////////////////////////////////////////////////////////////////////////////
+  //  If tracing is on, instrument the code.
+  ////////////////////////////////////////////////////////////////////////////
+
+  if (options.trace && (match_options & MATCHnotrace) == 0)
+    instrument_trace(rules);
+
+  ////////////////////////////////////////////////////////////////////////////
+  //  Make a cost vector if cost minimization is in effect
+  ////////////////////////////////////////////////////////////////////////////
+
+  Cost * cost_vector = 0;
+
+  if (match_options & MATCHwithintcost)
+  {
+    cost_vector = (Cost*)mem_pool[n * sizeof(Cost)];
+    int i = 0;
+    for_each ( MatchRule, r, rules)
+    {
+      match (r)
+       { MATCHrule(_,_,_,cost,_): { cost_vector[i] = cost; i++; } }
+    }
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  //  Translate each pattern into a matching tree and merge them together.
+  ////////////////////////////////////////////////////////////////////////////
+  if (merge_match)
+    m = trans_merge( n, rules, match_options, cost_vector);
+  else
+    m = trans_no_merge( n, 0, rules, match_options, cost_vector);
+
+  m = make_dag( m, match_options, rules);
+  debug_msg( "Matching DFA: %M\n", m);
+
+  ////////////////////////////////////////////////////////////////////////////
+  // Error checking.
+  ////////////////////////////////////////////////////////////////////////////
+
+  // BUG 3/6/97: Always check for selectability!!!
+
+  if (true || (match_options & MATCHnocheck) == 0)
+  {
+    if (match_options & (MATCHall | MATCHwithcost))
+    {
+      BitSet * may_match = new (mem_pool,n) BitSet;
+      matchables( m, *may_match);
+      int i = 0;
+      for_each ( MatchRule, r, rules)
+      {
+        if (! may_match->contains(i) && ! r->is_chain_rule)
+          error("%!this rule is never selected: %r\n", r->loc(), r);
+        i++;
+      }
+    }
+    else
+    {
+      {
+        for_each (MatchRule,r,rules)
+        {
+          if (! r->used)
+            error ("%!this rule is never used: %r\n", r->loc(), r);
+        }
+      }
+    }
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  //  Clean up the index map
+  ////////////////////////////////////////////////////////////////////////////
+
+  if (current_index_map)
+    delete current_index_map;
+  current_index_map = last_index_map;
+  return m;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Returns true if the set of rules involve cost expressions.
+//
+///////////////////////////////////////////////////////////////////////////////
+int involve_cost( MatchRules rules)
+{
+  int options = MATCHnone;
+  for_each( MatchRule, r, rules)
+  {
+    match (r)
+    {
+      MATCHrule( _, _, _, INTcost _, _):
+        { options |= MATCHwithcost | MATCHwithintcost; }
+    | MATCHrule( _, _, _, EXPcost _, _):
+        { options |= MATCHwithcost | MATCHwithexpcost; }
+    | _:
+    }
+  }
+  return options;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to check for refutable set of rules and print out
+//  warning/error messages.
+//
+///////////////////////////////////////////////////////////////////////////////
+static Bool check_refutable
+   (Match m, MatchRules rules, MatchOptions match_options)
+{
+  Bool is_refutable = refutable(m);            // error checking
+  if (! (match_options & MATCHnocheck) &&
+      ! (match_options & MATCHwhile) && is_refutable)
+  {
+    msg( "%!%wpatterns are not exhaustive:\n", rules->#1->loc());
+    for_each( MatchRule, r, rules)
+      msg( "%!\t%r\n", r->loc(), r);
+  }
+  return is_refutable;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Compile a match/matchall statement.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void MatchCompiler::gen_match_stmt
+   (MatchExps exps, MatchRules rules, MatchOptions match_options, Ty match_ty)
+{
+  MemPoolMark marker = mem_pool.getMark();     // set heap marker
+  int n              = length(rules);
+  Ty pattern_tys     = type_match_rules(rules);    // type inference
+  Id save_failure    = current_failure;
+  current_failure    = 0;
+  MatchOptions save  = current_options;
+  current_options    = match_options;
+
+  if (pattern_tys != NOty)
+  {
+    pr( "%^{\n%+");
+    if (match_options & MATCHwhile)
+    {
+      pr( "%^for (;;) {%+");
+      current_failure = labels.new_label();
+    }
+
+    // check for cost expressions
+    int cost_opts = involve_cost(rules);
+    if (cost_opts & MATCHwithcost)
+    {
+      if (match_options & MATCHall)
+        if (! (match_options & MATCHwithtreecost))
+          msg ("%L%wmatching costs are ignored.\n");
+        else
+          match_options |= cost_opts;
+    }
+
+    Match m = match_of( n, rules, match_options); // compile patterns
+    Bool is_refutable = check_refutable( m, rules, match_options);
+
+    // prefix code for matchall
+
+    if ((match_options & (MATCHall | MATCHwithcost)) &&
+        ! (match_options & MATCHwithtreecost))
+      pr( "%^const unsigned char * m__%s;\n", (is_refutable ? " = 0" : ""));
+
+    gen_match_variables( exps, pattern_tys);
+    gen( m, match_options, match_ty);
+
+    // suffix code for cost minimization
+
+    if (! (match_options & MATCHwithtreecost))
+    {
+      if (match_options & MATCHwithexpcost)
+        gen_match_cost_minimization( n, m, rules, is_refutable);
+      // suffix code for matchall
+      else if (match_options & MATCHall)
+        gen_matchall_suffix( n, m, rules, is_refutable);
+    }
+
+    if (match_options & MATCHwhile)
+    {
+      pr( "%-%^}");
+      if (is_refutable)
+        pr( "%^%s:;", current_failure);
+    }
+    pr( "%-%^}");
+  }
+  mem_pool.setMark( marker); // release all memory used
+  current_failure = save_failure;
+  current_options = save;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate suffix code for a matchall statement.
+//  The suffix code goes thru the bitmap and select all rule with
+//  its bit set.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void MatchCompiler::gen_matchall_suffix
+   (int n, Match m, MatchRules rules, Bool is_refutable)
+{  int index = 0; int bit = 0;
+   const BitSet& always_match = always_matchables(m,n);
+   if (is_refutable) { ifs++; pr ("%^if (m__) {%+"); }
+
+   for_each (MatchRule, r, rules)
+   {  match (r)
+      {  MATCHrule(_,_,_,_,action):
+         {  if (! always_match.contains(index * 8 + bit)) {
+               ifs++;
+               pr ("%^if (m__[%i] & %i) ", index, 1 << bit);
+            } else {
+               pr ("%^");
+            }
+	    MarkCurrentRule mark(current_rule,r);
+            pr ("{%+%&%-%?}\n", action);
+            if (++bit == 8) { bit = 0; index++; }
+         }
+      }
+   }
+   if (is_refutable) pr ("%-%^}");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate suffix code for a match statement with cost minimization.
+//  The bitmap selected with determine which cost function to execute.
+//  When all the appropriate cost functions are executed, we choose the
+//  matched rule with the lowest cost.  Ties are broken by the lexical
+//  order of the rules.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void MatchCompiler::gen_match_cost_minimization
+   (int n, Match m, MatchRules rules, Bool is_refutable)
+{
+  int index, bit;
+  const BitSet& always_match = always_matchables(m,n);
+
+  pr( "%^do {%+"
+      "%^int tmp_cost__, cost__ = %i, rule__ = -1;", MAX_COST);
+  if (is_refutable)
+  {
+    ifs++;
+    pr ("%^if (m__) {%+");
+  }
+  {
+    index = bit = 0;
+    for_each ( MatchRule, r, rules)
+    {
+      pr( "%^");
+      if (! always_match.contains(index * 8 + bit))
+      {
+        ifs++;
+        pr( "if (m__[%i] & %i) ", index, 1 << bit);
+      }
+      int rule_no = index * 8 + bit;
+      match (r)
+      {
+      MATCHrule (_,_,_,EXPcost(e,_),_):
+        {
+          pr( "if ((tmp_cost__ = %e) < cost__) { cost__ = tmp_cost__; rule_ = %i; }",
+                e, rule_no);
+        }
+      | MATCHrule (_,_,_,NOcost,_):
+        {  pr ("{ rule__ = %i; break; }", rule_no);  }
+      | MATCHrule (_,_,_,INTcost c,_):
+        {  pr ("if (cost__ > %i) { cost__ = %i; rule__ = %i; }", c, c, rule_no); }
+      }
+      if (++bit == 8)
+        { bit = 0; index++; }
+    }
+  }
+  if (is_refutable)
+    pr( "%-%^}");
+  pr(
+      "%-%^} while (0);"
+      "%^switch (rule__) {%+"
+    );
+  {
+    int i = 0;
+    for_each ( MatchRule, r, rules)
+    {
+      match (r)
+      {
+      MATCHrule( _, _, _, cost,action):
+        {
+          MarkCurrentRule mark( current_rule, r);
+          pr( "%^case %i: {%+%&%-%?} break;", i, action);
+          i++;
+        }
+      }
+    }
+  }
+  pr( "%-%^}");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate code that binds match variables.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void MatchCompiler::gen_match_variables( MatchExps es, Ty ty)
+{  Tys tys;
+   if (length(es) > 1) {
+      match (deref(ty))
+      {  TUPLEty ts: { tys = ts; }
+      |  _:          { bug("gen_match_variables()"); }
+      }
+   } else {
+      tys = #[ty];
+   }
+   for ( ; es && tys; es = es->#2, tys = tys->#2) {
+      match (es->#1)
+      {  me as MATCHexp(e,mv) | mv != 0:
+         {  if (! is_ground(tys->#1))
+               error ("%!missing type info in expression %e : %T\n",
+                      me->loc(), e, tys->#1);
+            pr ("%^%t = %e;\n", tys->#1, mv, e);
+         }
+      |  _:  { /* skip */ }
+      }
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate code for a set of function definitions.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void MatchCompiler::gen_fun_def (FunDefs fundefs)
+{
+  // Generate the prototype first (to deal with recursive definitions).
+  MemPoolMark marker = mem_pool.getMark();     // set heap marker
+  {
+    for_each (FunDef, f, fundefs)
+    {
+      match (f)
+      {
+      FUNdef(id, arg_ty, return_ty, rules):
+        {
+          arg_ty = type_match_rules(rules);
+          char buf[1024];
+          std::ostrstream b(buf,sizeof(buf));
+          std::ostream& s = b;
+          s << id << std::ends;
+          Ty ret_ty = return_ty == NOty ? void_ty : return_ty;
+          pr( "%^%t %b;\n",
+              ret_ty, buf, arg_ty, "1", TYformal);
+          if (! is_ground(arg_ty))
+            error( "%!missing type info in function %q %T\n",
+                   f->loc(), id, arg_ty);
+        }
+      }
+    }
+  }
+
+  // Then generate the body of the functions.
+  {
+    for_each (FunDef, f, fundefs)
+    {
+      match (f)
+      {
+      FUNdef(id, arg_ty, return_ty, rules):
+        {
+          int n = length(rules);
+          Match m = match_of(n, rules, MATCHnone);
+          check_refutable(m, rules, MATCHnone);
+          Ty ret_ty = return_ty == NOty ? void_ty : return_ty;
+          char buf[1024];
+          std::ostrstream b(buf,sizeof(buf));
+          std::ostream& s = b;
+          s << id << std::ends;
+          pr( "%^%t %b\n{\n%+",
+              ret_ty, buf, arg_ty, "1", TYformal);
+          gen(m);
+          pr( "%-%^}\n");
+        }
+      }
+    }
+  }
+  mem_pool.setMark( marker); // release all memory used
+}

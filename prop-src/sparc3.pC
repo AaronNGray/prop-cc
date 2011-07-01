@@ -1,0 +1,23 @@
+datatype Inst :: rewrite =
+   INT int
+ | LOAD (Inst)
+ | ADD  (Inst, Inst)
+ | SUB  (Inst, Inst)
+ | DIV  (Inst, Inst)
+ | MUL  (Inst, Inst)
+;
+
+void compile (Inst e)
+{
+rewrite (e) type (Inst) :: treeparser of
+  reg -> INT i \ 1: 
+| reg -> LOAD (INT addr) \ 2:
+| reg -> LOAD (ADD(reg,reg)) \ 3:
+| reg -> LOAD (reg)     \ cost(reg):
+| exp -> reg \ 0:
+| exp -> ADD (exp, exp) \ 1:
+| exp -> SUB (exp, exp) \ 1:
+| exp -> MUL (exp, exp) \ 2:
+| exp -> DIV (exp, exp) \ notarget(a):
+end rewrite;
+}

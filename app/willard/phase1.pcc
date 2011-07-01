@@ -1,0 +1,97 @@
+#include <AD/pretty/postream.h>
+#include "phase1.ph"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor and destructor for phase1 
+//
+///////////////////////////////////////////////////////////////////////////////
+Phase1::Phase1() {}
+Phase1::~Phase1() {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to invoke phase1 
+//
+///////////////////////////////////////////////////////////////////////////////
+Exp Phase1::phase1(Exp e) 
+{  message("DNF construction and simplification phase", e); 
+   (*this)(e); return e; 
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Transformation rules
+//
+///////////////////////////////////////////////////////////////////////////////
+rewrite Phase1
+{
+   Eq(Int i, Int j):  Boolean(i == j)
+|  Ne(Int i, Int j):  Boolean(i != j)
+|  Gt(Int i, Int j):  Boolean(i > j)
+|  Ge(Int i, Int j):  Boolean(i >= j)
+|  Lt(Int i, Int j):  Boolean(i < j)
+|  Le(Int i, Int j):  Boolean(i <= j)
+
+|  And(Boolean i, Boolean j):  Boolean(i && j)
+|  Or (Boolean i, Boolean j):  Boolean(i || j)
+|  Not(Boolean i):             Boolean(! i)
+
+|  Eq(Boolean i, Boolean j):  Boolean(i == j)
+|  Ne(Boolean i, Boolean j):  Boolean(i != j)
+|  Gt(Boolean i, Boolean j):  Boolean(i > j)
+|  Ge(Boolean i, Boolean j):  Boolean(i >= j)
+|  Lt(Boolean i, Boolean j):  Boolean(i < j)
+|  Le(Boolean i, Boolean j):  Boolean(i <= j)
+
+|  And(True, X):      X
+|  And(X, True):      X
+|  And(False, X):     False
+|  And(X, False):     False
+|  Or (True, X):      True
+|  Or (X, True):      True
+|  Or (False, X):     X
+|  Or (X, False):     X
+|  Not(Not X):        X 
+
+|  Eq(ID x, ID y) | x == y: True
+|  Ne(ID x, ID y) | x == y: False
+|  Gt(ID x, ID y) | x == y: False
+|  Ge(ID x, ID y) | x == y: True
+|  Lt(ID x, ID y) | x == y: False
+|  Le(ID x, ID y) | x == y: True
+
+|  EXISTS(x,A,True):  Nonempty(A)
+|  EXISTS(x,A,False): Not(Nonempty(A))
+
+//
+// 'Eta' rules
+//
+|  LET(x,e,ID y) | x == y: e
+|  GENERATOR(#[x],#[S],ID y) | x == y: S
+
+//
+// Transform into disjunctive normal form
+//
+| And(Or(a,b),c):  Or(And(a,c),And(b,c))
+| And(a,Or(b,c)):  Or(And(a,b),And(a,c))
+| Not(And(a,b)):   Or(Not(a),Not(b))
+| Not(Or(a,b)):    And(Not(a),Not(b))
+
+//  Replace universal quantification
+| FORALL(x,A,B):   Not(EXISTS(x,A,Not(B)))
+
+//
+//  Use left associativity 
+//
+| Or(Or(a,b),c):   Or(a,Or(b,c))
+| And(And(a,b),c): And(a,And(b,c))
+
+//
+//  Quantifier simplification
+//
+| /* 1  */ EXISTS(x,S,Or(f,g)):  Or(EXISTS(x,S,f), EXISTS(x,S,g));
+| /* 2  */ EXISTS(x,S,And(f,g)) | is_free(x,g): And(EXISTS(x,S,f),g);
+| /* 2' */ EXISTS(x,S,And(f,g)) | is_free(x,f): And(f,EXISTS(x,S,g));
+
+};

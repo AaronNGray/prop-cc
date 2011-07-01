@@ -1,0 +1,232 @@
+datatype Inst :: rewrite =
+    ADDD(Inst,Inst) | ADDF(Inst,Inst) | ADDI(Inst,Inst) 
+  | ADDP(Inst,Inst) | ADDU(Inst,Inst) 
+  | ADDRFP() | ADDRGP() | ADDRLP()
+  | ARGB(Inst) | ARGD(Inst) | ARGF(Inst) | ARGI(Inst) | ARGP(Inst) 
+  | ASGNB(Inst,Inst) | ASGNC(Inst,Inst) | ASGND(Inst,Inst) 
+  | ASGNF(Inst,Inst) | ASGNI(Inst,Inst) | ASGNP(Inst,Inst) | ASGNS(Inst,Inst) 
+  | BANDU(Inst,Inst) | BCOMU(Inst) | BORU(Inst,Inst) | BXORU(Inst,Inst) 
+  | CALLB(Inst,Inst) | CALLD(Inst) | CALLF(Inst) | CALLI(Inst) | CALLV(Inst) 
+  | CNSTC() | CNSTD() | CNSTF() | CNSTI() | CNSTP() | CNSTS() | CNSTU() 
+  | CVCI(Inst) | CVCU(Inst) | CVDF(Inst) | CVDI(Inst) | CVFD(Inst) 
+  | CVIC(Inst) | CVID(Inst) | CVIS(Inst) | CVIU(Inst) | CVPU(Inst) 
+  | CVSI(Inst) | CVSU(Inst) 
+  | CVUC(Inst) | CVUI(Inst) | CVUP(Inst) | CVUS(Inst) 
+  | DIVD(Inst,Inst) | DIVF(Inst,Inst) | DIVI(Inst,Inst) | DIVU(Inst,Inst) 
+  | EQD(Inst,Inst) | EQF(Inst,Inst) | EQI(Inst,Inst) 
+  | GED(Inst,Inst) | GEF(Inst,Inst) | GEI(Inst,Inst) | GEU(Inst,Inst) 
+  | GTD(Inst,Inst) | GTF(Inst,Inst) | GTI(Inst,Inst) | GTU(Inst,Inst) 
+  | INDIRB(Inst) | INDIRC(Inst) | INDIRD(Inst) | INDIRF(Inst)  
+  | INDIRI(Inst) | INDIRP(Inst) | INDIRS(Inst) 
+  | JUMPV(Inst) | LABELV() 
+  | LED(Inst,Inst) | LEF(Inst,Inst) | LEI(Inst,Inst) | LEU(Inst,Inst) 
+  | LOADB(Inst) | LOADC(Inst) | LOADD(Inst) | LOADF(Inst)  
+  | LOADI(Inst) | LOADP(Inst) | LOADS(Inst) | LOADU(Inst) 
+  | LSHI(Inst,Inst) | LSHU(Inst,Inst) 
+  | LTD(Inst,Inst) | LTF(Inst,Inst) | LTI(Inst,Inst) | LTU(Inst,Inst) 
+  | MODI(Inst,Inst) | MODU(Inst,Inst) 
+  | MULD(Inst,Inst) | MULF(Inst,Inst) | MULI(Inst,Inst) | MULU(Inst,Inst) 
+  | NED(Inst,Inst) | NEF(Inst,Inst) | NEI(Inst,Inst) 
+  | NEGD(Inst) | NEGF(Inst) | NEGI(Inst) 
+  | RETD(Inst) | RETF(Inst) | RETI(Inst) 
+  | RSHI(Inst,Inst) | RSHU(Inst,Inst) 
+  | SUBD(Inst,Inst) | SUBF(Inst,Inst) | SUBI(Inst,Inst) 
+  | SUBP(Inst,Inst) | SUBU(Inst,Inst) 
+  | VREGP() 
+;
+
+extern int move(Inst);
+extern int range(Inst,int,int);
+extern int imm(Inst);
+extern int notarget(Inst);
+
+void compile (Inst e)
+{
+rewrite (e) type (Inst) :: treeparser of
+   reg ->   INDIRC(VREGP()):     { "# read register\n"; }
+|  reg ->   INDIRD(VREGP()):     { "# read register\n"; }
+|  reg ->   INDIRF(VREGP()):     { "# read register\n"; }
+|  reg ->   INDIRI(VREGP()):     { "# read register\n"; }
+|  reg ->   INDIRP(VREGP()):     { "# read register\n"; }
+|  reg ->   INDIRS(VREGP()):     { "# read register\n"; }
+|  stmt ->  ASGNC(VREGP(),reg):  { "# write register\n"; }
+|  stmt ->  ASGND(VREGP(),reg):  { "# write register\n"; }
+|  stmt ->  ASGNF(VREGP(),reg):  { "# write register\n"; }
+|  stmt ->  ASGNI(VREGP(),reg):  { "# write register\n"; }
+|  stmt ->  ASGNP(VREGP(),reg):  { "# write register\n"; }
+|  stmt ->  ASGNS(VREGP(),reg):  { "# write register\n"; }
+|  con ->  CNSTC():  { "%a"; }
+|  con ->  CNSTI():  { "%a"; }
+|  con ->  CNSTP():  { "%a"; }
+|  con ->  CNSTS():  { "%a"; }
+|  con ->  CNSTU():  { "%a"; }
+|  stmt ->  reg:  { ""; }
+|  reg ->  CVIU(reg) \ notarget(redex):  { "%0"; }
+|  reg ->  CVPU(reg) \ notarget(redex):  { "%0"; }
+|  reg ->  CVUI(reg) \ notarget(redex):  { "%0"; }
+|  reg ->  CVUP(reg) \ notarget(redex):  { "%0"; }
+|  reg ->  ADDRGP():  { "set %a,%%%c\n"; }
+|  stk13 ->  ADDRFP():  { "%a"; }
+|  stk13 ->  ADDRLP():  { "%a"; }
+|  reg ->    stk13 \ 1:   { "add %0,%%fp,%%%c\n"; }
+|  stk ->  ADDRFP() \ 2:  { "set %a,%%%c\n"; }
+|  stk ->  ADDRLP() \ 2:  { "set %a,%%%c\n"; }
+|  reg ->  ADDRFP() \ 3:  { "set %a,%%%c\nadd %%%c,%%fp,%%%c\n"; }
+|  reg ->  ADDRLP() \ 3:  { "set %a,%%%c\nadd %%%c,%%fp,%%%c\n"; }
+|  con13 ->  CNSTC() \ imm(redex):  { "%a"; }
+|  con13 ->  CNSTI() \ imm(redex):  { "%a"; }
+|  con13 ->  CNSTP() \ imm(redex):  { "%a"; }
+|  con13 ->  CNSTS() \ imm(redex):  { "%a"; }
+|  con13 ->  CNSTU() \ imm(redex):  { "%a"; }
+|  base ->  ADDI(reg,con13):  { "%%%0+%1"; }
+|  base ->  ADDP(reg,con13):  { "%%%0+%1"; }
+|  base ->  ADDU(reg,con13):  { "%%%0+%1"; }
+|  base ->  reg:    { "%%%0"; }
+|  base ->  con13:  { "%0"; }
+|  base ->  stk13:  { "%%fp+%0"; }
+|  addr ->  base:           { "%0"; }
+|  addr ->  ADDI(reg,reg):  { "%%%0+%%%1"; }
+|  addr ->  ADDP(reg,reg):  { "%%%0+%%%1"; }
+|  addr ->  ADDU(reg,reg):  { "%%%0+%%%1"; }
+|  addr ->  stk:            { "%%fp+%%%0"; }
+|  reg ->   INDIRC(addr) \ 1:     { "ldsb [%0],%%%c\n"; }
+|  reg ->   INDIRS(addr) \ 1:     { "ldsh [%0],%%%c\n"; }
+|  reg ->   INDIRI(addr) \ 1:     { "ld [%0],%%%c\n"; }
+|  reg ->   INDIRP(addr) \ 1:     { "ld [%0],%%%c\n"; }
+|  reg ->   INDIRF(addr) \ 1:     { "ld [%0],%%f%c\n"; }
+|  stmt ->  ASGNC(addr,reg) \ 1:  { "stb %%%1,[%0]\n"; }
+|  stmt ->  ASGNS(addr,reg) \ 1:  { "sth %%%1,[%0]\n"; }
+|  stmt ->  ASGNI(addr,reg) \ 1:  { "st %%%1,[%0]\n"; }
+|  stmt ->  ASGNP(addr,reg) \ 1:  { "st %%%1,[%0]\n"; }
+|  stmt ->  ASGNF(addr,reg) \ 1:  { "st %%f%1,[%0]\n"; }
+|  addrl ->  ADDRLP() \ imm(redex):           { "%%%fp+%a"; }
+|  reg ->    INDIRD(addrl) \ 1:    { "ldd [%0],%%f%c\n"; }
+|  stmt ->   ASGND(addrl,reg) \ 1: { "std %%f%1,[%0]\n"; }
+|  reg ->   INDIRD(base) \ 2:     { "ld2 [%0],%%f%c\n"; }
+|  stmt ->  ASGND(base,reg) \ 2:  { "st2 %%f%1,[%0]\n"; }
+|  spill ->   ADDRLP() \ ! imm(redex):          { "%a"; }
+|  stmt ->  ASGNC(spill,reg):  { "set %0,%%g1\nstb %%%1,[%%fp+%%g1]\n"; }
+|  stmt ->  ASGNS(spill,reg):  { "set %0,%%g1\nsth %%%1,[%%fp+%%g1]\n"; }
+|  stmt ->  ASGNI(spill,reg):  { "set %0,%%g1\nst %%%1,[%%fp+%%g1]\n"; }
+|  stmt ->  ASGNP(spill,reg):  { "set %0,%%g1\nst %%%1,[%%fp+%%g1]\n"; }
+|  stmt ->  ASGNF(spill,reg):  { "set %0,%%g1\nst %%f%1,[%%fp+%%g1]\n"; }
+|  stmt ->  ASGND(spill,reg):  { "set %0,%%g1\nstd %%f%1,[%%fp+%%g1]\n"; }
+|  reg ->  CVCI(INDIRC(addr)):  { "ldsb [%0],%%%c\n"; }
+|  reg ->  CVSI(INDIRS(addr)):  { "ldsh [%0],%%%c\n"; }
+|  reg ->  CVCU(INDIRC(addr)):  { "ldub [%0],%%%c\n"; }
+|  reg ->  CVSU(INDIRS(addr)):  { "lduh [%0],%%%c\n"; }
+|  reg ->  CVIC(reg) \ move(redex):  { "mov %%%0,%%%c\n"; }
+|  reg ->  CVIS(reg) \ move(redex):  { "mov %%%0,%%%c\n"; }
+|  reg ->  CVIU(reg) \ move(redex):  { "mov %%%0,%%%c\n"; }
+|  reg ->  CVPU(reg) \ move(redex):  { "mov %%%0,%%%c\n"; }
+|  reg ->  CVUC(reg) \ move(redex):  { "mov %%%0,%%%c\n"; }
+|  reg ->  CVUI(reg) \ move(redex):  { "mov %%%0,%%%c\n"; }
+|  reg ->  CVUP(reg) \ move(redex):  { "mov %%%0,%%%c\n"; }
+|  reg ->  CVUS(reg) \ move(redex):  { "mov %%%0,%%%c\n"; }
+|  reg ->  CVIC(reg) \ notarget(redex):  { "%0"; }
+|  reg ->  CVIS(reg) \ notarget(redex):  { "%0"; }
+|  reg ->  CVUC(reg) \ notarget(redex):  { "%0"; }
+|  reg ->  CVUS(reg) \ notarget(redex):  { "%0"; }
+|  reg ->  LOADC(reg) \ move(redex):  { "mov %%%0,%%%c\n"; }
+|  reg ->  LOADI(reg) \ move(redex):  { "mov %%%0,%%%c\n"; }
+|  reg ->  LOADP(reg) \ move(redex):  { "mov %%%0,%%%c\n"; }
+|  reg ->  LOADS(reg) \ move(redex):  { "mov %%%0,%%%c\n"; }
+|  reg ->  LOADU(reg) \ move(redex):  { "mov %%%0,%%%c\n"; }
+|  reg ->  CNSTC() \ range(redex,0,0):  { "# reg\n"; }
+|  reg ->  CNSTI() \ range(redex,0,0):  { "# reg\n"; }
+|  reg ->  CNSTP() \ range(redex,0,0):  { "# reg\n"; }
+|  reg ->  CNSTS() \ range(redex,0,0):  { "# reg\n"; }
+|  reg ->  CNSTU() \ range(redex,0,0):  { "# reg\n"; }
+|  reg ->  con \ 1:  { "set %0,%%%c\n"; }
+|  rc ->  con13:  { "%0"; }
+|  rc ->  reg:    { "%%%0"; }
+|  reg ->  ADDI(reg,rc) \ 1:   { "add %%%0,%1,%%%c\n"; }
+|  reg ->  ADDP(reg,rc) \ 1:   { "add %%%0,%1,%%%c\n"; }
+|  reg ->  ADDU(reg,rc) \ 1:   { "add %%%0,%1,%%%c\n"; }
+|  reg ->  BANDU(reg,rc) \ 1:  { "and %%%0,%1,%%%c\n"; }
+|  reg ->  BORU(reg,rc) \ 1:   { "or %%%0,%1,%%%c\n" ; }
+|  reg ->  BXORU(reg,rc) \ 1:  { "xor %%%0,%1,%%%c\n"; }
+|  reg ->  SUBI(reg,rc) \ 1:   { "sub %%%0,%1,%%%c\n"; }
+|  reg ->  SUBP(reg,rc) \ 1:   { "sub %%%0,%1,%%%c\n"; }
+|  reg ->  SUBU(reg,rc) \ 1:   { "sub %%%0,%1,%%%c\n"; }
+|  rc5 ->  CNSTI() \ range(redex,0,31):  { "%a"; }
+|  rc5 ->  reg:    { "%%%0"; }
+|  reg ->  LSHI(reg,rc5) \ 1:  { "sll %%%0,%1,%%%c\n"; }
+|  reg ->  LSHU(reg,rc5) \ 1:  { "sll %%%0,%1,%%%c\n"; }
+|  reg ->  RSHI(reg,rc5) \ 1:  { "sra %%%0,%1,%%%c\n"; }
+|  reg ->  RSHU(reg,rc5) \ 1:  { "srl %%%0,%1,%%%c\n"; }
+|  reg ->  BANDU(reg,BCOMU(rc)) \ 1:  { "andn %%%0,%1,%%%c\n"; }
+|  reg ->  BORU(reg,BCOMU(rc)) \ 1:   { "orn %%%0,%1,%%%c\n"; }
+|  reg ->  BXORU(reg,BCOMU(rc)) \ 1:  { "xnor %%%0,%1,%%%c\n"; }
+|  reg ->  NEGI(reg) \ 1:   { "neg %%%0,%%%c\n"; }
+|  reg ->  BCOMU(reg) \ 1:  { "not %%%0,%%%c\n"; }
+|  reg ->  CVCI(reg) \ 2:  { "sll %%%0,24,%%%c; sra %%%c,24,%%%c\n"; }
+|  reg ->  CVSI(reg) \ 2:  { "sll %%%0,16,%%%c; sra %%%c,16,%%%c\n"; }
+|  reg ->  CVCU(reg) \ 1:  { "and %%%0,0xff,%%%c\n"; }
+|  reg ->  CVSU(reg) \ 2:  { "set 0xffff,%%g1; and %%%0,%%g1,%%%c\n"; }
+|  addrg ->  ADDRGP():        { "%a"; }
+|  stmt ->   JUMPV(addrg) \ 2:  { "ba %0; nop\n"; }
+|  stmt ->   JUMPV(addr) \ 2:   { "jmp %0; nop\n"; }
+|  stmt ->   LABELV():        { "%a:\n"; }
+|  stmt ->  EQI(reg,rc) \ 3:  { "cmp %%%0,%1; be %a; nop\n"; }
+|  stmt ->  GEI(reg,rc) \ 3:  { "cmp %%%0,%1; bge %a; nop\n"; }
+|  stmt ->  GEU(reg,rc) \ 3:  { "cmp %%%0,%1; bgeu %a; nop\n"; }
+|  stmt ->  GTI(reg,rc) \ 3:  { "cmp %%%0,%1; bg %a; nop\n"; }
+|  stmt ->  GTU(reg,rc) \ 3:  { "cmp %%%0,%1; bgu %a; nop\n"; }
+|  stmt ->  LEI(reg,rc) \ 3:  { "cmp %%%0,%1; ble %a; nop\n"; }
+|  stmt ->  LEU(reg,rc) \ 3:  { "cmp %%%0,%1; bleu %a; nop\n"; }
+|  stmt ->  LTI(reg,rc) \ 3:  { "cmp %%%0,%1; bl %a; nop\n"; }
+|  stmt ->  LTU(reg,rc) \ 3:  { "cmp %%%0,%1; blu %a; nop\n"; }
+|  stmt ->  NEI(reg,rc) \ 3:  { "cmp %%%0,%1; bne %a; nop\n"; }
+|  call ->  ADDRGP():           { "%a"; }
+|  call ->  addr:             { "%0"; }
+|  reg ->   CALLD(call) \ 2:      { "call %0; nop\n"; }
+|  reg ->   CALLF(call) \ 2:      { "call %0; nop\n"; }
+|  reg ->   CALLI(call) \ 2:      { "call %0; nop\n"; }
+|  stmt ->  CALLV(call) \ 2:      { "call %0; nop\n"; }
+|  stmt ->  CALLB(call,reg) \ 2:  { "call %0; st %%%1,[%%sp+64]\n"; }
+|  stmt ->  RETD(reg) \ 1:  { "# ret\n"; }
+|  stmt ->  RETF(reg) \ 1:  { "# ret\n"; }
+|  stmt ->  RETI(reg) \ 1:  { "# ret\n"; }
+|  stmt ->  ARGI(reg) \ 1:  { "st %%%0,[%%sp+4*%c+68]\n"; }
+|  stmt ->  ARGP(reg) \ 1:  { "st %%%0,[%%sp+4*%c+68]\n"; }
+|  stmt ->  ARGD(reg) \ 1:  { "# ARGD\n"; }
+|  stmt ->  ARGF(reg) \ 1:  { "# ARGF\n"; }
+|  reg ->  DIVI(reg,reg) \ 2:  { "call .div,2; nop\n"; }
+|  reg ->  DIVU(reg,reg) \ 2:  { "call .udiv,2; nop\n"; }
+|  reg ->  MODI(reg,reg) \ 2:  { "call .rem,2; nop\n"; }
+|  reg ->  MODU(reg,reg) \ 2:  { "call .urem,2; nop\n"; }
+|  reg ->  MULI(reg,reg) \ 2:  { "call .mul,2; nop\n"; }
+|  reg ->  MULU(reg,reg) \ 2:  { "call .umul,2; nop\n"; }
+|  reg ->  ADDD(reg,reg) \ 1:  { "faddd %%f%0,%%f%1,%%f%c\n"; }
+|  reg ->  ADDF(reg,reg) \ 1:  { "fadds %%f%0,%%f%1,%%f%c\n"; }
+|  reg ->  DIVD(reg,reg) \ 1:  { "fdivd %%f%0,%%f%1,%%f%c\n"; }
+|  reg ->  DIVF(reg,reg) \ 1:  { "fdivs %%f%0,%%f%1,%%f%c\n"; }
+|  reg ->  MULD(reg,reg) \ 1:  { "fmuld %%f%0,%%f%1,%%f%c\n"; }
+|  reg ->  MULF(reg,reg) \ 1:  { "fmuls %%f%0,%%f%1,%%f%c\n"; }
+|  reg ->  SUBD(reg,reg) \ 1:  { "fsubd %%f%0,%%f%1,%%f%c\n"; }
+|  reg ->  SUBF(reg,reg) \ 1:  { "fsubs %%f%0,%%f%1,%%f%c\n"; }
+|  reg ->  NEGF(reg) \ 1:   { "fnegs %%f%0,%%f%c\n"; }
+|  reg ->  LOADF(reg) \ 1:  { "fmovs %%f%0,%%f%c\n"; }
+|  reg ->  CVDF(reg) \ 1:   { "fdtos %%f%0,%%f%c\n"; }
+|  reg ->  CVFD(reg) \ 1:   { "fstod %%f%0,%%f%c\n"; }
+|  reg ->  CVDI(reg) \ 3:  { "fdtoi %%f%0,%%f0; st %%f0,[%%sp+64]; ld [%%sp+64],%%%c\n"; }
+|  reg ->  CVID(reg) \ 3:  { "st %%%0,[%%sp+64]; ld [%%sp+64],%%f%c; fitod %%f%c,%%f%c\n"; }
+|  rel ->  EQD(reg,reg):  { "fcmped %%f%0,%%f%1; nop; fbue"; }
+|  rel ->  EQF(reg,reg):  { "fcmpes %%f%0,%%f%1; nop; fbue"; }
+|  rel ->  GED(reg,reg):  { "fcmped %%f%0,%%f%1; nop; fbuge"; }
+|  rel ->  GEF(reg,reg):  { "fcmpes %%f%0,%%f%1; nop; fbuge"; }
+|  rel ->  GTD(reg,reg):  { "fcmped %%f%0,%%f%1; nop; fbug"; }
+|  rel ->  GTF(reg,reg):  { "fcmpes %%f%0,%%f%1; nop; fbug"; }
+|  rel ->  LED(reg,reg):  { "fcmped %%f%0,%%f%1; nop; fbule"; }
+|  rel ->  LEF(reg,reg):  { "fcmpes %%f%0,%%f%1; nop; fbule"; }
+|  rel ->  LTD(reg,reg):  { "fcmped %%f%0,%%f%1; nop; fbul"; }
+|  rel ->  LTF(reg,reg):  { "fcmpes %%f%0,%%f%1; nop; fbul"; }
+|  rel ->  NED(reg,reg):  { "fcmped %%f%0,%%f%1; nop; fbne"; }
+|  rel ->  NEF(reg,reg):  { "fcmpes %%f%0,%%f%1; nop; fbne"; }
+|  stmt ->  rel \ 4:  { "%0 %a; nop\n"; }
+|  reg ->   LOADD(reg) \ 2:  { "# LOADD\n"; }
+|  reg ->   NEGD(reg) \ 2:  { "# NEGD\n"; }
+|  stmt ->  ASGNB(reg,INDIRB(reg)):  { "# ASGNB\n"; }
+end rewrite;
+}

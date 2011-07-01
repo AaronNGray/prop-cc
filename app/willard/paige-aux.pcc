@@ -1,0 +1,65 @@
+#include "paige.ph"
+#include "willard-ast.ph"
+#include <AD/strings/quark.h>
+
+//
+//  Auxiliary routines to generate new variable names
+//
+Id PaigeGoyal::gensym() { return gensym("Q"); }
+Id PaigeGoyal::gensym(Id prefix) 
+   { return Quark(Quark(prefix,"_"),++new_name); }
+
+//
+//  Auxiliary routines to check whether a variable is free in an expression
+//
+Bool PaigeGoyal::is_free(Id x, Exp e) const
+{  IdSet S;
+   free_vars(e,S);
+   return ! S.contains(x);
+}
+
+Bool PaigeGoyal::is_free(Ids xs, Exp e) const
+{  IdSet S;
+   free_vars(e,S);
+   match while (xs) of #[h ... t]: { if (S.contains(h)) return false; xs = t; }
+   end match;
+   return true;
+}
+
+void PaigeGoyal::remove_vars(IdSet& S, Ids ids) const
+{
+   match while (ids) of #[h ... t]: { S.remove(h); ids = t; } end match;
+}
+
+void PaigeGoyal::remove_vars(IdSet& S, const IdSet& T) const
+{  foreach(i,T) S.remove(T.key(i));
+}
+
+//
+//  Methods to collect free variables in a term
+//
+void PaigeGoyal::free_vars(Exp e, IdSet& S) const
+{  match (e) of
+      OP(_,es):  { free_vars(es,S); }
+   |  APP(f,es): { free_vars(es,S); }
+   |  LIT _:     { return; }
+   |  ID y:      { S.insert(y); }
+   |  TUPLE es:  { free_vars(es,S); } 
+   |  FORALL(x, a, b):    { free_vars(a,S); free_vars(b,S); S.remove(x); }
+   |  EXISTS(x, a, b):    { free_vars(a,S); free_vars(b,S); S.remove(x); }
+   |  LET(x,a,b):         { free_vars(a,S); free_vars(b,S); S.remove(x); }
+   |  GUARD (a,b):        { free_vars(a,S); free_vars(b,S); }
+   |  GENERATOR (xs,a,b): { free_vars(a,S); free_vars(b,S); remove_vars(S,xs); }
+   //|  IF(a,b,c):          { free_vars(a,S); free_vars(b,S); free_vars(c,S); }
+   end match;
+}
+
+void PaigeGoyal::free_vars(Exps es, IdSet& S) const
+{  match while (es)
+   {  #[ h ... t ]:  { free_vars(h,S); es = t; } }
+}
+
+void PaigeGoyal::free_vars(Ids xs, IdSet& S) const
+{  match while (xs)
+   {  #[ h ... t ]:  { S.insert(h); xs = t; } }
+}

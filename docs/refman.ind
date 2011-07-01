@@ -1,0 +1,176 @@
+\begin{theindex}
+  \item {\tt  PROP\relax  \_EXPLICIT\relax  \_TEMPLATE\relax  \_INSTANTIATION}, 
+		25
+
+  \indexspace
+
+  \item Classes
+    \subitem {\tt  BGC}, 64, 68
+     \subitem {\tt  CGC}, 64
+     \subitem {\tt  GCHeapManager}, 64
+     \subitem {\tt  GCObject}, 64, 66
+     \subitem {\tt  GCRewriteCache}, 44
+     \subitem {\tt  GCVerifier}, 66
+     \subitem {\tt  GCVerify}, 70
+     \subitem {\tt  GC}, 64--66, 68, 70
+     \subitem {\tt  IOLexerBuffer}, 12
+     \subitem {\tt  IOLexerStack}, 12
+     \subitem {\tt  LexerBuffer}, 11
+     \subitem {\tt  MarkSweepGC}, 64
+     \subitem {\tt  Mem}, 64
+     \subitem {\tt  RewriteCache}, 44
+     \subitem {\tt  WeakPointerManager}, 64
+     \subitem {\tt  WeakPointer}, 70
+  \item Command line options
+    \subitem {\tt  -G -GNU}, 56
+     \subitem {\tt  -I{\em  path}}, 56
+     \subitem {\tt  -M -make\relax  \_depends}, 56
+     \subitem {\tt  -N -non\relax  \_linear}, 56
+     \subitem {\tt  -Oadaptive\relax  \_matching}, 56
+     \subitem {\tt  -Ofast\relax  \_string\relax  \_match}, 56
+     \subitem {\tt  -Oinline\relax  \_casts}, 56
+     \subitem {\tt  -Orewriting}, 47, 56
+     \subitem {\tt  -Otagged\relax  \_pointer}, 56
+     \subitem {\tt  -S -save\relax  \_space}, 57
+     \subitem {\tt  -fno-implicit-templates}, 25
+     \subitem {\tt  -l -no\relax  \_line\relax  \_directives}, 56
+     \subitem {\tt  -memory\relax  \_usage}, 56
+     \subitem {\tt  -n -no\relax  \_codegen}, 56
+     \subitem {\tt  -o{\em  outfile}}, 56
+     \subitem {\tt  -r -report}, 56
+     \subitem {\tt  -r}, 16
+     \subitem {\tt  -s -strict}, 56
+     \subitem {\tt  -save\relax  \_space}, 25
+     \subitem {\tt  -t -stdout}, 57
+     \subitem {\tt  -use\relax  \_global\relax  \_pool}, 57
+     \subitem {\tt  -v{\em  num}}, 57
+     \subitem {\tt  -v}, 16
+
+  \indexspace
+
+  \item graph type, 54
+
+  \indexspace
+
+  \item state caching, 42
+  \item Syntax
+    \subitem Keywords
+      \subsubitem {\tt  \relax  \$$n$}, 16
+     \subsubitem {\tt  \relax  \$\relax  \$}, 16
+     \subsubitem {\tt  applicative}, 37
+     \subsubitem {\tt  before:}, 38
+     \subsubitem {\tt  bottomup:}, 38
+     \subsubitem {\tt  classof}, 28, 70
+     \subsubitem {\tt  collectable}, 23, 29
+     \subsubitem {\tt  cutrewrite}, 45
+     \subsubitem {\tt  datatype view}, 49
+     \subsubitem {\tt  datatype}, 9, 23
+     \subsubitem {\tt  edge:}, 54
+     \subsubitem {\tt  expect:}, 14
+     \subsubitem {\tt  extern}, 23, 25, 42
+     \subsubitem {\tt  failrewrite}, 46
+     \subsubitem {\tt  graphtype}, 54
+     \subsubitem {\tt  index:}, 42
+     \subsubitem {\tt  inline}, 23, 25
+     \subsubitem {\tt  instantiate datatype}, 25, 30, 57
+     \subsubitem {\tt  instantiate}, 25
+     \subsubitem {\tt  law}, 23
+     \subsubitem {\tt  left:}, 14
+     \subsubitem {\tt  lexeme class}, 8, 9
+     \subsubitem {\tt  lexeme}, 8, 9, 23
+     \subsubitem {\tt  matchall}, 25
+     \subsubitem {\tt  matchscan*}, 10
+     \subsubitem {\tt  matchscan}, 10
+     \subsubitem {\tt  match}, 25, 50
+     \subsubitem {\tt  node:}, 54
+     \subsubitem {\tt  persistent}, 23, 30
+     \subsubitem {\tt  postorder:}, 38
+     \subsubitem {\tt  preorder:}, 38
+     \subsubitem {\tt  refine persistent}, 30
+     \subsubitem {\tt  refine}, 28
+     \subsubitem {\tt  relation}, 32
+     \subsubitem {\tt  rewrite class}, 37
+     \subsubitem {\tt  rewrite}, 23, 37, 41, 42
+     \subsubitem {\tt  right:}, 14
+     \subsubitem {\tt  syntax class}, 13
+     \subsubitem {\tt  syntax}, 14
+     \subsubitem {\tt  this}, 50
+     \subsubitem {\tt  topdown:}, 38
+     \subsubitem {\tt  topdown}, 37
+     \subsubitem {\tt  treeparser}, 37
+     \subsubitem {\tt  type}, 41
+     \subsubitem {\tt  view}, 50, 53
+     \subsubitem {\tt  where type}, 23
+     \subsubitem {\tt  while}, 26
+     \subsubitem {\tt  with}, 27
+     \subitem Non--terminals
+      \subsubitem {\it  Char}, 5
+     \subsubitem {\it  Cons\relax  \_Specs}, 23
+     \subsubitem {\it  Cons\relax  \_Spec}, 23
+     \subsubitem {\it  Context\relax  \_Spec}, 10
+     \subsubitem {\it  Cost}, 25
+     \subsubitem {\it  Datatype\relax  \_Decl}, 23
+     \subsubitem {\it  Datatype\relax  \_Qualifiers}, 23
+     \subsubitem {\it  Datatype\relax  \_Qualifier}, 23
+     \subsubitem {\it  Datatype\relax  \_Spec}, 23, 53
+     \subsubitem {\it  Datatype\relax  \_View\relax  \_Spec}, 53
+     \subsubitem {\it  Edge\relax  \_Def}, 54
+     \subsubitem {\it  Expect\relax  \_Decl}, 14
+     \subsubitem {\it  Graph\relax  \_Mode}, 54
+     \subsubitem {\it  Graph\relax  \_Type}, 54
+     \subsubitem {\it  Guard}, 25
+     \subsubitem {\it  Id}, 5
+     \subsubitem {\it  Index\relax  \_Decl}, 42
+     \subsubitem {\it  Index\relax  \_Spec}, 42
+     \subsubitem {\it  Instantiate\relax  \_Decl}, 25
+     \subsubitem {\it  Integer}, 5
+     \subsubitem {\it  Lab\relax  \_Pat}, 27
+     \subsubitem {\it  Lab\relax  \_Type\relax  \_Exp}, 24
+     \subsubitem {\it  Law\relax  \_Arg}, 24
+     \subsubitem {\it  Law\relax  \_Spec}, 24
+     \subsubitem {\it  Lexeme\relax  \_Class\relax  \_Decl}, 8
+     \subsubitem {\it  Lexeme\relax  \_Class\relax  \_Eq}, 8
+     \subsubitem {\it  Lexeme\relax  \_Decl}, 8
+     \subsubitem {\it  Lexeme\relax  \_Eq}, 8
+     \subsubitem {\it  Lexeme\relax  \_Spec}, 8
+     \subsubitem {\it  Match\relax  \_Action}, 25
+     \subsubitem {\it  Match\relax  \_Mode}, 25
+     \subsubitem {\it  Match\relax  \_Rule}, 25
+     \subsubitem {\it  Matchscan\relax  \_Action}, 10
+     \subsubitem {\it  Matchscan\relax  \_Mode}, 10
+     \subsubitem {\it  Matchscan\relax  \_Rule}, 10
+     \subsubitem {\it  Matchscan}, 10
+     \subsubitem {\it  Match}, 25
+     \subsubitem {\it  Node\relax  \_Def}, 54
+     \subsubitem {\it  One\relax  \_Alt}, 15
+     \subsubitem {\it  Operator}, 14
+     \subsubitem {\it  PatArg}, 27
+     \subsubitem {\it  Pat\relax  \_Var}, 27
+     \subsubitem {\it  Pat}, 27
+     \subsubitem {\it  Placement\relax  \_Cons}, 29
+     \subsubitem {\it  Precedence\relax  \_Decl}, 14
+     \subsubitem {\it  Production\relax  \_Rule}, 15
+     \subsubitem {\it  Quark}, 5
+     \subsubitem {\it  Real}, 5
+     \subsubitem {\it  Refine\relax  \_Decl}, 29
+     \subsubitem {\it  Refine\relax  \_Spec}, 29
+     \subsubitem {\it  Rewrite\relax  \_Action}, 37
+     \subsubitem {\it  Rewrite\relax  \_Class\relax  \_Decl}, 37
+     \subsubitem {\it  Rewrite\relax  \_Decl}, 37
+     \subsubitem {\it  Rewrite\relax  \_Mode}, 37
+     \subsubitem {\it  Rewrite\relax  \_Modifier}, 37
+     \subsubitem {\it  Rewrite\relax  \_Rule}, 37
+     \subsubitem {\it  Rewrite\relax  \_Stmt}, 41
+     \subsubitem {\it  Running\relax  \_Prop}, 56
+     \subsubitem {\it  Simple\relax  \_Cons\relax  \_Spec}, 23
+     \subsubitem {\it  Stmt}, 5
+     \subsubitem {\it  String}, 5
+     \subsubitem {\it  Symbol}, 15
+     \subsubitem {\it  Syntax\relax  \_Class\relax  \_Decl}, 13
+     \subsubitem {\it  Syntax\relax  \_Decl}, 14
+     \subsubitem {\it  Token\relax  \_Spec}, 9
+     \subsubitem {\it  Tokens\relax  \_Decl}, 9
+     \subsubitem {\it  Type\relax  \_Exp}, 24
+     \subsubitem {\it  Type\relax  \_Qualifier}, 24
+     \subsubitem {\it  Type\relax  \_Spec}, 24, 25
+     \subsubitem {\it  View\relax  \_Cons\relax  \_Specs}, 53\end{theindex}

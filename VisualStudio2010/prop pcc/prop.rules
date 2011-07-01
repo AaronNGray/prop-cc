@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<VisualStudioToolFile
+	Name="Prop Compiler Compiler (Debug)"
+	Version="8.00"
+	>
+	<Rules>
+		<CustomBuildRule
+			Name="Prop Compiler"
+			DisplayName="Prop Compiler"
+			CommandLine="..\prop\debug\prop.exe -I[$IncludePath] -I[$RootPath] [inputs]"
+			Outputs="[$Output].cc"
+			FileExtensions="*.pcc;*.ph"
+			ExecutionDescription="Prop Compiler"
+			ShowOnlyRuleProperties="false"
+			>
+			<Properties>
+				<StringProperty
+					Name="IncludePath"
+					DisplayName="IncludePath"
+					Description="Include Path"
+					DefaultValue="..\..\include"
+					Delimited="true"
+				/>
+				<StringProperty
+					Name="RootPath"
+					DisplayName="RootPath"
+					DefaultValue="..\..\prop-src"
+				/>
+			</Properties>
+		</CustomBuildRule>
+	</Rules>
+</VisualStudioToolFile>

@@ -1,0 +1,45 @@
+#include <iostream.h>
+#include <AD/strings/quark.h>
+
+datatype List<T> :: collectable rewrite = #[] | #[ T ... List<T> ];
+datatype List2<T> :: collectable rewrite = #{} | #{ T ... List2<T> };
+datatype Sexpr :: collectable rewrite
+               = ATOM of Quark
+               | INTEGER of int
+               | REAL of double
+               | #()
+               | #( Sexpr ... Sexpr )
+
+law inline LAMBDA(x,e) = #(ATOM(#"lambda"),#(x),e)
+               ;
+
+instantiate datatype List<int>, List2<int>, Sexpr, List<Sexpr>;
+
+extern ostream& operator << (ostream& s, Sexpr e);
+extern ostream& print_list(ostream& s, Sexpr e);
+
+ostream& print_list(ostream& s, Sexpr e)
+{  s << '(';
+   match while(e)
+   {  #(h):       { s << h; e = #(); }
+   |  #(h ... t): { s << h << ' '; e = t; }
+   }
+   return s << ')';
+}
+
+ostream& operator << (ostream& s, Sexpr e)
+{  match (e) 
+   {  ATOM id:       { return s << id; }
+   |  INTEGER i:     { return s << i; }
+   |  REAL r:        { return s << r; }
+   |  #():           { return s << "nil"; }
+   |  #( _ ... _ ):  { return print_list(s,e); }
+   }
+} 
+
+int main()
+{  Sexpr x    = ATOM(#"x");
+   Sexpr succ = LAMBDA(x,#(ATOM(#"+"),x,INTEGER(1)));
+   cout << succ << '\n';
+   return 0;
+}

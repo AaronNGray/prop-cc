@@ -1,0 +1,81 @@
+#include <AD/pretty/postream.h>
+#include "querygraph.ph"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor and destructor for query graph construction 
+//
+///////////////////////////////////////////////////////////////////////////////
+QueryGraphConstruction::QueryGraphConstruction() {}
+QueryGraphConstruction::~QueryGraphConstruction() {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to invoke the query graph construction phase 
+//
+///////////////////////////////////////////////////////////////////////////////
+Exp QueryGraphConstruction::construct_query_graph(Exp e) 
+{  message("Constructing the query graph", e); 
+   parent.clear();               // clears the query graph
+   (*this)(e);                   // construct the graph
+   compute_transitive_closure(); // compute the transitive closure
+   print_query_graph();
+   return e; 
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to check whether a variable preceeds another in the quantifier 
+//  ordering.
+//
+///////////////////////////////////////////////////////////////////////////////
+Bool QueryGraphConstruction::preceeds(Id x, Id y) const
+{  for (int i = 0; i < quantifier_vars.size(); i++)
+   {  if (quantifier_vars[i] == x)
+      {  for (int j = i+1; j < quantifier_vars.size(); j++)
+            if (quantifier_vars[j] == y) return true;
+         return false;
+      }
+   }
+   return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Transformation rules
+//
+///////////////////////////////////////////////////////////////////////////////
+rewrite QueryGraphConstruction
+{
+
+//
+//  Push and pop quantifier names.
+//
+preorder:
+  FORALL(x,_,_):      { push_quantifier(x); }
+| EXISTS(x,_,_):      { push_quantifier(x); }
+| GENERATOR(xs,_,_):  { push_quantifier(xs); }
+
+postorder:
+| FORALL(x,_,_):      { pop_quantifier(x); }
+| EXISTS(x,_,_):      { pop_quantifier(x); }
+| GENERATOR(xs,_,_):  { pop_quantifier(xs); }
+
+  // Locate all atomic predicates and add edges into the query graph
+preorder:
+| OP("=" || "/=" || "<" || ">" || "<=" || ">=" || "#",es):
+  {  
+     // Collect all free variables in this expression.
+     IdSet S;
+     free_vars(es,S);   
+
+     // Now add edges to the query graph.
+     foreach(i,S)
+     {  Id x = S.value(i);
+	foreach(j,S)
+	{  Id y = S.value(j);
+	   if (x != y && preceeds(x,y)) add_edge(x,y);
+	}
+     }
+  }
+};

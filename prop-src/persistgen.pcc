@@ -1,0 +1,311 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file handles persistent datatypes processing.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <AD/strings/quark.h>
+#include "basics.ph"
+#include "ir.ph"
+#include "ast.ph"
+#include "datagen.h"
+#include "type.h"
+#include "hashtab.h"
+#include "options.h"
+#include "datatype.ph"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Equality and hashing on cons/tys pairs
+//
+///////////////////////////////////////////////////////////////////////////////
+
+unsigned int id_tys_hash( HashTable::Key a)
+{
+  Pair<Id,Tys> key = (Pair<Id,Tys>)a;
+  return (unsigned int)key->fst + tys_hash(key->snd);
+}
+
+Bool id_tys_equal( HashTable::Key a, HashTable::Key b)
+{
+  Pair<Id,Tys> x = (Pair<Id,Tys>)a;
+  Pair<Id,Tys> y = (Pair<Id,Tys>)b;
+  return x->fst == y->fst && tys_equal(x->snd,y->snd);
+}
+
+unsigned int pid_hash( HashTable::Key pid)
+{
+  match (Pid(pid))
+   {
+     PERSISTid id:  { return string_hash(id); }
+   | PERSISTnone:   { return 1235; }
+   }
+}
+
+Bool pid_equal( HashTable::Key a, HashTable::Key b)
+{
+  match (Pid(a)) and (Pid(b))
+  {
+    PERSISTid  a, PERSISTid  b: { return string_equal( a, b); }
+  | _,            _:            { return false; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Global hashtables to store mapping from types to persistent Id's
+//  and vice versa.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+HashTable type_pid_map( id_tys_hash, id_tys_equal);
+HashTable pid_type_map( pid_hash, pid_equal);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Enter a new persistent id entry
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void update_persistent( Id id, Tys tys, Pid pid)
+{
+  Pair<Id,Tys> key = makepair( id, tys);
+  HashTable::Entry * e1 = type_pid_map.lookup((HashTable::Key)key);
+  HashTable::Entry * e2 = pid_type_map.lookup((HashTable::Key)pid);
+  if (e1)
+    error ("%Lpersistence redefined for type %s%P\n",id,tys);
+  if (e2)
+  {
+    Pair<Id,Tys> previous = (Pair<Id,Tys>)(e2->v);
+    error( "%Lpersistence pid %Q already allocated for type %s%P\n",
+           pid, previous->fst, previous->snd);
+  }
+  if (e1 == 0 && e2 == 0)
+  {
+    type_pid_map.insert( key, (HashTable::Value) pid);
+    pid_type_map.insert( (HashTable::Key) pid, key);
+  }
+
+  // add persistent qualifier to the constructor's type
+
+  match (lookup_ty(id))
+  {
+  DATATYPEty ({ hierarchy ... },_) | hierarchy != 0:
+    { hierarchy->qualifiers |= QUALpersistent; }
+  | _:
+    { error("%Ltype %s%P is not a datatype\n",id,tys); }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Lookup a new persistent id entry
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Pid lookup_persistent( Id id, Tys tys)
+{  Pair<Id,Tys> key = makepair( id, tys);
+   HashTable::Entry * e1 = type_pid_map.lookup( (HashTable::Key) key);
+   if (e1)
+     return value_of( Pid, type_pid_map, e1);
+   else
+     return PERSISTnone;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This method generates the class interface of a persistence object
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::generate_persistence_interface( CodeGen& C)
+{
+  C.pr(
+        "%^%/"
+        "%^//"
+        "%^// Methods for persistence and object serialization"
+        "%^//"
+        "%^%/"
+        "%-%^protected:%+"
+        "%^virtual const PObjectType& persist_type_id () const;"
+        "%^virtual Pistream&          persist_read    (Pistream&);"
+        "%^virtual Postream&          persist_write   (Postream&) const;"
+        "%-%^public:%+"
+      );
+
+  C.pr(
+        "%^// Default constructor for persistence object factory"
+        "%^%s();",
+        class_name
+      );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This method generates the implementation of the persistent I/O functions
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::generate_persistence_implementation
+   (CodeGen& C, Tys tys, DefKind k)
+{
+  Id obj_type = DatatypeCompiler::temp_vars.new_label();
+
+  //
+  // Generate a PObjectType object for this class.
+  //
+
+  Pid pid  = lookup_persistent( root->datatype_name, tys);
+
+  if (pid == PERSISTnone)
+    error( "%Lpersist object id is undefined for %s%P\n",
+           root->datatype_name, tys);
+
+  //
+  // Generate a default constructor for this class
+  //
+
+  C.pr( "%^%s%P::%s()", class_name, tys, class_name);
+
+  if (this != root && root->has_variant_tag)
+    C.pr( " : %s%P(tag_%S)", root->class_name, tys, constructor_name);
+  C.pr( "%^{%+");
+  gen_class_constructor_body( C, tys, k);
+  C.pr( "%-%^}");
+
+  //
+  // Generate the object type for this class
+  //
+
+  C.pr(
+        "%^static PObjectType %s(%Q \"(%s%P::%s)\");"
+        "%^const PObjectType& %s%P::persist_type_id() const { return %s; }",
+        obj_type, pid, root->datatype_name, tys,
+        (cons == NOcons ? "base_class" : constructor_name),
+        class_name, tys, obj_type
+      );
+
+  if (cons != NOcons)
+  {
+    //
+    //  Generate an object factory for this class if it is creatable.
+    //
+    C.pr( "%^static PObjectFactory< %s%P > %s(%s);\n",
+          class_name, tys, DatatypeCompiler::temp_vars.new_label(), obj_type);
+  }
+
+  //
+  // Generate the read method
+  //
+  Exp self_exp = DEREFexp( IDexp( #"this"));
+  C.pr( "%^Pistream& %s%P::persist_read(Pistream& strm__)"
+        "%^{%+",
+        class_name, tys);
+
+  gen_super_class_persist_IO( C, tys, k, ">>");
+
+  if (cons != NOcons)
+    gen_field_persist_IO( C, self_exp, cons_arg_ty, tys, k, ">>", true);
+
+  C.pr( "%^return strm__;%-%^}");
+
+  //
+  // Generate the write method
+  //
+  C.pr( "%^Postream& %s%P::persist_write(Postream& strm__) const"
+        "%^{%+",
+        class_name, tys);
+  gen_super_class_persist_IO( C, tys, k, "<<");
+  if (cons != NOcons)
+     gen_field_persist_IO( C, self_exp, cons_arg_ty, tys, k, "<<", true);
+  C.pr( "%^return strm__;%-%^}");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This method generates the persistence calls I/O for superclasses
+//
+///////////////////////////////////////////////////////////////////////////////
+void DatatypeClass::gen_super_class_persist_IO
+   (CodeGen& C, Tys tys, DefKind k, Id io_op)
+{
+  // Generate a call to the superclass
+  Id rw = io_op[0] == '>' ? "read" : "write";
+  if (this != root)
+    C.pr( "%^%s%P::persist_%s(strm__);", root->class_name, tys, rw);
+
+  // Generate a call to all the persistent superclasses
+
+  for_each (Inherit, inh, inherited_classes)
+  {
+    if ((inh->qualifiers & QUALpersistent) ||
+    has_qual(QUALpersistent,inh->super_class))
+    {
+      C.pr( "%t::trace(strm__);",
+          apply_ty( mkpolyty( inh->super_class, parameters), tys), "");
+      if (this == root)
+        root->use_persist_base = true;
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This method generates the persistence calls I/O for individual
+//  fields of the datatype
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::gen_field_persist_IO
+   (CodeGen& C, Exp exp, Ty ty, Tys tys, DefKind k, Id io, Bool toplevel)
+{
+  Bool is_reading = io[0] == '>';
+
+  match (deref(ty))
+  {
+  TUPLEty types:
+    {
+      int i = 1;
+      for_each ( Ty, ty, types)
+        gen_field_persist_IO( C, DOTexp( exp, index_of(i++)), ty, tys, k, io);
+    }
+  | EXTUPLEty types:
+    {
+      int i = 1;
+      for_each ( Ty, ty, types)
+        gen_field_persist_IO( C, DOTexp( exp, index_of(i++)), ty, tys, k, io);
+    }
+  | RECORDty( labels, _, types):
+    {
+      Ids ls; Tys ts;
+      for( ls = labels, ts = types; ls && ts; ls = ls->#2, ts = ts->#2)
+        gen_field_persist_IO( C, DOTexp( exp, ls->#1), ts->#1, tys, k, io);
+    }
+  | ARRAYty( ty, bound):
+    {
+      C.pr(
+            "%^{%+"
+            "%^for (int i__ = 0; i__ < %e; i__++)"
+            "%^{%+",
+            bound
+          );
+      gen_field_persist_IO( C, INDEXexp( exp, IDexp( #"i__")), ty, tys, k, io);
+      C.pr(
+            "%-%^}"
+            "%-%^}"
+          );
+     }
+  |  ty:
+     {
+       if (toplevel)
+         exp = DOTexp( exp, mangle(cons->name));
+
+       if (is_reading && is_datatype(ty))
+         C.pr( "%^%e = (%t)read_object(strm__);", exp, ty, "");
+       else
+         C.pr( "%^strm__ %s %e;",io, exp, ty);
+
+       C.pr( " // %T", ty);
+     }
+  }
+}

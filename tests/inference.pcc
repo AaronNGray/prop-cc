@@ -1,0 +1,91 @@
+//////////////////////////////////////////////////////////////////////////////
+//  This is a simple self-contained test to benchmark the speed of
+//  naive inferencing in Prop.
+//
+//  To compile on Unix: 
+//
+//     prop triangle.pcc
+//     gcc -I<prop-include-dir> triangle.cc -o triangle -L<ADLib-library-dir>
+//         -lad -liostream -lg++
+//////////////////////////////////////////////////////////////////////////////
+
+#include <iostream.h>
+
+datatype Number :: relation = num   (int);
+datatype Limit  :: relation = limit (int);
+instantiate datatype Number, Limit;
+
+//
+// The following inference construct defines an inference class
+// with two rules and one axiom. 
+//
+inference class Triangle {};
+
+inference Triangle {
+  
+  //
+  //  Start from 1
+  //
+  --------------------
+      num   (1);
+
+  //
+  //  Assert all numbers from 1 to n
+  //
+      num   (m)
+  and limit (n) where m < n
+  ---------------------------
+      num   (m + 1);
+
+  //
+  //  Now try all combination of x, y, and z's and look for witnesses
+  //  of the Pythagorean Theorem. 
+  //
+  //  Notice that we are in effect performing a three way 
+  //  cartesian product.  Since Prop doesn't yet have indexing,
+  //  all permutations have to be enumerated.  So this is in effect
+  //  a good benchmark for the basic (naive) inference speed of Prop.
+  //  This is NOT a recommended use of inference, of course.
+  //
+  //  Notice that the inferencing will go progressively slower as
+  //  more and more facts are entered into the database.  The time
+  //  complexity is O(n^3), where n is the limit.  Space complexity
+  //  is O(n^2), since the RETE algorithm caches intermediate results
+  //  from the first join in its beta memory.
+  //
+      num (x)
+  and num (y) where x < y
+  and num (z) where y < z && x * x + y * y == z * z
+  -----------------------------------------------------
+      { cout << x << " * " << x << " + " 
+             << y << " * " << y << " = "
+             << z << " * " << z << '\n';
+      };
+};
+
+int main()
+{ 
+   Triangle triangle;   // instantiate an inference module
+   int top;         
+
+   //
+   // Get the limit
+   //
+   cout << "Please input a limit (say, between 10 - 100): " << flush;
+   cin >> top; 
+   cout << "Trying all numbers from 1 to " << top << '\n';
+
+   //
+   // Insert the initial parameter into the database.
+   //
+   triangle << limit (top);
+
+   //
+   // Run the inference engine until it is stable.
+   // The inference rules defined above will be fired and triangular
+   // identities will be printed.  
+   //
+   triangle.infer();
+
+   return 0;
+}

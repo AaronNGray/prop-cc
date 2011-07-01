@@ -1,0 +1,87 @@
+\newcommand{\etalchar}[1]{$^{#1}$}
+\begin{thebibliography}{CFH{\etalchar{+}}91}
+
+\bibitem[AF]{CMM}
+Guiseppe Attardi and Tito Flagella.
+\newblock A customisable memory management framework.
+\newblock Technical report, University of Pisa.
+
+\bibitem[AGT89]{codegen-with-trees}
+Alfred~V. Aho, Mahadevan Ganapathi, and Steven W.~K. Tjiang.
+\newblock Code generation using tree matching and dynamic programming.
+\newblock {\em ACM Transactions on Programming Languages and Systems},
+  11(4):491--516, October 1989.
+
+\bibitem[Bar88]{Mostly-copying}
+Joel~F. Bartlett.
+\newblock Compacting garbage collection with ambiguous roots.
+\newblock Technical Report 88/2, DEC Western Research Laboratory, Palo Alto,
+  California, Febrarry 1988.
+
+\bibitem[Bar89]{Gen-mostly-copying}
+Joel~F. Bartlett.
+\newblock Mostly-copying collection picks up generations and {C++}.
+\newblock Technical Report TN-12, DEC Western Research Laboratory, Palo Alto,
+  California, October 1989.
+
+\bibitem[Boe93]{Boehm}
+Hans-Juergen Boehm.
+\newblock Space efficient conservative garbage collection.
+\newblock {\em ACM SIGPLAN PLDI}, pages 197--206, 1993.
+
+\bibitem[CFH{\etalchar{+}}91]{subtype-SETL}
+J.~Cai, P.~Facon, F.~Henglein, R.~Paige, and E.~Schonberg.
+\newblock Type transofrmation and data structure choice.
+\newblock {\em In B. Moeller, editor, Constructing Programs From
+  Specifications}, pages 126--164, 1991.
+
+\bibitem[ED93]{Safe-C++-GC}
+J.R. Ellis and D.L. Detlefs.
+\newblock Safe, efficient garbage collection for {C++}.
+\newblock Technical Report CSL-93-4, Xerox Parc, 1993.
+
+\bibitem[HMM86]{SML}
+Robert Harper, David MacQueen, and Robin Milner.
+\newblock Standard {ML}.
+\newblock Report ECS-LFCS-86-2, Laboratory for Foundations of Computer Science,
+  Computer Science Department, Edinburgh University, 1986.
+
+\bibitem[Les75]{lex}
+M.~E. Lesk.
+\newblock {LEX}: a lexical analyzer generator.
+\newblock Technical Report~39, AT\&T Bell Laboratories, Murray Hill, N.J.,
+  1975.
+
+\bibitem[Pai89]{real-time-SETL}
+R.~Paige.
+\newblock Real-time simulation of a set machine on a {RAM}.
+\newblock {\em In N. Janicki and W. Koczkodaj, editor, Computing and
+  Information}, II:69--73, May 1989.
+
+\bibitem[Pax90]{flex}
+V.~Paxson.
+\newblock Using flex --- a fast lexical analyzer.
+\newblock Technical report, The Regents of the University of California, May
+  1990.
+
+\bibitem[San94]{vcg}
+Georg Sander.
+\newblock Graph layout through the {VCG} tool.
+\newblock Technical Report A03/94, Universit\"{a}t des Saarlandes, October
+  1994.
+
+\bibitem[San95]{vcg-manual}
+Georg Sander.
+\newblock {\em {VCG}: Visualization of Compiler Graphs (v.1.30)}, 1995.
+
+\bibitem[SDDS86]{SETL}
+J.~Schwartz, R.~Dewar, D.~Dubinsky, and E.~Schonberg.
+\newblock {\em Programming with Sets: An Introduction to {SETL}}.
+\newblock Springer-Verlag, 1986.
+
+\bibitem[Str91]{C++}
+Bjarne Stroustrup.
+\newblock {\em The C++ Programming Language. Second Edition}.
+\newblock Addison-Welsey, 1991.
+
+\end{thebibliography}

@@ -1,0 +1,135 @@
+//
+//  Test the view mechanism
+//
+
+#include <assert.h>
+#include <iostream.h>
+
+class Expression
+{
+public:
+   enum Variant { Int, Ident, Add, Sub, Mul, Div };
+   virtual Variant get_variant() const = 0;
+   virtual int  number() const;
+   virtual const char * ident() const;
+   virtual const Expression * child(int) const;
+   virtual Expression *& child(int);
+};
+
+typedef Expression * Exp;
+
+int Expression::number() const 
+{ cerr << "unimplement Expression::number()\n"; exit(1); return 0; }
+
+const char * Expression::ident() const 
+{ cerr << "unimplement Expression::ident()\n"; exit(1); return 0; }
+
+const Expression * Expression::child(int) const 
+{ cerr << "unimplement Expression::child(int) const\n"; exit(1); return 0; }
+
+Expression *& Expression::child(int) 
+{ cerr << "unimplement Expression::child(int)\n"; exit(1); 
+  static Expression * t = 0;
+  return t; 
+}
+
+class Number : public Expression {
+   int the_number;
+public:
+   Number(int n) : the_number(n) {}
+   Variant get_variant() const { return Int; }
+   int number() const { return the_number; }
+   friend Expression * INT(int i) { return new Number(i); }
+};
+
+class Identifier : public Expression {
+   const char * the_ident;
+public:
+   Identifier(const char * ident) : the_ident(ident) {}
+   Variant get_variant() const { return Ident; }
+   const char * ident() const { return the_ident; }
+   friend Expression * ID(const char * id) { return new Identifier(id); }
+};
+
+class Operator : public Expression {
+   char  op;
+   Expression * children[2];
+public:
+   Operator(char o, const Expression* a, const Expression* b) : op(o) 
+      { children[0] = (Expression*)a; children[1] = (Expression*)b; }
+   Variant get_variant() const
+   {  switch (op)
+      { case '+':  return Add;
+        case '-':  return Sub;
+        case '*':  return Mul;
+        case '/':  return Div;
+	default:   return Add;
+      }
+   }
+   Expression *& child(int i) { return children[i]; }
+   const Expression * child(int i) const { return children[i]; }
+
+   friend Expression * ADD(const Expression * a, const Expression * b)
+   {  return new Operator('+',a,b); }
+   friend Expression * SUB(const Expression * a, const Expression * b)
+   {  return new Operator('-',a,b); }
+   friend Expression * MUL(const Expression * a, const Expression * b)
+   {  return new Operator('*',a,b); }
+   friend Expression * DIV(const Expression * a, const Expression * b)
+   {  return new Operator('/',a,b); }
+};
+
+datatype Exp :: view
+   = match (this->get_variant())
+     view Expression::Int   => INT (int = this->number()) 
+   | view Expression::Ident => ID (const char * = this->ident()) 
+   | view Expression::Add   => ADD (Exp = this->child(0), Exp = this->child(1))
+   | view Expression::Sub   => SUB (Exp = this->child(0), Exp = this->child(1))
+   | view Expression::Mul   => MUL (Exp = this->child(0), Exp = this->child(1))
+   | view Expression::Div   => DIV (Exp = this->child(0), Exp = this->child(1))
+   ;
+
+ostream& operator << (ostream& s, Exp e)
+{  match (e)
+   {  INT i:     { return s << i; }
+   |  ID x:      { return s << x; }
+   |  ADD (x,y): { return s << '(' << x << " + " << y << ')'; }
+   |  SUB (x,y): { return s << '(' << x << " - " << y << ')'; }
+   |  MUL (x,y): { return s << '(' << x << " * " << y << ')'; }
+   |  DIV (x,y): { return s << '(' << x << " / " << y << ')'; }
+   }
+}
+
+int eval(Exp e)
+{  match (e) 
+   {  INT i:     { return i; }
+   |  ID x:      { return 0; }
+   |  ADD (x,y): { return eval(x) + eval(y); }
+   |  SUB (x,y): { return eval(x) - eval(y); }
+   |  MUL (x,y): { return eval(x) * eval(y); }
+   |  DIV (x,INT 0): { cerr << "Division by zero\n"; return 0; }
+   |  DIV (x,y): { return eval(x) / eval(y); }
+   }
+}
+
+void simplify(Exp& e)
+{
+
+   rewrite (e) type (Exp)
+   {
+      ADD(INT i, INT j): INT(i+j)
+   |  SUB(INT i, INT j): INT(i-j)
+   |  MUL(INT i, INT j): INT(i*j)
+   |  DIV(INT i, INT j): INT(i/j)
+   }
+}
+
+int main()
+{  Exp e = ADD(MUL(INT(5),INT(2)),DIV(INT(30),INT(6)));
+   cout << "Expression = " << e << endl;
+   cout << "Eval(" << e << ") = " << eval(e) << endl;
+   simplify(e);
+   cout << "Simplified = " << e << endl;
+   assert(eval(e) == 15);
+   return 0;
+}

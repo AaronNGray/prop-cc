@@ -1,0 +1,342 @@
+This is TeX, Version 3.1415 (C version 6.1) (format=lplain 95.5.17)  7 APR 1997 13:48
+**refman.tex
+(refman.tex
+LaTeX2e <1994/06/01> patch level 3
+\@indexfile=\write4
+Writing index file refman.idx 
+(/usr/local/lib/texmf/tex/latex/latex/article.cls
+Document Class: article 1994/07/13 v1.2u Standard LaTeX document class
+(/usr/local/lib/texmf/tex/latex/latex/size10.clo
+File: size10.clo 1994/07/13 v1.2u Standard LaTeX file (size option)
+)
+\c@part=\count82
+\c@section=\count83
+\c@subsection=\count84
+\c@subsubsection=\count85
+\c@paragraph=\count86
+\c@subparagraph=\count87
+\c@figure=\count88
+\c@table=\count89
+\abovecaptionskip=\skip41
+\belowcaptionskip=\skip42
+\bibindent=\dimen102
+) (html.sty
+Package: html 1996/02/01 v1.0 hypertext commands for latex2html (nd, hws)
+\c@lpart=\count90
+\c@lchapter=\count91
+\c@lsection=\count92
+\c@lsubsection=\count93
+\c@lsubsubsection=\count94
+\c@lparagraph=\count95
+\c@lsubparagraph=\count96
+\c@lsubsubparagraph=\count97
+\c@lequation=\count98
+\ptrfile=\write5
+)
+\LINE=\box25
+ (refman.aux)
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 119.
+LaTeX Font Info:    ... okay on input line 119.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 119.
+LaTeX Font Info:    ... okay on input line 119.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 119.
+LaTeX Font Info:    ... okay on input line 119.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 119.
+LaTeX Font Info:    ... okay on input line 119.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 119.
+LaTeX Font Info:    ... okay on input line 119.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 119.
+LaTeX Font Info:    ... okay on input line 119.
+LaTeX Info: Redefining \" on input line 119.
+LaTeX Info: Redefining \" on input line 119.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <12> on input line 121.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <8> on input line 121.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <6> on input line 121.
+
+[1
+
+] (refman.toc
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 2.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 2.
+ [1] [2])
+\tf@toc=\write6
+ [3] [4]
+Overfull \hbox (0.76413pt too wide) in paragraph at lines 217--232
+ [] 
+ []
+
+[5] [6] [7] [8]
+Overfull \hbox (19.86139pt too wide) in paragraph at lines 502--525
+[][] 
+ []
+
+[9] [10] [11] [12] [13] [14]
+Overfull \hbox (18.85365pt too wide) in paragraph at lines 870--883
+[][] 
+ []
+
+[15] [16] [17] [18] [19] [20] [21] [22]
+Overfull \hbox (39.70605pt too wide) in paragraph at lines 1441--1451
+[][] 
+ []
+
+[23] [24] [25] [26] [27] [28] [29]
+Overfull \hbox (42.1975pt too wide) in paragraph at lines 1896--1898
+[]\OT1/cmr/m/n/10 For ex-am-ple, the fol-low-ing state-ment de-clares the per-s
+is-tent ob-ject id for type []\OT1/cmtt/m/n/10 Exp \OT1/cmr/m/n/10 above to be 
+[]\OT1/cmtt/m/n/10 "Simple expressions"\OT1/cmr/m/n/10 . 
+ []
+
+[30] [31] [32] [33] [34] [35] [36]
+Overfull \hbox (58.87152pt too wide) in paragraph at lines 2255--2273
+[][] 
+ []
+
+[37] [38] [39] [40] [41] [42] [43] [44] [45] [46]
+Overfull \hbox (54.05748pt too wide) in paragraph at lines 2979--2984
+[]\OT1/cmr/m/n/10 Given an in-put term of the form []\OT1/cmtt/m/n/10 FORALL(X,
+A,Not(P))\OT1/cmr/m/n/10 , the term will first be re-duced to []\OT1/cmtt/m/n/1
+0 Not(EXISTS(X,A,Not(Not(P))))
+ []
+
+[47] [48] [49] [50] [51] [52] [53]
+Overfull \hbox (19.1988pt too wide) in paragraph at lines 3334--3339
+[]\OT1/cmr/m/n/10 The graph struc-ture map-ping pro-cess uses real-time set ma-
+chine simulation[[]] and sub-type analysis[[]]
+ []
+
+[54] [55] [56]
+Underfull \hbox (badness 10000) in paragraph at lines 3482--3482
+[]\OT1/cmtt/m/n/10 Sorry: pattern not supported in
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3487--3487
+[]\OT1/cmtt/m/n/10 accessor is undefined for view pattern:
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3489--3489
+[]\OT1/cmtt/m/n/10 arity mismatch (expecting $\OML/cmm/m/it/10 n$\OT1/cmtt/m/n/
+10 ) in pattern:
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3509--3509
+[]\OT1/cmtt/m/n/10 constructor \OT1/cmtt/m/it/10 con \OT1/cmtt/m/n/10 doesn't t
+ake labeled
+ []
+
+[57]
+Underfull \hbox (badness 10000) in paragraph at lines 3523--3523
+[]\OT1/cmtt/m/n/10 duplicated definition of pattern
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3529--3529
+[]\OT1/cmtt/m/n/10 duplicated pattern variable '\OT1/cmtt/m/it/10 id\OT1/cmtt/m
+/n/10 '. Use
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3536--3536
+[]\OT1/cmtt/m/n/10 expecting $\OML/cmm/m/it/10 c[]$ \OT1/cmtt/m/n/10 ... $\OML/
+cmm/m/it/10 c[]$ \OT1/cmtt/m/n/10 (from line $\OML/cmm/m/it/10 l$\OT1/cmtt/m/n/
+10 ) but
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3537--3537
+[]\OT1/cmtt/m/n/10 expecting non-terminal \OT1/cmtt/m/it/10 nt \OT1/cmtt/m/n/10
+ to have type $\OML/cmm/m/it/10 t[]$
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3541--3541
+[]\OT1/cmtt/m/n/10 expecting type $\OML/cmm/m/it/10 t[]$ \OT1/cmtt/m/n/10 but f
+ound $\OML/cmm/m/it/10 t[]$ \OT1/cmtt/m/n/10 in pattern
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3547--3547
+[]\OT1/cmtt/m/n/10 flexible vector pattern currently not
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3549--3549
+[]\OT1/cmtt/m/n/10 format #$\OML/cmm/m/it/10 l$ \OT1/cmtt/m/n/10 used on non-re
+cord constructor
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3558--3558
+[]\OT1/cmtt/m/n/10 illegal print format '$\OML/cmm/m/it/10 c$\OT1/cmtt/m/n/10 '
+ in constructor
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3559--3559
+[]\OT1/cmtt/m/n/10 illegal record label '$\OML/cmm/m/it/10 l$\OT1/cmtt/m/n/10 '
+ in expression:
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3562--3562
+[]\OT1/cmtt/m/n/10 inherited attribute '\OT1/cmtt/m/it/10 type\OT1/cmtt/m/n/10 
+' can only be
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3562--3562
+\OT1/cmtt/m/n/10 used in treeparser mode in rewrite class
+ []
+
+[58]
+Underfull \hbox (badness 10000) in paragraph at lines 3569--3569
+[]\OT1/cmtt/m/n/10 law '\OT1/cmtt/m/it/10 id\OT1/cmtt/m/n/10 ': bound variable 
+'$\OML/cmm/m/it/10 v$\OT1/cmtt/m/n/10 ' is absent
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3572--3572
+[]\OT1/cmtt/m/n/10 law '\OT1/cmtt/m/it/10 id\OT1/cmtt/m/n/10 ': type \OT1/cmtt/
+m/it/10 type \OT1/cmtt/m/n/10 cannot be used in
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3578--3578
+[]\OT1/cmtt/m/n/10 lexeme pattern is undefined for
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3588--3588
+[]\OT1/cmtt/m/n/10 missing non-terminal in tree grammar
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3589--3589
+[]\OT1/cmtt/m/n/10 missing type \OT1/cmtt/m/it/10 type \OT1/cmtt/m/n/10 in the 
+traversal list
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3594--3594
+[]\OT1/cmtt/m/n/10 missing type info in expression \OT1/cmtt/m/it/10 exp \OT1/c
+mtt/m/n/10 :
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3605--3605
+[]\OT1/cmtt/m/n/10 multiple mixed polarity pattern variable
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3607--3607
+[]\OT1/cmtt/m/n/10 multiple unit constructors in polymorphic
+ []
+
+[59]
+Underfull \hbox (badness 10000) in paragraph at lines 3618--3618
+[]\OT1/cmtt/m/n/10 pattern variable '$\OML/cmm/m/it/10 v$\OT1/cmtt/m/n/10 ' has
+ no binding at
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3620--3620
+[]\OT1/cmtt/m/n/10 persistence pid \OT1/cmtt/m/it/10 name \OT1/cmtt/m/n/10 alre
+ady allocated
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3623--3623
+[]\OT1/cmtt/m/n/10 predicate \OT1/cmtt/m/it/10 p\OT1/cmtt/m/n/10 : expecting ty
+pe $\OML/cmm/m/it/10 t[]$ \OT1/cmtt/m/n/10 but found
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3628--3628
+[]\OT1/cmtt/m/n/10 replacement not in rewrite class:
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3636--3636
+[]\OT1/cmtt/m/n/10 synthesized attribute '\OT1/cmtt/m/it/10 type\OT1/cmtt/m/n/1
+0 ' can only be
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3636--3636
+\OT1/cmtt/m/n/10 used in treeparser mode in rewrite class
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3637--3637
+[]\OT1/cmtt/m/n/10 the class representation of constructor
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3640--3640
+[]\OT1/cmtt/m/n/10 too few arguments \OT1/cmtt/m/it/10 arg \OT1/cmtt/m/n/10 in 
+instantiation of
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3641--3641
+[]\OT1/cmtt/m/n/10 too many arguments \OT1/cmtt/m/it/10 arg \OT1/cmtt/m/n/10 in
+ instantiation
+ []
+
+[60]
+Underfull \hbox (badness 10000) in paragraph at lines 3651--3651
+[]\OT1/cmtt/m/n/10 type '\OT1/cmtt/m/it/10 type\OT1/cmtt/m/n/10 ' is not rewrit
+able in
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3656--3656
+[]\OT1/cmtt/m/n/10 type mismatch between nonterminal \OT1/cmtt/m/it/10 nt\OT1/c
+mtt/m/n/10 (type
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 3664--3664
+[]\OT1/cmtt/m/n/10 unification fails occurs check with $\OML/cmm/m/it/10 t[]$
+ []
+
+[61] [62] [63] [64] [65] [66]
+Overfull \hbox (9.0171pt too wide) in paragraph at lines 3989--3994
+[]\OT1/cmr/m/n/10 Each col-lec-tor has a cur-rent ver-bosity level, which can b
+e set and re-set us-ing the meth-ods []\OT1/cmtt/m/n/10 set_verbosity(int)
+ []
+
+
+Overfull \hbox (6.82849pt too wide) in paragraph at lines 4021--4024
+\OT1/cmr/m/n/10 Currently a Bartlett-style mostly copy-ing col-lec-tor has been
+ im-ple-mented. The cur-rent ver-sion is non-generational
+ []
+
+[67] [68] [69] [70]
+Overfull \hbox (9.53024pt too wide) in paragraph at lines 4241--4243
+[][]\OT1/cmr/m/n/10 Method []\OT1/cmtt/m/n/10 number_of_nodes() \OT1/cmr/m/n/10
+ re-turns the node count of the last struc-ture traced us-ing []\OT1/cmtt/m/n/1
+0 is_valid_structure\OT1/cmr/m/n/10 ,
+ []
+
+(refman.bbl) (refman.ind [71] [72
+
+] [73]) (refman.aux) ) 
+Here is how much of TeX's memory you used:
+ 524 strings out of 10971
+ 5311 string characters out of 67312
+ 58201 words of memory out of 262141
+ 3383 multiletter control sequences out of 9500
+ 19404 words of font info for 59 fonts, out of 100000 for 255
+ 14 hyphenation exceptions out of 607
+ 23i,9n,20p,182b,344s stack positions out of 300i,40n,60p,3000b,4000s
+
+Output written on refman.dvi (74 pages, 305320 bytes).

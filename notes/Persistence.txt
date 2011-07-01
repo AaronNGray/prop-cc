@@ -1,0 +1,223 @@
+On Persistence
+--------------
+
+Persistent objects can be written and later recovered from a stream in
+its entirety in a serial manner.
+
+The persistence protocol is implemented in class Pstream in the library.
+User defined persistent types should be derived from the base class PObject.
+Each object should redefine the following virtual methods:
+
+From  <AD/persist/pobject.h>
+
+    class PObject {
+    public:
+        virtual TypeId       persist_type_id   () const;
+        virtual const char * persist_type_name () const;
+        virtual Pistream&    persist_read      (Pistream&);
+        virtual Postream&    persist_write     (Postream&) const; 
+#   define DEFINE_PERSISTENT_CLASS(ID, NAME)                             \
+        virtual TypeId       persist_type_id   () const { return ID; }   \
+        virtual const char * persist_type_name () const { return NAME; } \
+        virtual Pistream&    persist_read      (Pistream&);              \
+        virtual Postream&    persist_write     (Postream&) const;      
+    };
+
+Briefly, method 'persist_type_id()' identifies the type of each object.
+The TypeId for each user object must be a positive integer and each
+type must have an unique id.  The method 'persist_type_name()' returns
+a string identifying the type.  
+
+Method 'persist_read()' and 'persist_write()' are invoked during
+reading and writing from and to a persistence stream.  These methods
+should not be called by the client directly but are instead called from
+the persistent stream classes.  Being such it is alright to place
+these virtual methods in the private section of the class. 
+
+Currently, the persistent stream class heirarchy as structured as follows:
+
+         Pstream
+        /       \
+   Pistream    Postream
+        \       /
+        Piostream
+
+Persistent input streams have the following protocol.  Notice that
+an istream must be attached to the Pistream during object construction.
+An optional memory manager can also be attached to the persistent stream,
+and if this is supplied then all new storage will be acquired from this
+memory manager instead of from the operator new.   
+
+From  <AD/persist/pstream.h>
+
+   class Pistream : public virtual Pstream {
+   public:
+      Pistream(istream&);           
+      Pistream(istream&, Mem&);
+     ~Pistream();
+   
+      friend Pistream& operator >> (Pistream&, int&);
+      friend Pistream& operator >> (Pistream&, unsigned int&);
+      friend Pistream& operator >> (Pistream&, short&);
+      friend Pistream& operator >> (Pistream&, unsigned short&);
+      friend Pistream& operator >> (Pistream&, char&);
+      friend Pistream& operator >> (Pistream&, unsigned char&);
+      friend Pistream& operator >> (Pistream&, long&);
+      friend Pistream& operator >> (Pistream&, unsigned long&);
+      friend Pistream& operator >> (Pistream&, float&);
+      friend Pistream& operator >> (Pistream&, double&);
+      friend Pistream& operator >> (Pistream&, const char *&);
+      friend Pistream& operator >> (Pistream&, const unsigned char *&);
+      friend Pistream& operator >> (Pistream&, PObject&);
+      friend Pistream& operator >> (Pistream&, const PObject *&);
+   };
+
+As such, the persistent streams do not actually perform the actual I/O;
+it only implements the serialization and marshalling protocol.  This extra
+layer of abstraction provides more flexibility with little performance
+cost.  For example, we can attach any subclass of istream to a Pistream.
+
+The serialization protocol performs the following functions:
+  (a) insert type information into the byte streams and decode the type
+      information on the way back.
+  (b) encode pointer sharing information so that the structure of a network
+      of objects is preserved on the receiving end.  And finally,
+  (c) encode the information in network byte order so that the output format
+      of an object is architecture independent and portable across platforms
+      (currently floating point numbers are not properly encoded.)
+
+
+The output stream protocol is an exact mirror of the input protocol:
+
+   class Postream : public virtual Pstream {
+   public:
+      Postream(ostream&);           
+     ~Postream();
+   
+      friend Postream& operator << (Postream&, int);
+      friend Postream& operator << (Postream&, unsigned int);
+      friend Postream& operator << (Postream&, short);
+      friend Postream& operator << (Postream&, unsigned short);
+      friend Postream& operator << (Postream&, char);
+      friend Postream& operator << (Postream&, unsigned char);
+      friend Postream& operator << (Postream&, long);
+      friend Postream& operator << (Postream&, unsigned long);
+      friend Postream& operator << (Postream&, float);
+      friend Postream& operator << (Postream&, double);
+      friend Postream& operator << (Postream&, const char *);
+      friend Postream& operator << (Postream&, const unsigned char *);
+      friend Postream& operator << (Postream&, const PObject&);
+      friend Postream& operator << (Postream&, const PObject *);
+   };
+
+Each type of persistent objects makes use of an 'object factory' to
+create objects of each type.  Object factories are created and registered
+using the template PObjectFactory: 
+
+From  <AD/persist/pfactory.h>
+
+template <class T>
+   class PObjectFactory {
+   public:
+      PObjectFactory(TypeId);
+      virtual PObject * create_object() { return new T; }
+   };
+
+Here's an example: persistent classes Foo and Bar, where Bar is
+a subclass of Foo, can be defined in the following manner:
+
+In foo.h
+
+    class Foo : public PObject {
+       int    temp;        // temp is not a persistent member
+
+       int    integer;     // the rest are persistent
+       char * string;
+       short  array[10];
+       Foo  * next;
+       Foo  * last;
+    public:
+       DEFINE_PERSISTENT_CLASS(1, "Foo")
+    };
+
+    class Bar : public Foo {
+       Foo    foo;
+       char * name;
+    public:
+       DEFINE_PERSISTENT_CLASS(2, "Bar");
+    };
+
+In foo.cc
+
+    //
+    // Create an object factory for each persistent type.
+    // The supplied type id for each factory must match that
+    // of the object.
+    //
+    PObjectFactory<Foo> foo_factory(1);
+    PObjectFactory<Bar> bar_factory(2);
+
+Note the use of the macro DEFINE_PERSISTENT_CLASS to save work.
+The class specific read and write methods are defined as follows:
+
+    Postream& Foo::persist_write(Postream& f) 
+    {  f << integer;
+       f << string;
+       for (int i = 0; i < 10; i++)
+          f << array[i];
+       f << next;    
+       f << last;
+    }
+
+    Pistream& Foo::persist_read(Pistream& f) 
+    {  f >> integer;
+       f >> string;
+       for (int i = 0; i < 10; i++)
+          f >> array[i];
+       f >> next;    
+       f >> last;
+    }
+
+    Postream& Bar::persist_write(Postream& f) 
+    {  Foo::persist_write(f);
+       f << foo;
+       f << name;
+    }
+    
+    Pistream& Bar::persist_read(Pistream& f) 
+    {  Foo::persist_read(f);
+       f >> foo;
+       f >> name;
+    }
+
+Notice that all the persistent members must be read and written in
+the same order.  The derivation of each persist_write() and persist_read()
+methods is very similar to the trace() method for the garbage collector,
+except that in this case we have to read and write all members, not just
+pointers.
+
+As we have mentioned, all sharing between pointers are preserved
+in the persistent encoding, so it is safe to store general graph
+like structures (i.e. even cyclic structures.)
+
+While reading from a persistent stream, the storage for pointers to 
+PObject's are allocated by calling the appropriate object factories
+(e.g. next and last members in class Foo), which in turns calls the 
+default new method for the class.  This, by default, is simply 
+::operator new().  It is up to the implementor for each class to override 
+this method if other storage management strategy is needed.
+
+One final note about strings (char * and unsigned char *): the storage
+for a string is allocated on the fly during reading.  By default, this
+storage is allocated by calling 'new char []'.  If instead a memory manager
+is supplied to the Pistream's constructor, then memory will be allocated
+from the memory manager.  All storage allocated are not kept track of in 
+any way by the persistent streams, and it is up to the user to release
+them when they are not longer needed.  
+
+As a convenience, all garbage collectors are subclassed from GC, which in 
+turns is subclassed from Mem, so it is possible to use garbage collection 
+if it is difficult to manually manage the allocated storage.
+
+Feb 19, 1995.
+Allen Leung

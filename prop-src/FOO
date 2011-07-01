@@ -1,0 +1,423 @@
+///////////////////////////////////////////////////////////////////////////////
+//  This file is generated automatically using Prop (version 2.3.5),
+//  last updated on Jun 18, 1997.
+//  The original source file is "timespace.pcc".
+///////////////////////////////////////////////////////////////////////////////
+
+#define PROP_REWRITING_USED
+#define PROP_QUARK_USED
+#include <propdefs.h>
+#line 1 "timespace.pcc"
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the time and space complexity
+//  datatypes.  These datatypes are used to represent time and space
+//  complexity in the SETL-like extension language.
+//
+///////////////////////////////////////////////////////////////////////////////
+#include <math.h>
+#include <iostream>
+#include "basics.h"
+#include "timespace.h"
+
+using namespace std;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Instantiate the time and space datatypes
+//
+///////////////////////////////////////////////////////////////////////////////
+#line 18 "timespace.pcc"
+#line 18 "timespace.pcc"
+///////////////////////////////////////////////////////////////////////////////
+//
+// Interface specification of datatype Complexity
+//
+///////////////////////////////////////////////////////////////////////////////
+#line 18 "timespace.pcc"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Interface specification of datatype Time
+//
+///////////////////////////////////////////////////////////////////////////////
+#line 18 "timespace.pcc"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Interface specification of datatype Space
+//
+///////////////////////////////////////////////////////////////////////////////
+#line 18 "timespace.pcc"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Instantiation of datatype Complexity
+//
+///////////////////////////////////////////////////////////////////////////////
+#line 18 "timespace.pcc"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Instantiation of datatype Time
+//
+///////////////////////////////////////////////////////////////////////////////
+#line 18 "timespace.pcc"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Instantiation of datatype Space
+//
+///////////////////////////////////////////////////////////////////////////////
+#line 18 "timespace.pcc"
+
+
+#line 18 "timespace.pcc"
+#line 18 "timespace.pcc"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print the complexity
+//
+///////////////////////////////////////////////////////////////////////////////
+ostream& operator << (ostream& f, Complexity c)
+{
+#line 26 "timespace.pcc"
+#line 36 "timespace.pcc"
+{
+   switch (c->tag__) {
+      case a_Complexity::tag_Var: {
+#line 27 "timespace.pcc"
+        f << _Var(c)->Var;
+#line 27 "timespace.pcc"
+         } break;
+      case a_Complexity::tag_Add: {
+#line 28 "timespace.pcc"
+        f << '(' << _Add(c)->_1 << " + " << _Add(c)->_2 << ')';
+#line 28 "timespace.pcc"
+         } break;
+      case a_Complexity::tag_Mul: {
+#line 29 "timespace.pcc"
+        f << '(' << _Mul(c)->_1 << " * " << _Mul(c)->_2 << ')';
+#line 29 "timespace.pcc"
+         } break;
+      case a_Complexity::tag_Div: {
+#line 30 "timespace.pcc"
+        f << '(' << _Div(c)->_1 << " / " << _Div(c)->_2 << ')';
+#line 30 "timespace.pcc"
+         } break;
+      case a_Complexity::tag_Power: {
+#line 31 "timespace.pcc"
+        f << '(' << _Power(c)->_1 << " ^ " << _Power(c)->_2 << ')';
+#line 31 "timespace.pcc"
+         } break;
+      case a_Complexity::tag_Log: {
+#line 32 "timespace.pcc"
+        f << "log " << _Log(c)->Log;
+#line 32 "timespace.pcc"
+         } break;
+      case a_Complexity::tag_Const: {
+#line 33 "timespace.pcc"
+        f << _Const(c)->Const;
+#line 33 "timespace.pcc"
+         } break;
+      case a_Complexity::tag_BigOh: {
+#line 34 "timespace.pcc"
+        f << "O(" << _BigOh(c)->BigOh << ')';
+#line 34 "timespace.pcc"
+         } break;
+      case a_Complexity::tag_Omega: {
+#line 35 "timespace.pcc"
+        f << "Omega(" << _Omega(c)->Omega << ')';
+#line 35 "timespace.pcc"
+         } break;
+      default: {
+#line 36 "timespace.pcc"
+        f << "o(" << _LittleOh(c)->LittleOh << ')';
+#line 36 "timespace.pcc"
+         } break;
+   }
+}
+#line 37 "timespace.pcc"
+#line 37 "timespace.pcc"
+
+   return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print the time complexity
+//
+///////////////////////////////////////////////////////////////////////////////
+ostream& operator << (ostream& f, Time t)
+{  return f << "Time(" << t << ")"; }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print the space complexity
+//
+///////////////////////////////////////////////////////////////////////////////
+ostream& operator << (ostream& f, Space s)
+{  return f << "Space(" << s << ")"; }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Function to simplify a complexity expression
+//
+///////////////////////////////////////////////////////////////////////////////
+Complexity simplify (Complexity c)
+{
+#line 63 "timespace.pcc"
+#line 69 "timespace.pcc"
+   extern void  _t_i_m_e_s_p_a_c_eco_X1_rewrite(Complexity & );
+   _t_i_m_e_s_p_a_c_eco_X1_rewrite(c);
+#line 69 "timespace.pcc"
+#line 69 "timespace.pcc"
+
+   return c;
+}
+#line 72 "timespace.pcc"
+class _t_i_m_e_s_p_a_c_eco_X1 : public BURS {
+private:
+   _t_i_m_e_s_p_a_c_eco_X1(const _t_i_m_e_s_p_a_c_eco_X1&);               // no copy constructor
+   void operator = (const _t_i_m_e_s_p_a_c_eco_X1&); // no assignment
+public:
+   struct _t_i_m_e_s_p_a_c_eco_X1_StateRec * stack__, * stack_top__;
+public:
+   void labeler(const char *, int&, int);
+   void labeler(Quark, int&, int);
+          void  labeler(Complexity & redex, int&, int);
+   inline virtual void  operator () (Complexity & redex) { int s; labeler(redex,s,0); }
+private:
+   public:
+      inline _t_i_m_e_s_p_a_c_eco_X1() {}
+};
+void  _t_i_m_e_s_p_a_c_eco_X1_rewrite(Complexity &  _x_)
+{  _t_i_m_e_s_p_a_c_eco_X1 _r_;
+   _r_(_x_);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// This macro can be redefined by the user for debugging
+//
+///////////////////////////////////////////////////////////////////////////////
+#ifndef DEBUG__t_i_m_e_s_p_a_c_eco_X1
+#define DEBUG__t_i_m_e_s_p_a_c_eco_X1(repl,redex,file,line,rule) repl
+#else
+static const char * _t_i_m_e_s_p_a_c_eco_X1_file_name = "timespace.pcc";
+#endif
+
+static const TreeTables::Offset _t_i_m_e_s_p_a_c_eco_X1_accept_base [ 7 ] = {
+   0, 0, 1, 3, 5, 7, 9
+};
+static const TreeTables::ShortRule _t_i_m_e_s_p_a_c_eco_X1_accept_vector [ 11 ] = {
+   -1, 0, -1, 1, -1, 2, -1, 3, -1, 4, -1
+};
+static const TreeTables::ShortState _t_i_m_e_s_p_a_c_eco_X1_theta_1[2][2] = {
+   { 0, 0 },
+   { 0, 2 }
+};
+
+
+static const TreeTables::ShortState _t_i_m_e_s_p_a_c_eco_X1_theta_2[2][2] = {
+   { 0, 0 },
+   { 0, 3 }
+};
+
+
+static const TreeTables::ShortState _t_i_m_e_s_p_a_c_eco_X1_theta_3[2][2] = {
+   { 0, 0 },
+   { 0, 4 }
+};
+
+
+static const TreeTables::ShortState _t_i_m_e_s_p_a_c_eco_X1_theta_4[2][2] = {
+   { 0, 0 },
+   { 0, 5 }
+};
+
+
+static const TreeTables::ShortState _t_i_m_e_s_p_a_c_eco_X1_theta_5[2] = {
+   0, 6
+};
+
+
+static const TreeTables::ShortState _t_i_m_e_s_p_a_c_eco_X1_mu_1_0[7] = {
+   0, 1, 0, 0, 0, 0, 0
+};
+
+
+static const TreeTables::ShortState _t_i_m_e_s_p_a_c_eco_X1_mu_1_1[7] = {
+   0, 1, 0, 0, 0, 0, 0
+};
+
+
+static const TreeTables::ShortState _t_i_m_e_s_p_a_c_eco_X1_mu_2_0[7] = {
+   0, 1, 0, 0, 0, 0, 0
+};
+
+
+static const TreeTables::ShortState _t_i_m_e_s_p_a_c_eco_X1_mu_2_1[7] = {
+   0, 1, 0, 0, 0, 0, 0
+};
+
+
+static const TreeTables::ShortState _t_i_m_e_s_p_a_c_eco_X1_mu_3_0[7] = {
+   0, 1, 0, 0, 0, 0, 0
+};
+
+
+static const TreeTables::ShortState _t_i_m_e_s_p_a_c_eco_X1_mu_3_1[7] = {
+   0, 1, 0, 0, 0, 0, 0
+};
+
+
+static const TreeTables::ShortState _t_i_m_e_s_p_a_c_eco_X1_mu_4_0[7] = {
+   0, 1, 0, 0, 0, 0, 0
+};
+
+
+static const TreeTables::ShortState _t_i_m_e_s_p_a_c_eco_X1_mu_4_1[7] = {
+   0, 1, 0, 0, 0, 0, 0
+};
+
+
+static const TreeTables::ShortState _t_i_m_e_s_p_a_c_eco_X1_mu_5_0[7] = {
+   0, 1, 0, 0, 0, 0, 0
+};
+
+
+inline void  _t_i_m_e_s_p_a_c_eco_X1::labeler(char const * redex,int& s__,int)
+{
+   {
+s__ = 0;
+   }
+}
+
+inline void  _t_i_m_e_s_p_a_c_eco_X1::labeler(Quark redex,int& s__,int)
+{
+   {
+s__ = 0;
+   }
+}
+
+void  _t_i_m_e_s_p_a_c_eco_X1::labeler (Complexity & redex, int& s__, int r__)
+{
+replacement__:
+   switch(redex->tag__) {
+      case a_Complexity::tag_Var: {
+         int s0__;
+         labeler(_Var(redex)->Var, s0__, r__);
+         s__ = 0;} break;
+      case a_Complexity::tag_Add: {
+         int s0__;
+         int s1__;
+         labeler(_Add(redex)->_1, s0__, r__);
+         labeler(_Add(redex)->_2, s1__, r__);
+         s__ = _t_i_m_e_s_p_a_c_eco_X1_theta_1[_t_i_m_e_s_p_a_c_eco_X1_mu_1_0[s0__]][_t_i_m_e_s_p_a_c_eco_X1_mu_1_1[s1__]]; } break;
+      case a_Complexity::tag_Mul: {
+         int s0__;
+         int s1__;
+         labeler(_Mul(redex)->_1, s0__, r__);
+         labeler(_Mul(redex)->_2, s1__, r__);
+         s__ = _t_i_m_e_s_p_a_c_eco_X1_theta_2[_t_i_m_e_s_p_a_c_eco_X1_mu_2_0[s0__]][_t_i_m_e_s_p_a_c_eco_X1_mu_2_1[s1__]]; } break;
+      case a_Complexity::tag_Div: {
+         int s0__;
+         int s1__;
+         labeler(_Div(redex)->_1, s0__, r__);
+         labeler(_Div(redex)->_2, s1__, r__);
+         s__ = _t_i_m_e_s_p_a_c_eco_X1_theta_3[_t_i_m_e_s_p_a_c_eco_X1_mu_3_0[s0__]][_t_i_m_e_s_p_a_c_eco_X1_mu_3_1[s1__]]; } break;
+      case a_Complexity::tag_Power: {
+         int s0__;
+         int s1__;
+         labeler(_Power(redex)->_1, s0__, r__);
+         labeler(_Power(redex)->_2, s1__, r__);
+         s__ = _t_i_m_e_s_p_a_c_eco_X1_theta_4[_t_i_m_e_s_p_a_c_eco_X1_mu_4_0[s0__]][_t_i_m_e_s_p_a_c_eco_X1_mu_4_1[s1__]]; } break;
+      case a_Complexity::tag_Log: {
+         int s0__;
+         labeler(_Log(redex)->Log, s0__, r__);
+         s__ = _t_i_m_e_s_p_a_c_eco_X1_theta_5[_t_i_m_e_s_p_a_c_eco_X1_mu_5_0[s0__]]; } break;
+      case a_Complexity::tag_Const: {
+         int s0__;
+         s0__ = 0; // double
+         s__ = 1;} break;
+      case a_Complexity::tag_BigOh: {
+         int s0__;
+         labeler(_BigOh(redex)->BigOh, s0__, r__);
+         s__ = 0;} break;
+      case a_Complexity::tag_Omega: {
+         int s0__;
+         labeler(_Omega(redex)->Omega, s0__, r__);
+         s__ = 0;} break;
+      default: {
+         int s0__;
+         labeler(_LittleOh(redex)->LittleOh, s0__, r__);
+         s__ = 0;} break;
+   }
+   const TreeTables::ShortRule * o__ = _t_i_m_e_s_p_a_c_eco_X1_accept_vector + _t_i_m_e_s_p_a_c_eco_X1_accept_base[s__];
+accept__:
+   switch (*o__) {
+      case 4: if (equality_of(_Const(_Log(redex)->Log)->Const,))
+      {
+#line 68 "timespace.pcc"
+         { redex = DEBUG__t_i_m_e_s_p_a_c_eco_X1(Const(log(_Const(_Log(redex)->Log)->Const)),redex,_t_i_m_e_s_p_a_c_eco_X1_file_name,68,"Log Const i | equality_of(redex!Log!Const,): ...");
+           r__ = 1; goto replacement__; }
+#line 69 "timespace.pcc"
+}
+      else { ++o__; goto accept__; } break;
+      case 3: if ((equality_of(_Const(_Power(redex)->_1)->Const,) && equality_of(_Const(_Power(redex)->_2)->Const,)))
+      {
+#line 67 "timespace.pcc"
+         { redex = DEBUG__t_i_m_e_s_p_a_c_eco_X1(Const(exp((log(_Const(_Power(redex)->_1)->Const) * _Const(_Power(redex)->_2)->Const))),redex,_t_i_m_e_s_p_a_c_eco_X1_file_name,67,"Power (Const i, Const j) | (equality_of(redex!Power.1!Const,) && equality_of(redex!Power.2!Const,)): ...");
+           r__ = 1; goto replacement__; }
+#line 68 "timespace.pcc"
+}
+      else { ++o__; goto accept__; } break;
+      case 2: if ((equality_of(_Const(_Div(redex)->_1)->Const,) && equality_of(_Const(_Div(redex)->_2)->Const,)))
+      {
+#line 66 "timespace.pcc"
+         { redex = DEBUG__t_i_m_e_s_p_a_c_eco_X1(Const((_Const(_Div(redex)->_1)->Const / _Const(_Div(redex)->_2)->Const)),redex,_t_i_m_e_s_p_a_c_eco_X1_file_name,66,"Div (Const i, Const j) | (equality_of(redex!Div.1!Const,) && equality_of(redex!Div.2!Const,)): ...");
+           r__ = 1; goto replacement__; }
+#line 67 "timespace.pcc"
+}
+      else { ++o__; goto accept__; } break;
+      case 1: if ((equality_of(_Const(_Mul(redex)->_1)->Const,) && equality_of(_Const(_Mul(redex)->_2)->Const,)))
+      {
+#line 65 "timespace.pcc"
+         { redex = DEBUG__t_i_m_e_s_p_a_c_eco_X1(Const((_Const(_Mul(redex)->_1)->Const * _Const(_Mul(redex)->_2)->Const)),redex,_t_i_m_e_s_p_a_c_eco_X1_file_name,65,"Mul (Const i, Const j) | (equality_of(redex!Mul.1!Const,) && equality_of(redex!Mul.2!Const,)): ...");
+           r__ = 1; goto replacement__; }
+#line 66 "timespace.pcc"
+}
+      else { ++o__; goto accept__; } break;
+      case 0: if ((equality_of(_Const(_Add(redex)->_1)->Const,) && equality_of(_Const(_Add(redex)->_2)->Const,)))
+      {
+#line 64 "timespace.pcc"
+         { redex = DEBUG__t_i_m_e_s_p_a_c_eco_X1(Const((_Const(_Add(redex)->_1)->Const + _Const(_Add(redex)->_2)->Const)),redex,_t_i_m_e_s_p_a_c_eco_X1_file_name,64,"Add (Const i, Const j) | (equality_of(redex!Add.1!Const,) && equality_of(redex!Add.2!Const,)): ...");
+           r__ = 1; goto replacement__; }
+#line 65 "timespace.pcc"
+}
+      else { ++o__; goto accept__; } break;
+   }
+
+}
+
+/*
+------------------------------- Statistics -------------------------------
+Merge matching rules         = yes
+Number of DFA nodes merged   = 0
+Number of ifs generated      = 0
+Number of switches generated = 1
+Number of labels             = 0
+Number of gotos              = 0
+Adaptive matching            = disabled
+Fast string matching         = disabled
+Inline downcasts             = disabled
+--------------------------------------------------------------------------
+*/

@@ -1,0 +1,46 @@
+datatype Wff :: collectable
+	     = T | F
+             | VAR Quark
+             | NOT Wff
+             | AND Wff, Wff
+             | OR  Wff, Wff
+             ;
+
+refine class Wff::Wff() { cerr << "this"; }
+   and class Wff::VAR() { cerr << "var"; }
+   and class Wff::NOT() { cerr << "not"; }
+   and class Wff::AND() { cerr << "and"; }
+   and class Wff::OR()  { cerr << "or"; }
+   and class Wff::~Wff() { cerr << "~wff"; }
+   and class Wff::~VAR() { cerr << "~var"; }
+   and class Wff::~NOT() { cerr << "~not"; }
+   and class Wff::~AND() { cerr << "~and"; }
+   and class Wff::~OR()  { cerr << "~or"; }
+;
+
+instantiate datatype Wff;
+
+Wff dnf (Wff wff)
+{
+   rewrite (wff) type (Wff)
+   {  NOT T: F
+   |  NOT F: T
+   |  NOT NOT X: X
+   |  OR(T,_): T
+   |  OR(_,T): T
+   |  OR(F,X): X
+   |  OR(X,F): X
+   |  AND(T,X): X
+   |  AND(X,T): X
+   |  AND(F,_): F
+   |  AND(_,F): F
+
+   |  NOT(OR(X,Y)):   AND(NOT X,NOT Y)
+
+   |  AND(OR(X,Y),Z): OR(AND(X,Z),AND(Y,Z))
+   |  AND(X,OR(Y,Z)): OR(AND(X,Y),AND(X,Z))
+   |  OR(OR(X,Y),Z):  OR(X,OR(Y,Z))
+   |  AND(AND(X,Y),Z): AND(X,AND(Y,Z))
+   }
+   return wff;
+}

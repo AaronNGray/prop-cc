@@ -1,0 +1,187 @@
+//
+//  Testing finalization with garbage collection.
+//  We use the class BGC_F (BGC with finalization) for garbage collection.
+//  In addition of reclaiming garbage, BGC_F will also call the finalization
+//  method (the destructor) for each object freed.
+//
+#include <iostream.h>
+#include <AD/gc/markswp.h>
+
+MarkSweepGC marksweep_gc;
+
+//
+//  The following auxiliary class keeps track of allocation and finalization.
+//
+class LOGGER {
+public:
+   static int allocation_count;
+   static int deallocation_count;
+   LOGGER() { allocation_count++; }
+  ~LOGGER() { deallocation_count++; }
+};
+
+int LOGGER::allocation_count   = 0;
+int LOGGER::deallocation_count = 0;
+
+//
+//  Define an algebraic datatype.  Currently, rewriting can only be 
+//  performed on datatypes(and not views) in Prop.  
+//  If replacement is to be performed on a datatype, then it should
+//  be declared using the ``rewrite'' qualifier.
+//  In this example, we'll use garbage collection with rewriting.
+//
+//  We'll inherit from LOGGER so that allocation and finalization
+//  of each EXP cell is logged.
+//
+datatype EXP : LOGGER :: collectable rewrite 
+   = om
+   | num (int)
+   | var (char)
+   | add (EXP, EXP)
+   | sub (EXP, EXP)
+   | mul (EXP, EXP)
+   | div (EXP, EXP)
+   ;
+
+//
+//  Datatype instantiation generates any additional methods and definitions.
+//  In this case garbage collection tracing methods are generated.
+//  As always, this should be placed in an implementation file.
+//
+instantiate datatype EXP;
+
+//
+//  Define a method that prints an expression.  This is a simple
+//  inductive definition
+//
+ostream& operator << (ostream& f, EXP e)
+{  match (e) {
+      om:       { return f << "om"; }
+   |  num i:    { return f << i; }
+   |  var v:    { return f << v; }
+   |  add(a,b): { return f << '(' << a << " + " << b << ')'; }
+   |  sub(a,b): { return f << '(' << a << " - " << b << ')'; }
+   |  mul(a,b): { return f << '(' << a << " * " << b << ')'; }
+   |  div(a,b): { return f << '(' << a << " / " << b << ')'; }
+   }
+}
+
+//
+//  Define the interface to a ``rewriting class.''  A rewriting class 
+//  is simply a C++ class with rewriting rules attached.  In real programs
+//  this definition should be placed in some definition (i.e. .ph) files.
+//  
+//  In parenthesis, we must list all datatypes involved.   Unlike
+//  simple pattern matching, rewriting can involve a set of mutually
+//  recursive (or mutually exclusive, if desired) datatype definitions.
+//  So in general this is a comma delimited list.   
+//
+//  In this example it involves only the datatype EXP.
+//
+rewrite class Simplify (EXP)
+{  // nothing here for now.
+public:
+   Simplify() {}
+};
+
+//
+//  Now we define the rewriting rules in the rewriting class Simplify.  These
+//  rules should be placed in an implementation file (.pcc, .pC, .pc++ etc).
+//
+//  In this brief sample class we have some rules that perform 
+//  simple constant folding and strength reduction.
+//
+//  Currently, all the rules for a rewrite class must be placed in
+//  the same rewrite construct.  This will probably change in the future
+//  once I work out the details on incremental tree automata compilation.
+//
+rewrite Simplify {
+   add (num 0, x):                    rewrite(x); 
+|  add (x, num 0):                    rewrite(x);  
+|  sub (x, num 0):                    rewrite(x);  
+|  mul (x, num 0):                    rewrite(num(0));  
+|  mul (num 0, x):                    rewrite(num(0));  
+|  mul (x, num 1):                    rewrite(x);       
+|  mul (num 1, x):                    rewrite(x); 
+|  mul (x, num 2):                    rewrite(add(x,x)); 
+|  mul (num 2, x):                    rewrite(add(x,x)); 
+|  div (x, num 1):                    rewrite(x);        
+|  add (num x, num y):                rewrite(num(x + y)); 
+|  sub (num x, num y):                rewrite(num(x - y)); 
+|  mul (num x, num y):                rewrite(num(x * y)); 
+|  div (num x, num y) where (y != 0): rewrite(num(x / y)); 
+|  div (_, num 0):                    { /* cout << "Division by zero!\n"; */ }
+|  div (zero as num 0, x):            rewrite(zero); 
+};
+
+//
+//  Now defines the function that uses all this stuff.
+//
+void do_my_stuff()
+{
+   //
+   // Instantiate a rewriting class 
+   //
+   Simplify sim;
+   EXP t1, term, term2;
+
+   for (int trials = 1; trials < 10000; trials++) {
+      //
+      // (0 + x * 2) / (1 * 5 + 1 * 3) / (0 / y);
+      //
+      t1 = div(div(add(num(0), mul(var('x'),num(2))), 
+                   add(mul(num(1), num(5)),mul(num(1),num(3)))),
+               div(num(0),var('y')));
+      term = mul(t1,t1);
+
+      //
+      //  Rewrite the big term above.
+      // 
+      // cout << "Before: " << term << '\n';
+      sim(term);
+      // cout << "After: " << term << '\n';
+
+      //
+      //  Rewrite it again.  It should have no effect since the term
+      //  is already in normal form.
+      //
+      sim(term);
+      // cout << "Again (should have no effect): " << term << '\n';
+
+      //
+      //  Rewrite some other term.
+      //
+      term2 = add(sub(num(3),num(3)), var('z'));
+      // cout << "Before: " << term2 << '\n';
+      sim(term2);
+      // cout << "After: " << term2 << '\n';
+   }
+}
+
+int main()
+{
+   GC::set_default_gc(marksweep_gc);
+   //
+   // Turn on finalization
+   //
+   GC::get_default_gc().set_finalization(true); 
+
+   cout << "Now performing some rewrites and generating some garbage.\n"
+           "(See also the test 'test_rc1')\n" << flush;
+   // GC::get_default_gc().set_verbosity(0);
+   do_my_stuff();
+   cout << "Finished.  Now I'll force one more GC to clean up.\n"
+           "There should be at most a few kilobytes of retention at the end.\n"
+           "The GC should be able to recognized a large part of the heap as\n"
+           "garbage.  See below:\n";
+   // GC::get_default_gc().set_verbosity(1);
+   GC::garbage_collect();
+   cout << "The following allocation count should be very close to the\n"
+           "finalization count.  If they are very far apart that means\n"
+           "something is wrong.\n" 
+        << "Allocation count        = " << LOGGER::allocation_count << '\n'
+        << "Number of finalizations = " << LOGGER::deallocation_count << '\n';
+   if (GC::get_default_gc().statistics().bytes_used <= 1024)
+      cout << "Seems like it's working well for your platform.   Lucky dog!\n";
+   return 0;
+}

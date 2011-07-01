@@ -1,0 +1,47 @@
+#include <iostream.h>
+#include <assert.h>
+#include <AD/gc/gcobject.h>
+#include <AD/strings/quark.h>
+
+int traced = 0;
+
+template <class T>
+   class base : public GCObject 
+   {
+   public:
+      base() {}
+      virtual void trace(GC *) { traced++; }
+   };
+
+datatype Exp<T> : collectable public base<T> :: collectable =
+    OP(Quark, Exp<T>, Exp<T>)
+|   OBJ(T) 
+|   ID(Quark)
+;
+
+template <class T>
+   ostream& operator << (ostream& s, Exp<T> e)
+   {  match (e) of
+	OP(a,b,c):  { return s << '(' << b << ' ' << a << ' ' << c << ')'; }
+      | OBJ x:      { return s << x; }
+      | ID  x:      { return s << x; }
+      end match;
+   }
+
+instantiate datatype Exp<int>;
+
+int main()
+{
+   GC::get_default_gc().set_initial_heap_size(1024*1024);
+   for (int i = 0; i < 100000; i++)
+   {
+      Exp<int> a = new classof ID<int>(#"a");
+      Exp<int> b = new classof ID<int>(#"b");
+      Exp<int> e1 = new classof OBJ<int>(0);
+      Exp<int> e = OP(#"+",a,OP(#"*",b,e1));
+      if (i % 10000 == 0) cout << i << ": " << e << '\n';
+   }
+   cout << "Finished: base class traced = " << traced << "\n";
+   assert(traced != 0);
+   return 0;
+}

@@ -1,0 +1,42 @@
+#include <iostream.h>
+
+datatype Replaced<T> = REPLACED of T
+
+and Exp =
+   NUM   of int           => _  
+|  ADD   of Exp, Exp      => "(" _ "+" _ ")"
+|  FINAL of Replaced<Exp> => "FINAL(" _ ")"
+;
+
+ostream& operator << (ostream& f, Replaced<Exp> e); 
+
+instantiate datatype Exp, Replaced<Exp>;
+
+ostream& operator << (ostream& f, Replaced<Exp> e)
+   { match (e) of REPLACED e: { return f << "REPLACED(" << e << ")"; } 
+     end match; 
+   }
+
+rewrite class Silly (Exp) {
+public:
+   Silly() {}
+};
+
+rewrite Silly {
+   NUM 0:  FINAL(REPLACED(NUM(1)))
+|  NUM x:  FINAL(REPLACED(NUM(2)))
+};
+
+int main() 
+{
+   Exp e = ADD(NUM(0),NUM(3));
+   Silly S;
+   cout << "Before = " << e << '\n';
+   S(e);
+   cout << "After = " << e << '\n';
+   rewrite (e) type (Exp,Replaced<Exp>) {
+      FINAL(REPLACED(e)): e
+   }
+   cout << "Finally = " << e << '\n';
+   return 0;
+}

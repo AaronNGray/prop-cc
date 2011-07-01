@@ -1,0 +1,547 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the utility routines for the parser.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <new>
+#include <iostream>
+#include <AD/pretty/postream.h>
+#include <strstream>
+#include <string.h>
+#include <stdlib.h>
+#include "ir.ph"
+#include "ast.ph"
+#include "parser.ph"
+#include "type.h"
+#include "matchcom.h"
+#include "keywords.ph"
+#include "config.h"
+#include "list.h"
+#include "compiler.h"
+#include "options.h"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Explaination mechanism for parser error.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+instantiate datatype PropToken;
+
+void PropParser::print_user_symbol(std::ostream& f, Symbol c)
+{
+  f << '"' << (PropToken)c << '"';
+}
+
+void PropParser::explain_error()
+{
+  nice_explain( std::cerr);
+  std::cerr << '\n';
+  if (options.debug)
+    debug_explain( std::cerr);
+}
+
+extern int match_rule;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Destructor
+//
+///////////////////////////////////////////////////////////////////////////////
+
+PropParser::~PropParser() {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to initialize the parser
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void PropParser::initialize( Compiler& C)
+{
+  compiler         = &C;
+  graphtype_def    = 0;
+  SCs_top          = 0;
+  quote_top        = 0;
+  levels_top       = 0;
+  options.emit_code = true;
+  me_top           = 0;
+  var_top          = 0;
+  antecedent_count = 0;
+  in_rewrite       = false;
+  rule_count       = 0;
+  is_view_def      = false;
+  symbol_count     = 0;
+  item_count       = 0;
+  nonterm_count    = 0;
+  code_top         = 0;
+  includes_top     = 0;
+  included_count   = 0;
+  program          = #[];
+  my_cons          = NOcons;
+  my_exp           = NOexp;
+  match_rule       = 0;
+  rw_top           = -1;
+  push_rw_stack();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//  Method to push/pop the rw stack
+///////////////////////////////////////////////////////////////////////////////
+
+void PropParser::push_rw_stack()
+{
+  ++rw_top;
+  if (rw_top >= MAX_LEXICAL_DEPTH)
+    bug("rw stack overflow");
+  rw_stack[rw_top].mode    = MatchRuleInfo::BOTTOMUP;
+  rw_stack[rw_top].option  = MatchRuleInfo::NO_OPTIONS;
+  rw_stack[rw_top].qual    = QUALnone;
+}
+
+void PropParser::pop_rw_stack()
+{
+  --rw_top;
+  if (rw_top < 0)
+    bug("rw stack underflow");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//  Functions to mark a tree with the current location.
+///////////////////////////////////////////////////////////////////////////////
+
+Pat  mark( Pat  p) { p = MARKEDpat(Loc(),p); return p; }
+Exp  mark( Exp  e) { e = MARKEDexp(Loc(),e); return e; }
+Decl mark( Decl d) { if (d != NOdecl) d = MARKEDdecl(Loc(),d); return d; }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Function to mark tuples used
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void mark_tuple_used( int arity)
+{
+  if (arity <= 1 || arity > MAX_TUPLE_ARITY)
+    bug("Illegal tuple arity: %i", arity);
+  Used::tuple[arity] = true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//  Functions to build lists.
+///////////////////////////////////////////////////////////////////////////////
+
+Pat mklistpat( Id cons, Id nil, Pats ps, Pat p = NOpat)
+{
+  return LISTpat''
+            {
+              cons = lookup_cons(cons),
+              nil  = lookup_cons(nil),
+              head = ps,
+              tail = p
+            };
+}
+
+Pat mkvecpat
+   (Id a, Pat len, Pat array, Pats ps, Bool flex1 = false, Bool flex2 = false)
+{
+  Used::vector = true;
+  return VECTORpat''
+            {
+              cons      = lookup_cons(a),
+              len       = len,
+              array     = array,
+              elements  = ps,
+              head_flex = flex1,
+              tail_flex = flex2
+            };
+}
+
+Exp mklistexp( Id cons, Id nil, Exps es, Exp e = NOexp)
+{
+  return LISTexp(lookup_cons(cons), lookup_cons(nil), es, e);
+}
+
+Exp mkappexp( Exp a, Exp b)
+{
+  Cons c = NOcons;
+/*
+   match (a) and (b)
+   {  IDexp id, RECORDexp _ | c = find_cons(id): { return CONSexp(c,#[],b); }
+   |  _:                                         { return APPexp(a,b); }
+   }
+*/
+  match (a)
+  {
+    IDexp id | c = find_cons( id):  { return CONSexp( c, #[], b); }
+  | _:                              { return APPexp( a, b); }
+  }
+}
+
+Exp mkvecexp( Id vec, Exps es)
+{
+  Used::vector = true;
+  return VECTORexp( lookup_cons( vec), es);
+}
+
+TermDef mklistterm( Id c, Ty a, Ty b, Decls d)
+{  //match (b)
+   //{  ! DEFVALty _: { b = DEFVALty(b,LITERALexp(INTlit(0))); }
+   //|  _: // skip
+   //}
+   return TERMdef''{ id = c, ty = mktuplety(#[ a, b ]), decls = d };
+}
+
+Exp extupleexp( Exps es) { mark_tuple_used(length(es)); return EXTUPLEexp(es); }
+Pat extuplepat( Pats ps) { mark_tuple_used(length(ps)); return EXTUPLEpat(ps); }
+Ty  extuplety( Tys ts)   { mark_tuple_used(length(ts));
+                          return TYCONty( (TyCon)EXTUPLEtycon, ts); }
+
+///////////////////////////////////////////////////////////////////////////////
+//  Function to build a piece of verbatim code.
+///////////////////////////////////////////////////////////////////////////////
+
+Decls PropParser::mkcode( Decls decls)
+{
+  if (options.emit_code && scan.length() > 0)
+  {
+    Decl code = OPAQUEdecl( str_pool( scan.text(), scan.length()));
+    decls = #[ mark(code) ... decls ];
+  }
+  scan.reset();
+  first_line = line;
+  return decls;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Methods to increment the line count
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void PropParser::count_lines ()
+{
+  for (const char * p = lexbuf.text(); *p; p++)
+    if (*p == '\n')
+      line++;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//  Method to lookup an expression from the pattern environment.
+///////////////////////////////////////////////////////////////////////////////
+
+Exp PropParser::lookup_exp(Id id)
+{
+  Bool from_current;
+  Exp e = pv_env.lookup(id,&from_current);
+  match (e) and (id[0])
+  {
+    NOexp, '$' || '#':
+    {
+      error ("%Lpattern variable '%s' has no binding at this point\n", id);
+      return NOexp;
+    }
+  | NOexp, _: { return IDexp(id); }
+  | e,     _: { return e; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//  Type variable stack for building polymorphic type schemes.
+///////////////////////////////////////////////////////////////////////////////
+
+Ty PropParser::lookup_tyvar( Id id)
+{
+  for (int i = 0; i < var_top; i++)
+    if (var_stack[i] == id)
+      return INDty( id, i);
+  return mkidty( id, #[]);
+}
+
+Pat PropParser::lookup_patvar( Id id)
+{
+  for (int i = 0; i < var_top; i++)
+    if (var_stack[i] == id)
+	  return pat_stack[i] == NOpat
+                ? (pat_stack[i] = INDpat( id, i, mkvar())) : pat_stack[i];
+  Pat scheme = DatatypeCompiler::lookup_pat(id);
+  if (scheme != NOpat)
+    return apply_pat( scheme, NOpat);
+  else
+    return IDpat( id, mkvar(), NOexp);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//  Create a pattern from a constructor
+///////////////////////////////////////////////////////////////////////////////
+
+Pat PropParser::mkconspat( Cons cons)
+{
+  match (cons)
+  {
+    ONEcons { name, tag, lexeme_pattern,
+        alg_ty = DATATYPEty({ qualifiers ... },_) ... }
+            | (qualifiers & QUALlexeme) && (match_kind[me_top] & MATCHscanner):
+    {
+      if (lexeme_pattern == NOpat)
+      {
+        error ("%Lpattern is undefined for lexeme %s\n", name);
+        return NOpat;
+      }
+      else
+        return lexeme_pattern;
+    }
+  | _: { return CONSpat(cons); }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//  Routine to add a new "$" variable binding
+///////////////////////////////////////////////////////////////////////////////
+
+void PropParser::add_parse_stack_binding
+   (int item_number, int symbol_number, int nonterm_number)
+{
+  Ty junk_ty = NOty;
+  if (item_number <= 0)
+    pv_env.add( #"$$", SYNexp( 0, -symbol_number, NOty, false), junk_ty);
+  else
+    pv_env.add( #"$" + item_number,
+            SYNexp( nonterm_number, -symbol_number, NOty, false), junk_ty);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//  Error handler for the parser
+///////////////////////////////////////////////////////////////////////////////
+
+PropParser::ErrorAction PropParser::error_report(const char * message)
+{
+  if (meta.length() > 0)
+  {
+    error ("%L%s at quotation text `%s`, ", message, meta.text());
+    meta.reset();
+  }
+  else if (lexbuf.length() == 0)
+    error ("%L%s at end of file, ", message);
+  else
+    error ("%L%s at token \"%s\", ", message, lexbuf.text());
+
+  return Retry;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to initialize the lexer
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void PropParser::initialize_lexer( const char * initial_file_name)
+{
+  if (initial_file_name == 0)
+    initial_file_name = "<stdin>";
+  file = initial_file_name; line = first_line = 1;
+  SCs_top     = 0;
+  levels_top  = 0;
+  quote_top   = 0;
+  options.emit_code   = true;
+  program     = #[];
+  levels[levels_top++] = -1;
+  lexbuf.set_context(C);
+  lexbuf.set_stream(*input_stream);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to cleanup the lexer
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void PropParser::cleanup_lexer()
+{
+  while (quote_top != 0)
+  {
+    const Quote& quote = quote_stack[--quote_top];
+    Loc loc;
+    loc.file_name  = quote.file_name;
+    loc.begin_line = quote.line_number;
+    loc.end_line   = quote.line_number;
+    error ("%!unbalanced %c ... %c at end of file\n",
+           &loc, (int)quote.open, (int)quote.close);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to open a new include file
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void PropParser::open_include_file( const char * file_name)
+{
+  for (int i = 0; i < included_count; i++)
+    if (included_files[i] == file_name)
+      return;
+  std::istream * new_stream = options.open_input_file( file_name);
+  if (options.gen_dependences)
+    IncludeDependency::add_dependency( str_pool[options.current_file_path]);
+  if (new_stream == 0)
+  {
+    error ("%Lcan't find include file \"%s\"\n", file_name);
+    return;
+  }
+  if (includes_top >= MAX_INCLUDE_FILES)
+    bug ("Include file stack overflow");
+  if (included_count >= MAX_INCLUDE_FILES)
+    bug ("Too many include files");
+  included_files[included_count++] = file_name;
+  includes[includes_top].file_stream = input_stream;
+  includes[includes_top].file        = file;
+  includes[includes_top].line        = line;
+  includes[includes_top].first_line  = first_line;
+  includes[includes_top].scan        = scan;
+  includes[includes_top].doc         = doc;
+  includes[includes_top].meta        = meta;
+  includes_top++;
+  line         = 1;
+  first_line   = 1;
+  file         = file_name;
+  options.emit_code    = false;
+  input_stream = new_stream;
+  lexbuf.push_stream(*input_stream);
+  lexbuf.set_context(C);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to open a new include file
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void PropParser::close_include_file()
+{
+  if (includes_top <= 0)
+    bug("Include file stack underflow");
+  --includes_top;
+  debug_msg("[Closing \"%s\" %i lines]\n", file, line-1);
+  delete input_stream;
+  input_stream = includes[includes_top].file_stream;
+  file         = includes[includes_top].file;
+  line         = includes[includes_top].line;
+  first_line   = includes[includes_top].first_line;
+  scan         = includes[includes_top].scan;
+  doc          = includes[includes_top].doc;
+  meta         = includes[includes_top].meta;
+  options.emit_code    = includes_top == 0;
+  input_stream = &lexbuf.pop_stream();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Methods to append text to the code buffer.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void PropParser::emit()
+{ emit(lexbuf.text(), lexbuf.length()); }
+
+void PropParser::emit( const char * t, long len)
+{  if (options.emit_code) scan.emit(t,len); }
+
+void PropParser::emit( char c)
+{  if (options.emit_code) scan.emit(c); }
+
+void PropParser::emit_header()
+{  if (options.emit_code)
+      compiler->emit_header(lexbuf.text()+2,lexbuf.length()-2);
+}
+
+//  Append an expression
+
+void PropParser::emit( Exp e)
+{
+  std::ostrstream b;
+  std::ostream& f = b;
+  f << e << std::ends;
+  emit(b.str());
+  b.rdbuf()->freeze(0);  // free buffer
+}
+
+// Append a constructor expression
+void PropParser::emit_cons( Id cons_name)
+{
+  lookup_cons( cons_name);
+  emit( mangle( cons_name));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Methods to enter/exit a lexical context.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void PropParser::start_sc(LexicalContext c)
+{
+  SCs[SCs_top++] = LexicalContext( lexbuf.context());
+  lexbuf.set_context(c);
+  // if (options.debug) std::cerr << "[+context " << c << "]";
+}
+
+void PropParser::end_sc()
+{
+  if (SCs_top != 0)
+  {
+    --SCs_top;
+    lexbuf.set_context(SCs[SCs_top]);
+  }
+  // if (options.debug) std::cerr << "[-context " << SCs[SCs_top] << "]";
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Methods to enter/exit a statement
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void PropParser::start_statement()
+{
+  levels[levels_top++] = quote_top;
+  start_sc(C);
+}
+
+void PropParser::end_statement()
+{
+  levels_top--;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Methods to push and pop from the quotation stack
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void PropParser::start_quote( char a, char b)
+{  quote_stack[quote_top++] = Quote( file, line, a, b);
+}
+
+char PropParser::end_quote( char c)
+{
+  if (quote_top == 0)
+  {
+    error("%Lunmatched ending quote %c\n",c);
+    return c;
+  }
+  else
+  {
+    const Quote& quote = quote_stack[quote_top-1];
+    if (quote.close != c)
+    {
+      error("%Lexpecting %c ... %c (from line %i) but found %c ... %c instead\n",
+             (int)quote.open, (int)quote.close, quote.line_number,
+             (int)quote.open, (int)c);
+    }
+    quote_top--;
+    return quote.close;
+  }
+}

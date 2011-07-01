@@ -1,0 +1,7 @@
+-- Test variable renaming and quantifier elimination
+
+{ [x,y] : x in S, y in T, z in U | 
+        (exists y in U . z = x and x = y)
+    and (exists z in U . z = 1) 
+    or  not (exists i in U . x >= y)
+}

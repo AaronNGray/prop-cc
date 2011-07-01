@@ -1,0 +1,320 @@
+Functor encoding for literals:
+literal 0	=	5
+literal 1	=	6
+literal 2	=	7
+
+Functor encoding for constructors:
+datatype EXP:
+	num	=	0
+	add	=	1
+	sub	=	2
+	mul	=	3
+	div	=	4
+
+Index compression is enabled
+Algorithm is TreeGen
+Canonical grammar:
+[0]	1 : add(num(0), _)
+[1]	1 : add(_, num(0))
+[2]	1 : sub(_, num(0))
+[3]	1 : mul(_, num(0))
+[4]	1 : mul(num(0), _)
+[5]	1 : mul(_, num(1))
+[6]	1 : mul(num(1), _)
+[7]	1 : mul(_, num(2))
+[8]	1 : mul(num(2), _)
+[9]	1 : div(_, num(1))
+[10]	1 : add(num(_), num(_))
+[11]	1 : sub(num(_), num(_))
+[12]	1 : mul(num(_), num(_))
+[13]	1 : div(num(_), num(_))
+
+
+Statistics of the tree automaton:
+   Number of functors      = 8
+   Number of non-terminals = 2
+   Number of states        = 42
+   Memory used             = 24 k-bytes
+
+Index compression statistics:
+   Uncompressed index entries = 378
+   Non-empty index entries    = 70
+   Compressed table entries   = 149
+   Compression rate           = 154%
+
+Items:
+{0}	_
+{1}	_
+{2}	num(_)
+{3}	div(num(_), num(_))
+{4}	mul(num(_), num(_))
+{5}	sub(num(_), num(_))
+{6}	add(num(_), num(_))
+{7}	1
+{8}	num(1)
+{9}	div(_, num(1))
+{10}	2
+{11}	num(2)
+{12}	mul(num(2), _)
+{13}	mul(_, num(2))
+{14}	mul(num(1), _)
+{15}	mul(_, num(1))
+{16}	0
+{17}	num(0)
+{18}	mul(num(0), _)
+{19}	mul(_, num(0))
+{20}	sub(_, num(0))
+{21}	add(_, num(0))
+{22}	add(num(0), _)
+
+States:
+<0>	_
+<1>	0
+	_
+<2>	1
+	_
+<3>	2
+	_
+<4>	num(_)
+	_
+<5>	num(0)
+	num(_)
+	_
+<6>	num(1)
+	num(_)
+	_
+<7>	num(2)
+	num(_)
+	_
+<8>	add(num(_), num(_))
+	_
+	[accept 10]
+<9>	sub(num(_), num(_))
+	_
+	[accept 11]
+<10>	mul(num(_), num(_))
+	_
+	[accept 12]
+<11>	div(num(_), num(_))
+	_
+	[accept 13]
+<12>	add(_, num(0))
+	_
+	[accept 1]
+<13>	add(num(0), _)
+	add(_, num(0))
+	add(num(_), num(_))
+	_
+	[accept 0]
+<14>	add(_, num(0))
+	add(num(_), num(_))
+	_
+	[accept 1]
+<15>	add(num(0), _)
+	_
+	[accept 0]
+<16>	add(num(0), _)
+	add(num(_), num(_))
+	_
+	[accept 0]
+<17>	sub(_, num(0))
+	_
+	[accept 2]
+<18>	sub(_, num(0))
+	sub(num(_), num(_))
+	_
+	[accept 2]
+<19>	mul(_, num(0))
+	_
+	[accept 3]
+<20>	mul(_, num(0))
+	mul(num(0), _)
+	mul(num(_), num(_))
+	_
+	[accept 3]
+<21>	mul(_, num(0))
+	mul(num(_), num(_))
+	_
+	[accept 3]
+<22>	mul(num(0), _)
+	_
+	[accept 4]
+<23>	mul(num(0), _)
+	mul(num(_), num(_))
+	_
+	[accept 4]
+<24>	mul(_, num(1))
+	_
+	[accept 5]
+<25>	mul(_, num(1))
+	mul(num(1), _)
+	mul(num(_), num(_))
+	_
+	[accept 5]
+<26>	mul(num(0), _)
+	mul(_, num(1))
+	mul(num(_), num(_))
+	_
+	[accept 4]
+<27>	mul(_, num(1))
+	mul(num(_), num(_))
+	_
+	[accept 5]
+<28>	mul(num(1), _)
+	_
+	[accept 6]
+<29>	mul(_, num(0))
+	mul(num(1), _)
+	mul(num(_), num(_))
+	_
+	[accept 3]
+<30>	mul(num(1), _)
+	mul(num(_), num(_))
+	_
+	[accept 6]
+<31>	div(_, num(1))
+	_
+	[accept 9]
+<32>	div(_, num(1))
+	div(num(_), num(_))
+	_
+	[accept 9]
+<33>	mul(_, num(2))
+	_
+	[accept 7]
+<34>	mul(_, num(2))
+	mul(num(2), _)
+	mul(num(_), num(_))
+	_
+	[accept 7]
+<35>	mul(num(1), _)
+	mul(_, num(2))
+	mul(num(_), num(_))
+	_
+	[accept 6]
+<36>	mul(num(0), _)
+	mul(_, num(2))
+	mul(num(_), num(_))
+	_
+	[accept 4]
+<37>	mul(_, num(2))
+	mul(num(_), num(_))
+	_
+	[accept 7]
+<38>	mul(num(2), _)
+	_
+	[accept 8]
+<39>	mul(_, num(1))
+	mul(num(2), _)
+	mul(num(_), num(_))
+	_
+	[accept 5]
+<40>	mul(_, num(0))
+	mul(num(2), _)
+	mul(num(_), num(_))
+	_
+	[accept 3]
+<41>	mul(num(2), _)
+	mul(num(_), num(_))
+	_
+	[accept 8]
+Functor encoding for literals:
+
+Functor encoding for constructors:
+datatype EXP:
+	num	=	2
+	add	=	3
+	sub	=	4
+	mul	=	5
+	div	=	6
+datatype NAT:
+	zero	=	0
+	succ	=	1
+
+Index compression is disabled
+Algorithm is TreeGen
+Canonical grammar:
+[0]	1 : zero
+[1]	1 : succ(zero)
+[2]	1 : succ(succ(_))
+[3]	1 : succ(succ(zero))
+[4]	1 : succ(succ(succ(succ(_))))
+[5]	1 : add(num(_), num(_))
+[6]	1 : sub(num(_), num(_))
+[7]	1 : mul(num(_), num(_))
+[8]	1 : div(num(_), num(_))
+
+
+Statistics of the tree automaton:
+   Number of functors      = 7
+   Number of non-terminals = 2
+   Number of states        = 13
+   Memory used             = 24 k-bytes
+
+Index compression statistics:
+   Uncompressed index entries = 130
+   Non-empty index entries    = 25
+   Compressed table entries   = 60
+   Compression rate           = 117%
+
+Items:
+{0}	_
+{1}	_
+{2}	num(_)
+{3}	div(num(_), num(_))
+{4}	mul(num(_), num(_))
+{5}	sub(num(_), num(_))
+{6}	add(num(_), num(_))
+{7}	succ(_)
+{8}	succ(succ(_))
+{9}	succ(succ(succ(_)))
+{10}	succ(succ(succ(succ(_))))
+{11}	zero
+{12}	succ(zero)
+{13}	succ(succ(zero))
+
+States:
+<0>	_
+<1>	zero
+	_
+	[accept 0]
+<2>	succ(_)
+	_
+<3>	num(_)
+	_
+<4>	succ(zero)
+	succ(_)
+	_
+	[accept 1]
+<5>	succ(succ(_))
+	succ(_)
+	_
+	[accept 2]
+<6>	add(num(_), num(_))
+	_
+	[accept 5]
+<7>	sub(num(_), num(_))
+	_
+	[accept 6]
+<8>	mul(num(_), num(_))
+	_
+	[accept 7]
+<9>	div(num(_), num(_))
+	_
+	[accept 8]
+<10>	succ(succ(zero))
+	succ(succ(_))
+	succ(_)
+	_
+	[accept 2]
+<11>	succ(succ(succ(_)))
+	succ(succ(_))
+	succ(_)
+	_
+	[accept 2]
+<12>	succ(succ(succ(succ(_))))
+	succ(succ(succ(_)))
+	succ(succ(_))
+	succ(_)
+	_
+	[accept 2]

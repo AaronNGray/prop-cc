@@ -1,0 +1,206 @@
+\indexentry{Syntax!Non--terminals!{\it  Integer}}{5}
+\indexentry{Syntax!Non--terminals!{\it  Char}}{5}
+\indexentry{Syntax!Non--terminals!{\it  Real}}{5}
+\indexentry{Syntax!Non--terminals!{\it  String}}{5}
+\indexentry{Syntax!Non--terminals!{\it  Id}}{5}
+\indexentry{Syntax!Non--terminals!{\it  Stmt}}{5}
+\indexentry{Syntax!Non--terminals!{\it  Quark}}{5}
+\indexentry{Syntax!Non--terminals!{\it  Lexeme\relax  \_Decl}}{8}
+\indexentry{Syntax!Keywords!{\tt  lexeme}}{8}
+\indexentry{Syntax!Non--terminals!{\it  Lexeme\relax  \_Eq}}{8}
+\indexentry{Syntax!Non--terminals!{\it  Lexeme\relax  \_Class\relax  \_Decl}}{8}
+\indexentry{Syntax!Keywords!{\tt  lexeme class}}{8}
+\indexentry{Syntax!Non--terminals!{\it  Lexeme\relax  \_Class\relax  \_Eq}}{8}
+\indexentry{Syntax!Non--terminals!{\it  Lexeme\relax  \_Spec}}{8}
+\indexentry{Syntax!Non--terminals!{\it  Tokens\relax  \_Decl}}{9}
+\indexentry{Syntax!Keywords!{\tt  datatype}}{9}
+\indexentry{Syntax!Keywords!{\tt  lexeme}}{9}
+\indexentry{Syntax!Non--terminals!{\it  Token\relax  \_Spec}}{9}
+\indexentry{Syntax!Keywords!{\tt  lexeme class}}{9}
+\indexentry{Syntax!Non--terminals!{\it  Matchscan}}{10}
+\indexentry{Syntax!Non--terminals!{\it  Matchscan\relax  \_Mode}}{10}
+\indexentry{Syntax!Keywords!{\tt  matchscan}}{10}
+\indexentry{Syntax!Keywords!{\tt  matchscan*}}{10}
+\indexentry{Syntax!Non--terminals!{\it  Context\relax  \_Spec}}{10}
+\indexentry{Syntax!Non--terminals!{\it  Matchscan\relax  \_Rule}}{10}
+\indexentry{Syntax!Non--terminals!{\it  Matchscan\relax  \_Action}}{10}
+\indexentry{Classes!{\tt  LexerBuffer}}{11}
+\indexentry{Classes!{\tt  IOLexerBuffer}}{12}
+\indexentry{Classes!{\tt  IOLexerStack}}{12}
+\indexentry{Syntax!Non--terminals!{\it  Syntax\relax  \_Class\relax  \_Decl}}{13}
+\indexentry{Syntax!Keywords!{\tt  syntax class}}{13}
+\indexentry{Syntax!Non--terminals!{\it  Syntax\relax  \_Decl}}{14}
+\indexentry{Syntax!Keywords!{\tt  syntax}}{14}
+\indexentry{Syntax!Non--terminals!{\it  Precedence\relax  \_Decl}}{14}
+\indexentry{Syntax!Keywords!{\tt  left:}}{14}
+\indexentry{Syntax!Keywords!{\tt  right:}}{14}
+\indexentry{Syntax!Non--terminals!{\it  Operator}}{14}
+\indexentry{Syntax!Non--terminals!{\it  Expect\relax  \_Decl}}{14}
+\indexentry{Syntax!Keywords!{\tt  expect:}}{14}
+\indexentry{Syntax!Non--terminals!{\it  Production\relax  \_Rule}}{15}
+\indexentry{Syntax!Non--terminals!{\it  One\relax  \_Alt}}{15}
+\indexentry{Syntax!Non--terminals!{\it  Symbol}}{15}
+\indexentry{Syntax!Keywords!{\tt  \relax  \$\relax  \$}}{16}
+\indexentry{Syntax!Keywords!{\tt  \relax  \$$n$}}{16}
+\indexentry{Command line options!{\tt  -r}}{16}
+\indexentry{Command line options!{\tt  -v}}{16}
+\indexentry{Syntax!Non--terminals!{\it  Datatype\relax  \_Decl}}{23}
+\indexentry{Syntax!Keywords!{\tt  datatype}}{23}
+\indexentry{Syntax!Keywords!{\tt  where type}}{23}
+\indexentry{Syntax!Keywords!{\tt  law}}{23}
+\indexentry{Syntax!Non--terminals!{\it  Datatype\relax  \_Spec}}{23}
+\indexentry{Syntax!Non--terminals!{\it  Cons\relax  \_Specs}}{23}
+\indexentry{Syntax!Non--terminals!{\it  Cons\relax  \_Spec}}{23}
+\indexentry{Syntax!Non--terminals!{\it  Simple\relax  \_Cons\relax  \_Spec}}{23}
+\indexentry{Syntax!Non--terminals!{\it  Datatype\relax  \_Qualifiers}}{23}
+\indexentry{Syntax!Non--terminals!{\it  Datatype\relax  \_Qualifier}}{23}
+\indexentry{Syntax!Keywords!{\tt  collectable}}{23}
+\indexentry{Syntax!Keywords!{\tt  rewrite}}{23}
+\indexentry{Syntax!Keywords!{\tt  persistent}}{23}
+\indexentry{Syntax!Keywords!{\tt  lexeme}}{23}
+\indexentry{Syntax!Keywords!{\tt  inline}}{23}
+\indexentry{Syntax!Keywords!{\tt  extern}}{23}
+\indexentry{Syntax!Non--terminals!{\it  Type\relax  \_Spec}}{24}
+\indexentry{Syntax!Non--terminals!{\it  Law\relax  \_Spec}}{24}
+\indexentry{Syntax!Non--terminals!{\it  Law\relax  \_Arg}}{24}
+\indexentry{Syntax!Non--terminals!{\it  Type\relax  \_Exp}}{24}
+\indexentry{Syntax!Non--terminals!{\it  Lab\relax  \_Type\relax  \_Exp}}{24}
+\indexentry{Syntax!Non--terminals!{\it  Type\relax  \_Qualifier}}{24}
+\indexentry{Syntax!Keywords!{\tt  instantiate datatype}}{25}
+\indexentry{Syntax!Non--terminals!{\it  Instantiate\relax  \_Decl}}{25}
+\indexentry{Syntax!Keywords!{\tt  instantiate datatype}}{25}
+\indexentry{Syntax!Keywords!{\tt  instantiate}}{25}
+\indexentry{Syntax!Non--terminals!{\it  Type\relax  \_Spec}}{25}
+\indexentry{Syntax!Keywords!{\tt  inline}}{25}
+\indexentry{Syntax!Keywords!{\tt  extern}}{25}
+\indexentry{Command line options!{\tt  -save\relax  \_space}}{25}
+\indexentry{Command line options!{\tt  -fno-implicit-templates}}{25}
+\indexentry{{\tt  PROP\relax  \_EXPLICIT\relax  \_TEMPLATE\relax  \_INSTANTIATION}}{25}
+\indexentry{Syntax!Non--terminals!{\it  Match}}{25}
+\indexentry{Syntax!Non--terminals!{\it  Match\relax  \_Mode}}{25}
+\indexentry{Syntax!Keywords!{\tt  match}}{25}
+\indexentry{Syntax!Keywords!{\tt  matchall}}{25}
+\indexentry{Syntax!Non--terminals!{\it  Match\relax  \_Rule}}{25}
+\indexentry{Syntax!Non--terminals!{\it  Guard}}{25}
+\indexentry{Syntax!Non--terminals!{\it  Cost}}{25}
+\indexentry{Syntax!Non--terminals!{\it  Match\relax  \_Action}}{25}
+\indexentry{Syntax!Keywords!{\tt  while}}{26}
+\indexentry{Syntax!Non--terminals!{\it  Pat}}{27}
+\indexentry{Syntax!Non--terminals!{\it  PatArg}}{27}
+\indexentry{Syntax!Non--terminals!{\it  Lab\relax  \_Pat}}{27}
+\indexentry{Syntax!Non--terminals!{\it  Pat\relax  \_Var}}{27}
+\indexentry{Syntax!Keywords!{\tt  with}}{27}
+\indexentry{Syntax!Keywords!{\tt  classof}}{28}
+\indexentry{Syntax!Keywords!{\tt  refine}}{28}
+\indexentry{Syntax!Keywords!{\tt  refine}}{28}
+\indexentry{Syntax!Non--terminals!{\it  Refine\relax  \_Decl}}{29}
+\indexentry{Syntax!Non--terminals!{\it  Refine\relax  \_Spec}}{29}
+\indexentry{Syntax!Non--terminals!{\it  Placement\relax  \_Cons}}{29}
+\indexentry{Syntax!Keywords!{\tt  collectable}}{29}
+\indexentry{Syntax!Keywords!{\tt  instantiate datatype}}{30}
+\indexentry{Syntax!Keywords!{\tt  persistent}}{30}
+\indexentry{Syntax!Keywords!{\tt  refine persistent}}{30}
+\indexentry{Syntax!Keywords!{\tt  instantiate datatype}}{30}
+\indexentry{Syntax!Keywords!{\tt  relation}}{32}
+\indexentry{Syntax!Non--terminals!{\it  Rewrite\relax  \_Class\relax  \_Decl}}{37}
+\indexentry{Syntax!Keywords!{\tt  rewrite class}}{37}
+\indexentry{Syntax!Non--terminals!{\it  Rewrite\relax  \_Mode}}{37}
+\indexentry{Syntax!Keywords!{\tt  treeparser}}{37}
+\indexentry{Syntax!Keywords!{\tt  applicative}}{37}
+\indexentry{Syntax!Keywords!{\tt  topdown}}{37}
+\indexentry{Syntax!Non--terminals!{\it  Rewrite\relax  \_Decl}}{37}
+\indexentry{Syntax!Keywords!{\tt  rewrite}}{37}
+\indexentry{Syntax!Non--terminals!{\it  Rewrite\relax  \_Rule}}{37}
+\indexentry{Syntax!Non--terminals!{\it  Rewrite\relax  \_Modifier}}{37}
+\indexentry{Syntax!Non--terminals!{\it  Rewrite\relax  \_Action}}{37}
+\indexentry{Syntax!Keywords!{\tt  bottomup:}}{38}
+\indexentry{Syntax!Keywords!{\tt  topdown:}}{38}
+\indexentry{Syntax!Keywords!{\tt  before:}}{38}
+\indexentry{Syntax!Keywords!{\tt  preorder:}}{38}
+\indexentry{Syntax!Keywords!{\tt  postorder:}}{38}
+\indexentry{Syntax!Non--terminals!{\it  Rewrite\relax  \_Stmt}}{41}
+\indexentry{Syntax!Keywords!{\tt  rewrite}}{41}
+\indexentry{Syntax!Keywords!{\tt  rewrite}}{41}
+\indexentry{Syntax!Keywords!{\tt  type}}{41}
+\indexentry{state caching}{42}
+\indexentry{Syntax!Keywords!{\tt  rewrite}}{42}
+\indexentry{Syntax!Keywords!{\tt  rewrite}}{42}
+\indexentry{Syntax!Non--terminals!{\it  Index\relax  \_Decl}}{42}
+\indexentry{Syntax!Keywords!{\tt  index:}}{42}
+\indexentry{Syntax!Non--terminals!{\it  Index\relax  \_Spec}}{42}
+\indexentry{Syntax!Keywords!{\tt  extern}}{42}
+\indexentry{Classes!{\tt  RewriteCache}}{44}
+\indexentry{Classes!{\tt  GCRewriteCache}}{44}
+\indexentry{Syntax!Keywords!{\tt  cutrewrite}}{45}
+\indexentry{Syntax!Keywords!{\tt  failrewrite}}{46}
+\indexentry{Command line options!{\tt  -Orewriting}}{47}
+\indexentry{Syntax!Keywords!{\tt  datatype view}}{49}
+\indexentry{Syntax!Keywords!{\tt  match}}{50}
+\indexentry{Syntax!Keywords!{\tt  this}}{50}
+\indexentry{Syntax!Keywords!{\tt  view}}{50}
+\indexentry{Syntax!Non--terminals!{\it  Datatype\relax  \_Spec}}{53}
+\indexentry{Syntax!Non--terminals!{\it  Datatype\relax  \_View\relax  \_Spec}}{53}
+\indexentry{Syntax!Non--terminals!{\it  View\relax  \_Cons\relax  \_Specs}}{53}
+\indexentry{Syntax!Keywords!{\tt  view}}{53}
+\indexentry{Syntax!Keywords!{\tt  view}}{53}
+\indexentry{graph type}{54}
+\indexentry{Syntax!Non--terminals!{\it  Graph\relax  \_Type}}{54}
+\indexentry{Syntax!Keywords!{\tt  graphtype}}{54}
+\indexentry{Syntax!Keywords!{\tt  node:}}{54}
+\indexentry{Syntax!Keywords!{\tt  edge:}}{54}
+\indexentry{Syntax!Non--terminals!{\it  Graph\relax  \_Mode}}{54}
+\indexentry{Syntax!Non--terminals!{\it  Node\relax  \_Def}}{54}
+\indexentry{Syntax!Non--terminals!{\it  Edge\relax  \_Def}}{54}
+\indexentry{Syntax!Non--terminals!{\it  Running\relax  \_Prop}}{56}
+\indexentry{Command line options!{\tt  -G -GNU}}{56}
+\indexentry{Command line options!{\tt  -I{\em  path}}}{56}
+\indexentry{Command line options!{\tt  -l -no\relax  \_line\relax  \_directives}}{56}
+\indexentry{Command line options!{\tt  -M -make\relax  \_depends}}{56}
+\indexentry{Command line options!{\tt  -memory\relax  \_usage}}{56}
+\indexentry{Command line options!{\tt  -n -no\relax  \_codegen}}{56}
+\indexentry{Command line options!{\tt  -N -non\relax  \_linear}}{56}
+\indexentry{Command line options!{\tt  -o{\em  outfile}}}{56}
+\indexentry{Command line options!{\tt  -Ofast\relax  \_string\relax  \_match}}{56}
+\indexentry{Command line options!{\tt  -Oadaptive\relax  \_matching}}{56}
+\indexentry{Command line options!{\tt  -Oinline\relax  \_casts}}{56}
+\indexentry{Command line options!{\tt  -Orewriting}}{56}
+\indexentry{Command line options!{\tt  -Otagged\relax  \_pointer}}{56}
+\indexentry{Command line options!{\tt  -r -report}}{56}
+\indexentry{Command line options!{\tt  -s -strict}}{56}
+\indexentry{Command line options!{\tt  -S -save\relax  \_space}}{57}
+\indexentry{Syntax!Keywords!{\tt  instantiate datatype}}{57}
+\indexentry{Command line options!{\tt  -t -stdout}}{57}
+\indexentry{Command line options!{\tt  -use\relax  \_global\relax  \_pool}}{57}
+\indexentry{Command line options!{\tt  -v{\em  num}}}{57}
+\indexentry{Classes!{\tt  GCHeapManager}}{64}
+\indexentry{Classes!{\tt  GCHeapManager}}{64}
+\indexentry{Classes!{\tt  GC}}{64}
+\indexentry{Classes!{\tt  CGC}}{64}
+\indexentry{Classes!{\tt  GC}}{64}
+\indexentry{Classes!{\tt  BGC}}{64}
+\indexentry{Classes!{\tt  CGC}}{64}
+\indexentry{Classes!{\tt  MarkSweepGC}}{64}
+\indexentry{Classes!{\tt  CGC}}{64}
+\indexentry{Classes!{\tt  WeakPointerManager}}{64}
+\indexentry{Classes!{\tt  GC}}{64}
+\indexentry{Classes!{\tt  GCObject}}{64}
+\indexentry{Classes!{\tt  GC}}{64}
+\indexentry{Classes!{\tt  GCObject}}{64}
+\indexentry{Classes!{\tt  GCObject}}{64}
+\indexentry{Classes!{\tt  GC}}{64}
+\indexentry{Classes!{\tt  Mem}}{64}
+\indexentry{Classes!{\tt  GC}}{65}
+\indexentry{Classes!{\tt  GC}}{65}
+\indexentry{Classes!{\tt  GCObject}}{66}
+\indexentry{Classes!{\tt  GCObject}}{66}
+\indexentry{Classes!{\tt  GC}}{66}
+\indexentry{Classes!{\tt  GCVerifier}}{66}
+\indexentry{Classes!{\tt  BGC}}{68}
+\indexentry{Classes!{\tt  GC}}{68}
+\indexentry{Classes!{\tt  BGC}}{68}
+\indexentry{Classes!{\tt  BGC}}{68}
+\indexentry{Classes!{\tt  WeakPointer}}{70}
+\indexentry{Syntax!Keywords!{\tt  classof}}{70}
+\indexentry{Classes!{\tt  GCVerify}}{70}
+\indexentry{Classes!{\tt  GCVerify}}{70}
+\indexentry{Classes!{\tt  GC}}{70}

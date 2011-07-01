@@ -1,0 +1,32 @@
+Notes on hash consing:
+
+Hash consing can be specified for algebraic datatypes using 
+the ``unique'' qualifier.  For example:
+
+   datatype EXP :: unique = num (int)
+                          | add (EXP, EXP)
+                          | sub (EXP, EXP)
+                          | mul (EXP, EXP)
+                          | div (EXP, EXP)
+                          ;
+
+
+defines an algebraic datatype EXP that is hash consed.  This basically
+means that if (and only if) two terms ``e1'' and ``e2'' built with EXP's
+constructors are structurally identical, then ``e1 == e2.''  This makes
+it possible to implement things like value numbering and the like very
+easily.  
+
+The current version of Prop (rel 2.0) implements this feature by keeping 
+a hash table of all existing consed cells for each given hash consed datatype.
+To instantiate this hash table, there must be declaration
+
+   instantiate datatype EXP;
+
+in some implementation module.  (In general, for future compatibility, it is 
+a good idea to have instantiate datatype declaration for each datatype used.)
+
+All hash consed datatypes are immutable, and cannot be overwritten.
+I.e. it is as if the qualifier ``const'' has been implicitly added. 
+
+   datatype EXP :: const unique = ...

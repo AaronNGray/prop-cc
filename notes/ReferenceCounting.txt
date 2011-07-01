@@ -1,0 +1,34 @@
+Notes on reference counting:
+
+Reference counting can be specified for algebraic datatypes using 
+the ``trace'' qualifier.  For example:
+
+   datatype EXP :: traced = num (int)
+                          | add (EXP, EXP)
+                          | sub (EXP, EXP)
+                          | mul (EXP, EXP)
+                          | div (EXP, EXP)
+                          ;
+
+defines an algebraic datatype EXP that is automatically reference counted.
+Like other datatypes, we are free redefine the operator `new' and `delete' 
+if that's what we want.  For example:
+
+   datatype EXP :: traced = num (int)
+                          | add (EXP, EXP)
+                          | sub (EXP, EXP)
+                          | mul (EXP, EXP)
+                          | div (EXP, EXP)
+   public:
+   {   void * operator new (size_t n)    { ... }
+       void   operator delete (void * x) { ... }
+   };
+
+In the current implementation of Prop (rel 2.0), reference countable datatypes
+are derived from the object ``RefObj'' and are actually implement using a
+smart pointer template ``Ref<T>.''  These implementation details can be
+found in ADLib's include file <AD/memory/ref.h>.
+
+Due to the overhead involved, I'd recommend *not* using this feature
+if there forms of memory management is available.
+

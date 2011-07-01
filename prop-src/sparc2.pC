@@ -1,0 +1,74 @@
+datatype Inst :: rewrite =
+    ADDD(Inst,Inst) | ADDF(Inst,Inst) | ADDI(Inst,Inst) 
+  | ADDP(Inst,Inst) | ADDU(Inst,Inst) |
+    ADDRFP |
+    ADDRGP |
+    ADDRLP |
+    ARGB(Inst) | ARGD(Inst) | ARGF(Inst) | ARGI(Inst) | ARGP(Inst) |
+    ASGNB(Inst,Inst) | ASGNC(Inst,Inst) | ASGND(Inst,Inst) 
+  | ASGNF(Inst,Inst) | ASGNI(Inst,Inst) | ASGNP(Inst,Inst) | ASGNS(Inst,Inst) |
+    BANDU(Inst,Inst) |
+    BCOMU(Inst) |
+    BORU(Inst,Inst) |
+    BXORU(Inst,Inst) |
+    CALLB(Inst,Inst) | CALLD(Inst) | CALLF(Inst) | CALLI(Inst) | CALLV(Inst) |
+    CNSTC | CNSTD | CNSTF | CNSTI | CNSTP | CNSTS | CNSTU |
+    CVCI(Inst) | CVCU(Inst) |
+    CVDF(Inst) | CVDI(Inst) |
+    CVFD(Inst) |
+    CVIC(Inst) | CVID(Inst) | CVIS(Inst) | CVIU(Inst) |
+    CVPU(Inst) |
+    CVSI(Inst) | CVSU(Inst) |
+    CVUC(Inst) | CVUI(Inst) | CVUP(Inst) | CVUS(Inst) |
+    DIVD(Inst,Inst) | DIVF(Inst,Inst) | DIVI(Inst,Inst) | DIVU(Inst,Inst) |
+    EQD(Inst,Inst) | EQF(Inst,Inst) | EQI(Inst,Inst) |
+    GED(Inst,Inst) | GEF(Inst,Inst) | GEI(Inst,Inst) | GEU(Inst,Inst) |
+    GTD(Inst,Inst) | GTF(Inst,Inst) | GTI(Inst,Inst) | GTU(Inst,Inst) |
+    INDIRB(Inst) | INDIRC(Inst) | INDIRD(Inst) | INDIRF(Inst) | 
+    INDIRI(Inst) | INDIRP(Inst) | INDIRS(Inst) |
+    JUMPV(Inst) |
+    LABELV |
+    LED(Inst,Inst) | LEF(Inst,Inst) | LEI(Inst,Inst) | LEU(Inst,Inst) |
+    LOADB(Inst) | LOADC(Inst) | LOADD(Inst) | LOADF(Inst) | 
+    LOADI(Inst) | LOADP(Inst) | LOADS(Inst) | LOADU(Inst) |
+    LSHI(Inst,Inst) | LSHU(Inst,Inst) |
+    LTD(Inst,Inst) | LTF(Inst,Inst) | LTI(Inst,Inst) | LTU(Inst,Inst) |
+    MODI(Inst,Inst) | MODU(Inst,Inst) |
+    MULD(Inst,Inst) | MULF(Inst,Inst) | MULI(Inst,Inst) | MULU(Inst,Inst) |
+    NED(Inst,Inst) | NEF(Inst,Inst) | NEI(Inst,Inst) |
+    NEGD(Inst) | NEGF(Inst) | NEGI(Inst) |
+    RETD(Inst) | RETF(Inst) | RETI(Inst) |
+    RSHI(Inst,Inst) | RSHU(Inst,Inst) |
+    SUBD(Inst,Inst) | SUBF(Inst,Inst) | SUBI(Inst,Inst) 
+  | SUBP(Inst,Inst) | SUBU(Inst,Inst) |
+    VREGP 
+;
+
+void compile (Inst e)
+{
+rewrite (e) type (Inst) :: treeparser of
+   reg ->   INDIRC(VREGP):     "# read register\n";
+|  reg ->   INDIRD(VREGP):     "# read register\n";
+|  reg ->   INDIRF(VREGP):     "# read register\n";
+|  reg ->   INDIRI(VREGP):     "# read register\n";
+|  reg ->   INDIRP(VREGP):     "# read register\n";
+|  reg ->   INDIRS(VREGP):     "# read register\n";
+|  stmt ->  ASGNC(VREGP,reg):  "# write register\n";
+|  stmt ->  ASGND(VREGP,reg):  "# write register\n";
+|  stmt ->  ASGNF(VREGP,reg):  "# write register\n";
+|  stmt ->  ASGNI(VREGP,reg):  "# write register\n";
+|  stmt ->  ASGNP(VREGP,reg):  "# write register\n";
+|  stmt ->  ASGNS(VREGP,reg):  "# write register\n";
+|  con ->  CNSTC:  "%a";
+|  con ->  CNSTI:  "%a";
+|  con ->  CNSTP:  "%a";
+|  con ->  CNSTS:  "%a";
+|  con ->  CNSTU:  "%a";
+|  stmt ->  reg:  "";
+|  reg ->  CVIU(reg) \ notarget(redex):  { "%0"  notarget(a); }
+|  reg ->  CVPU(reg) \ notarget(redex):  { "%0"  notarget(a); }
+|  reg ->  CVUI(reg) \ notarget(redex):  { "%0"  notarget(a); }
+|  reg ->  CVUP(reg) \ notarget(redex):  { "%0"  notarget(a); }
+|  reg ->  ADDRGP:  { "set %a,%%%c\n"  1; }
+end rewrite;
+}

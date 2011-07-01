@@ -1,0 +1,121 @@
+//////////////////////////////////////////////////////////////////////////////
+//  Testing persistence in Prop.
+//
+//  Persistence currently only means that objects are serializable into
+//  a byte stream.  Objects are inserted in network byte order so that
+//  they are portable across platforms.  Furthermore, pointer sharing
+//  is preserved.
+//////////////////////////////////////////////////////////////////////////////
+#include <iostream.h>
+#include <fstream.h>
+#include <assert.h>
+#include <string.h>
+#include <AD/generic/generic.h>  // Definition of type Bool
+#include <AD/persist/pstream.h>  // persistence streams
+
+//////////////////////////////////////////////////////////////////////////////
+//  Define a datatype with pretty printing.
+//////////////////////////////////////////////////////////////////////////////
+datatype EXP = num (int)      => _
+             | var (ID)       => _
+             | add (EXP, EXP) => "(" _ "+" _ ")"
+             | sub (EXP, EXP) => "(" _ "-" _ ")"
+             | mul (EXP, EXP) => "(" _ "*" _ ")"
+             | div (EXP, EXP) => "(" _ "/" _ ")"
+where type ID = const char *
+;
+
+//////////////////////////////////////////////////////////////////////////////
+//  Make the datatype persistent by defining the persistence type tag for 
+//  its constructors. 
+//
+//  The persistence type tag *must* be unique for each constructor.
+//
+//  The datatype definition together with the following refinement
+//  declaration can together serve as some sort of interface definition.
+//  The type EXP can now be communicated between programs through persistent
+//  streams.
+//////////////////////////////////////////////////////////////////////////////
+refine persistent EXP => "Simple expressions";
+
+//////////////////////////////////////////////////////////////////////////////
+//  Instantiate the datatype.  This declaration will generate all
+//  necessary pretty printing and persistence serialization methods.
+//////////////////////////////////////////////////////////////////////////////
+instantiate datatype EXP;
+
+//////////////////////////////////////////////////////////////////////////////
+//  A simple rewrite class to verify pointer sharing between nodes.
+//////////////////////////////////////////////////////////////////////////////
+rewrite class VerifySharing (EXP) 
+{
+public:
+   VerifySharing() {}
+};
+rewrite VerifySharing {
+   sub (x,y):  { assert(x == y); }
+|  mul (x,y):  { assert(x == y); }
+|  div (x,y):  { assert(x == y); }
+};
+
+//////////////////////////////////////////////////////////////////////////////
+//  Equality between expressions.
+//////////////////////////////////////////////////////////////////////////////
+Bool equal(EXP a, EXP b) 
+{  match (a) and (b) {
+      num i,    num j:    { return i == j; }
+   |  var x,    var y:    { return strcmp(x,y) == 0; }
+   |  add(a,b), add(c,d): { return equal(a,c) && equal(b,d); }
+   |  sub(a,b), sub(c,d): { return equal(a,c) && equal(b,d); }
+   |  mul(a,b), mul(c,d): { return equal(a,c) && equal(b,d); }
+   |  div(a,b), div(c,d): { return equal(a,c) && equal(b,d); }
+   |  _,        _       : { return false; }
+   }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//  The main program just writes out an expression; then read it back.
+//////////////////////////////////////////////////////////////////////////////
+int main()
+{  
+   // Create an expression with sharing
+   EXP e1 = add(num(1), var("x"));
+   EXP e2 = mul(e1,e1);
+   EXP e3 = div(e2,e2);
+   EXP e4 = sub(e3,e3);
+   EXP e5 = mul(e4,e4);
+   EXP e6 = div(e5,e5);
+   EXP e7 = sub(e6,e6);
+   EXP e8 = add(var("foo"),e7);
+
+   ///////////////////////////////////////////////////////////////////////////
+   // Write the expression to a file.
+   ///////////////////////////////////////////////////////////////////////////
+   cout << "Original = " << e8 << '\n';
+   {  ofstream out("persist1.dat");
+      Postream pout(out);
+      pout << e8;
+      out.close();
+   }
+
+   ///////////////////////////////////////////////////////////////////////////
+   // Read the expression back from the same file 
+   ///////////////////////////////////////////////////////////////////////////
+   EXP e;
+   {  ifstream in("persist1.dat");
+      Pistream pin(in);
+      e = (EXP)read_object(pin);
+      in.close();
+   } 
+
+   ///////////////////////////////////////////////////////////////////////////
+   //  Verify the structure
+   ///////////////////////////////////////////////////////////////////////////
+   cout << "Copy = " << e << '\n';
+   VerifySharing v;
+   v(e);
+   assert(equal(e8,e));
+
+   cout << "Persistence seems to be working on your platform\n";
+   return 0;
+}

@@ -1,0 +1,24 @@
+#include <iostream.h>
+#include "setl-lexeme.ph"
+#include "setl-syntax.ph"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Instantiate the token type
+//
+///////////////////////////////////////////////////////////////////////////////
+instantiate datatype SETL_Token;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This is the lexical scanner routine for our typed-SETL language
+//
+///////////////////////////////////////////////////////////////////////////////
+int SETLSyntax::get_token()
+{  matchscan while (lexer_buf)
+   {  lexeme class SETL_Token:        { return ?lexeme; }
+   |  /[(){}<>\[\],\+\-\*\/;.&^%#!]/: { return lexer_buf[0]; }
+   |  /[ \t\n]+/:                     // skip spaces
+   }
+   return EOF;
+}

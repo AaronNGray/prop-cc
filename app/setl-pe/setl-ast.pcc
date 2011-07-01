@@ -1,0 +1,7 @@
+#include "setl-ast.ph"
+
+instantiate datatype 
+    Exp, LabeledExp, Decl, Literal, Term, Ty,
+    List<Id>, List<Exp>, List<LabeledExp>, 
+    List<Decl>, List<Literal>, List<Term>, List<Ty>
+;

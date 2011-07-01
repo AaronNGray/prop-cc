@@ -1,0 +1,34 @@
+//
+//  Checking the polymorphic inference procedure's ability to catch
+//  type errors.
+//
+
+datatype List<T> = nil | cons(T,List<T>);
+datatype Tree<T> = empty | leaf(T) | node(Tree<T>,T,Tree<T>);
+
+instantiate datatype List<int>;
+
+int f(List<int> l) 
+{
+   match(l) {
+      case nil:                     return 1;
+      case cons(1,nil):             return 2;
+      case cons("bar",nil):         return 3;   // type checking fails here
+      case cons(1,cons("foo",nil)): return 4;   // type checking fails here
+      case node(empty,'a',leaf(3)): return 5;   // type checking fails here
+      case (nil : Tree<int>):       return 6;   // type checking fails here
+      case _:                       return 7;
+   }
+}
+
+int g(List< List<int> > l)
+{ 
+   match (l) {
+      case nil:                             return 1;
+      case cons(_,nil):                     return 2;
+      case cons(cons(1,_),nil):             return 3;
+      case cons(cons(1,_),cons("abd",nil)): return 4; // error! 
+      case cons(nil,nil):                   return 5; // ok
+      case cons(nil,1):                     return 6; // error!
+   }
+}

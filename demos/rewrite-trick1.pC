@@ -1,0 +1,42 @@
+#include <iostream.h>
+#include <AD/generic/generic.h>
+
+class Rewritable 
+{  Bool enabled;
+public:
+   Rewritable() : enabled(true) {}
+   void enable() { enabled = true; }
+   void disable() { enabled = false; }
+   Bool is_enabled() { return enabled; } 
+};
+ 
+datatype Exp : public Rewritable :: rewrite = 
+   NUM of int      => _  
+|  ADD of Exp, Exp => "(" _ "+" _ ")"
+   public:
+   {  friend Exp FINAL(Exp e) { e->disable(); return e; }
+   }
+;
+
+instantiate datatype Exp;
+
+rewrite class Silly (Exp) {
+public:
+   Silly() {}
+};
+
+rewrite Silly {
+   NUM 0 | redex->is_enabled():  FINAL(NUM(1))
+|  NUM x | redex->is_enabled():  FINAL(NUM(2))
+};
+
+int main() 
+{
+   Exp e = ADD(NUM(0),NUM(3));
+   Silly S;
+   cout << "Before = " << e << '\n';
+   S(e);
+   rewrite (e) type (Exp) { (e : Exp): { e->enable(); } }
+   cout << "After = " << e << '\n';
+   return 0;
+}

@@ -1,0 +1,1201 @@
+/////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the DatatypeClass
+//
+//////////////////////////////////////////////////////////////////////////////
+
+#include <AD/strings/quark.h>
+#include "datatype.ph"
+#include "ast.ph"
+#include "ir.ph"
+#include "type.h"
+#include "options.h"
+#include "list.h"
+#include "datagen.h"
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor for DatatypeClass
+//
+//////////////////////////////////////////////////////////////////////////////
+
+DatatypeClass::DatatypeClass
+    (CLASS_TYPE my_class_type,
+        Id cid, Id id, TyVars p, Inherits i, TyQual q, Decls d, Cons c,
+        DatatypeHierarchy * r)
+    : ClassDefinition(my_class_type,id,p,i,q,d),
+      constructor_name(cid), cons(c), root(r),
+      generating_list_special_forms(false),
+      cons_arg_ty(NOty), has_destructor(false)
+{
+  is_const = (qualifiers & QUALconst) ? "const " : "";
+  is_list  = is_list_constructor(constructor_name);
+  is_array = is_array_constructor(constructor_name);
+}
+
+DatatypeClass::~DatatypeClass() {}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to update the qualifiers and other
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::get_info()
+{
+  if (got_info) return;
+
+  got_info = true;
+
+/*
+  match (lookup_ty(datatype_name))
+  {
+  DATATYPEty({ qualifiers = q, body = b, unit, arg, terms ... },_):
+    {
+      qualifiers = q;
+      class_body = b;
+      for (int i = 0; i < number_of_subclasses; i++)
+      {
+        match (subclasses[i]->cons)
+        {
+        ONEcons { inherit, qual, body ... }:
+          {  // subclasses[i]->inherited_classes = inherit;
+	      subclasses[i]->qualifiers |= qual;
+	      subclasses[i]->class_body = body;
+          }
+        |  _: // skip
+        }
+      }
+    }
+  | _: // skip
+  }
+*/
+
+
+  //
+  //  Construct the inheritance list and fix it up if necessary
+  //
+  build_inheritance_list();
+
+  //
+  //  Use inline methods if we are not in space saving mode
+  //  or if the user specificately specified the inline qualifier
+  //
+  Bool must_inline     = (qualifiers & QUALinline);
+  Bool must_not_inline = (qualifiers & QUALextern);
+  if (must_inline && must_not_inline)
+  {
+    error( "%Ldatatype %s%V cannot be inline and external at the same time",
+           datatype_name, parameters
+         );
+  }
+  if (must_inline)
+    inline_methods = true;
+  else if (must_not_inline)
+    inline_methods = false;
+  else
+    inline_methods = !options.save_space;
+
+  //
+  //  Use a variant tag if we have subclasses in our hierarchy
+  //  and if the tag is not embedded into the pointer representation
+  //
+
+  has_variant_tag = ((optimizations & OPTtagless) == 0);
+
+  has_destructor = (qualifiers & QUALvirtualdestr) || (cons && is_array);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor for DatatypeHierarchy
+//
+//////////////////////////////////////////////////////////////////////////////
+
+DatatypeHierarchy::DatatypeHierarchy
+    (Id id, TyVars p, Inherits i, TyQual q, TermDefs t, Decls d)
+    : DatatypeClass(DATATYPE_CLASS,id,#"a_" + id,p,i,q,d,NOcons,this),
+      datatype_name(id), term_defs(t), subclasses(0),
+      number_of_subclasses(0), datatype_ty(NOty)
+{
+  unit_constructors = 0;
+  arg_constructors  = 0;
+  constructor_terms = 0;
+  use_persist_base  = false;
+  use_gc_base       = false;
+  got_info          = false;
+
+  //
+  //  Build the class hierarchy
+  //
+  build_class_hierarchy();
+}
+
+DatatypeHierarchy::~DatatypeHierarchy()
+{
+  delete [] subclasses;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to build the class hierarchy given a datatype.
+//  We'll create a DatatypeClass object for each subclass.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::build_class_hierarchy()
+{
+  // don't bother building the class hierarchy for views
+
+  if (is_view()) return;
+
+  // construct class hierarchy
+
+  match (lookup_ty(datatype_name))
+  {
+  mytype as DATATYPEty({ unit, arg, opt, terms, hierarchy ... }, _):
+    {
+      arity = unit + arg;
+      unit_constructors = unit;
+      arg_constructors  = arg;
+      constructor_terms = terms;
+      optimizations     = opt;
+      datatype_ty       = mytype;
+      hierarchy         = this;
+
+      if (arg > 0) // build class hierarchy only if we have more than
+	      // one variants
+      {
+        if (opt & OPTsubclassless) // no subclass
+        {
+          number_of_subclasses = 0;
+          for (int i = 0; i < arity; i++)
+          {
+            if (terms[i]->ty != NOty)
+            {
+              cons = terms[i];
+              constructor_name = cons->name;
+              is_list  = is_list_constructor(constructor_name);
+              is_array = is_array_constructor(constructor_name);
+              class_body = append(class_body, terms[i]->body);
+            }
+          }
+        }
+      else // use subclass
+        {
+          number_of_subclasses = arg;
+          subclasses = new DatatypeClass * [number_of_subclasses];
+          for (int i = 0, j = 0; i < arity; i++)
+          {
+            if (terms[i]->ty != NOty)
+              subclasses[j++] = build_one_subclass(terms[i]);
+          }
+        }
+      }
+    }
+  | _: // skip
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to build one subclass in the hierarchy.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+DatatypeClass *DatatypeHierarchy::build_one_subclass( Cons cons)
+{
+  match (cons)
+  {
+  ONEcons { name, ty, location, inherit, body, qual, class_def ... }:
+    {
+      return class_def = new DatatypeClass(
+	      DATATYPE_SUBCLASS,
+	      name,
+	      Quark(mangle(datatype_name),"_",mangle(name)),
+	      parameters,
+	      add_inherit(class_name,parameters,inherit),
+	      qual,
+	      body,
+	      cons,
+	      this);
+    }
+  | _:   { return 0; }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to build the inheritance list of the class hierachy.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::build_inheritance_list()
+{
+  if (qualifiers & QUALrelation)    append_base_class("Fact");
+  if (qualifiers & QUALrewritable)  append_base_class("TermObj");
+  if (qualifiers & QUALpersistent)  append_base_class("PObject");
+
+  if (qualifiers & QUALcollectable)
+  {
+    // Make sure we are only inheriting from one collectable object
+    // Make sure virtual inheritance is not used.
+    // Make sure that the collectable object is the first base class.
+
+    int pos       = 0;
+    int count     = 0;
+    for_each (Inherit, inh, inherited_classes)
+    {
+      if((inh->qualifiers & QUALcollectable) || is_gc_ty(inh->super_class))
+      {
+        count++;
+        if (pos != 0)
+        {
+          msg("%!%wcollectable object %T must be first base class\n",
+          inh->loc(), inh->super_class);
+        }
+      }
+      if (inh->qualifiers & QUALvirtual)
+      {
+        msg( "%!%wvirtual inheritance of %T may fail"
+	         " with garbage collection\n",
+             inh->loc(), inh->super_class
+           );
+      }
+      pos++;
+    }
+    if (count >= 2)
+      error("%Linheritance of multiple collectable object will fail\n");
+    if (count == 0)
+      add_base_class("GCObject");
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+// Method to generate a class constructor
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::gen_class_constructor( CodeGen& C, Tys tys, DefKind k)
+{
+  ClassDefinition::gen_class_constructor( C, tys, k);
+
+  if (is_list)
+  {
+    generating_list_special_forms = true;
+    ClassDefinition::gen_class_constructor( C, tys, k);
+    generating_list_special_forms = false;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the constructor parameters.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::gen_class_constructor_parameters
+   (CodeGen& C, Tys tys, DefKind k)
+{
+  Ty arg_ty = cons_arg_ty;
+  match ( deref( arg_ty))
+  {
+  TUPLEty #[a,b] | generating_list_special_forms:
+    { arg_ty = mktuplety(#[a]); }
+  |  _: // skip
+  }
+  Parameter param;
+  switch (k)
+  {
+  case EXTERNAL_IMPLEMENTATION:
+  case EXTERNAL_INSTANTIATION:
+    param = TYsimpleformal; break;
+  default:
+    param = TYformal; break;
+  }
+  C.pr( "%b", arg_ty, cons->name, param);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the constructor initializers.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::gen_class_constructor_initializers
+   (CodeGen& C, Tys tys, DefKind k)
+{
+  match (cons)
+  {
+  ONEcons { ty, cons_ty, name ... }:
+    {
+      Id colon = " : ";
+      Id comma = "";
+      C.pr( "%^");
+
+      // First generate the tag initializer
+      if (root->has_variant_tag)
+      {
+        if (k == EXTERNAL_INSTANTIATION)
+          C.pr( " : %s%P(tag_%S)", root->class_name, tys, constructor_name);
+        else
+          C.pr( " : %s%V(tag_%S)", root->class_name, parameters, constructor_name);
+        colon = ""; comma = ", ";
+      }
+
+      // Now generate the initializers for the arguments
+      gen_constructor_initializers( C, tys, k, cons_arg_ty, colon, comma);
+    }
+  | _: // skip
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the constructor initializers.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::gen_constructor_initializers
+   (CodeGen& C, Tys tys, DefKind k, Ty ty, Id colon, Id comma)
+{
+  if (is_array)
+  {
+    C.pr( "%s%slen_(x__len_)", colon, comma);
+    colon = "";
+    comma = ", ";
+    ty = mkarrayty( ty, IDexp( "len_"));
+  }
+
+  match ( deref( ty))
+  {
+    TUPLEty #[]: // skip
+  | TUPLEty ts: // tuple arguments
+      {
+        int i = 1;
+        for_each(Ty, t, ts)
+        {
+          if (generating_list_special_forms && i == 2)
+          {
+            if (k == EXTERNAL_INSTANTIATION)
+               C.pr( "%s%s_%i((%s%P *)0)", colon, comma,
+                      i, root->class_name, tys, i);
+            else
+               C.pr("%s%s_%i((%s%V *)0)", colon, comma,
+                      i, root->class_name, parameters, i);
+            colon = "";
+            comma = ", ";
+          }
+          else
+          {
+            if (! is_array_ty(t))
+            {
+              C.pr("%s%s_%i(x_%i)", colon, comma, i, i);
+              colon = "";
+              comma = ", ";
+            }
+          }
+          i++;
+        }
+      }
+  | RECORDty (labels,_,tys): // record arguments
+      {
+        Ids l; Tys t;
+        for (l = labels, t = tys; l && t; l = l->#2, t = t->#2)
+        {
+          if (! is_array_ty(t->#1))
+          {
+            C.pr( "%s%s%s(x_%s)", colon, comma, l->#1, l->#1);
+            colon = "";
+            comma = ", ";
+          }
+        }
+      }
+  | ty:  // single argument
+      {
+        if (! is_array_ty(ty))
+        {
+          C.pr( "%s%s%S(x_%S)",
+                colon, comma, constructor_name, constructor_name);
+          colon = ""; comma = ", ";
+        }
+      }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Methods to generate body of a constructor
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::gen_class_constructor_body( CodeGen& C, Tys tys, DefKind k)
+{
+  if (cons == NOcons) return;
+
+  Ty ty = cons_arg_ty;
+  if (is_array)
+    ty = mkarrayty( ty, IDexp( "len_"));
+
+  // Now generate the initializers for array arguments
+
+  match ( deref( ty))
+  {
+    TUPLEty #[]: // skip
+  | TUPLEty ts: // tuple arguments
+    {
+      int i = 1;
+      for_each(Ty, t, ts)
+      {
+        gen_array_initializer( C, tys, k, index_of(i), t, "x");
+        i++;
+      }
+    }
+  | RECORDty (labels,_,tys):
+    {
+      Ids ls; Tys ts;
+      for(ls = labels, ts = tys; ls && ts; ls = ls->#2, ts = ts->#2)
+      {
+        gen_array_initializer( C, tys, k, ls->#1, ts->#1, "x_");
+      }
+    }
+  | t:
+    { gen_array_initializer( C, tys, k, mangle( cons->name), t, "x_"); }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Methods to generate body of a constructor
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::gen_array_initializer
+   (CodeGen& C, Tys tys, DefKind k, Id exp, Ty ty, Id prefix)
+{
+  match (deref(ty))
+  {
+  ARRAYty( elem_ty, bound):
+    {
+      C.pr( "%^{%+"
+            "%^for (int i__ = 0; i__ < (%e); i__++)"
+            "%^{%+",
+            bound);
+      if (is_array)
+      {
+        C.pr( "%^typedef %t ELEMENT_TYPE__;"
+              "%^new (%S + i__) ELEMENT_TYPE__ (%s%S[i__]);",
+              elem_ty, "", exp, prefix, exp);
+      }
+      else
+      {
+        C.pr( "%^%S[i__] = %s%S[i__];", exp, prefix, exp);
+      }
+      C.pr("%-%^}" "%-%^}");
+    }
+  | _: // skip
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Methods to generate array initialization code.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Methods to generate destructor code.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::gen_class_destructor_body( CodeGen& C, Tys tys, DefKind)
+{
+  if (is_array && cons)
+  {
+    C.pr( "%^{%+"
+          "%^for (int i__; i__ < len_; i__++)"
+          "%^{%+"
+          "%^typedef %t ELEMENT_TYPE;"
+          "%^(%S+i__)->~ELEMENT_TYPE();"
+          "%-%^}"
+          "%-%^}",
+          cons_arg_ty, "", constructor_name
+        );
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Methods to generate the forward declarations for a datatype.
+//  These include unit constructors for the class.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::generate_forward_declarations( CodeGen& C)
+{
+  // don't generate code for views
+  if (is_view()) return;
+
+  get_info();
+  generate_forward_class_declarations(C);
+  generate_forward_constructor_declarations(C);
+
+  // don't generate code for forward definitions
+  if (term_defs == #[]) return;
+
+  generate_unit_constructors(C);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate forward class declarations.
+//  If the datatype is monomorphic, generate a typedef.
+//  Otherwise, generate a forward template declaration
+//  and a #define.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::generate_forward_class_declarations( CodeGen& C)
+{  // Generate forward declarations only if we have at least one variant
+  if (arg_constructors == 0 && term_defs != #[]) return;
+
+  C.pr(
+        "%^%/"
+        "%^//"
+        "%^// Forward class definition for %s%V"
+        "%^//"
+        "%^%/"
+        "%n#ifndef datatype_%S_defined"
+        "%n#define datatype_%S_defined",
+        datatype_name, parameters, datatype_name, datatype_name
+      );
+
+  if (is_polymorphic())
+  {  // Polymorphic datatypes
+    C.pr( "%^%Hclass %s;", parameters, class_name);
+    C.pr( "%n#define %s%v %s%s%V *\n",
+          datatype_name, parameters, is_const, class_name, parameters);
+  }
+  else
+  {  // Monomorphic datatypes
+     C.pr( "%^  class %s;", class_name);
+     C.pr( "%^  typedef %s%s * %s;", is_const, class_name, datatype_name);
+  }
+
+  C.pr( "%n#endif\n\n");
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate forward declarations for datatype constructors.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::generate_forward_constructor_declarations( CodeGen& C)
+{
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate code for the definition of a datatype
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::generate_datatype_definitions( CodeGen& C)
+{
+  // don't generate code for views
+  if (is_view()) return;
+
+  // don't generate code for forward definitions
+  if (term_defs == #[]) return;
+
+  // If there are no argument constructors, don't generate code
+  get_info();
+
+  if (arg_constructors == 0)
+    gen_class_postdefinition(C);
+  else
+  {
+    // Otherwise generate code for all the classes.
+    gen_class_definition(C);
+    for (int i = 0; i < number_of_subclasses; i++)
+      subclasses[i]->gen_class_definition(C);
+
+    // Generate datatype constructors
+    DefKind kind = inline_methods
+        ? INLINE_IMPLEMENTATION : INTERFACE_DEFINITION;
+
+    generate_datatype_constructors(C,#[],kind);
+
+    if (options.inline_casts == false || parameters != #[])
+      generate_downcasting_functions(C);
+    C.pr("\n\n");
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the unit constructor names.
+//  If there are no argument constructors, represent the constructors as
+//  enum's.   Otherwise, represent them as #define constants.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::generate_unit_constructors( CodeGen& C)
+{
+  if (unit_constructors == 0) return;
+  if (arg_constructors == 0)
+    generate_constructor_tags( C, "", "", unit_constructors, constructor_terms);
+  else
+    generate_define_tags( C, unit_constructors, constructor_terms);
+  C.pr( "\n\n");
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the constructor tags as enum's.
+//  Constructor tags are used to represent unit constructors
+//  and variant tags.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::generate_constructor_tags
+  (CodeGen& C, Id enum_prefix, Id tag_prefix, int n, Cons terms[])
+{
+  C.pr("%^enum %s%s {%+", enum_prefix, datatype_name);
+  Bool comma = false;
+  for (int i = 0; i < n; i++)
+  {
+    if (comma) C.pr
+      ( ", ");
+    if (i % 3 == 0)
+      C.pr( "%^");
+    C.pr( "%s%S = %i", tag_prefix, terms[i]->name, tag_of(terms[i]));
+    comma = true;
+  }
+  C.pr( "%-%^};\n\n");
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the unit constructor tags as #define constants.
+//  This is necessary if we have both unit and argument constructors
+//  for a type.  If polymorphic types are used, the #define constants
+//  are not given a type.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::generate_define_tags( CodeGen& C, int n, Cons terms[])
+{
+  for (int i = 0; i < n; i++)
+    C.pr("%n#  define %S %i", terms[i]->name, tag_of(terms[i]));
+/*
+   {  if (is_polymorphic())
+     C.pr("%n#  define %S %i", terms[i]->name, tag_of(terms[i]));
+      else
+     C.pr("%n#  define %S (%s)%i",
+        terms[i]->name, datatype_name, tag_of(terms[i]));
+   }
+*/
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate datatype constructor functions for a datatype.
+//  Datatype constructor functions are just external functions.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::generate_datatype_constructors
+   (CodeGen& C, Tys tys, DefKind kind)
+{
+  C.pr(
+        "%^%/"
+        "%^//"
+        "%^// Datatype constructor functions for %s%V"
+        "%^//"
+        "%^%/",
+        datatype_name, parameters
+      );
+
+  generate_datatype_constructor( C, tys, kind);
+  for (int i = 0; i < number_of_subclasses; i++)
+    subclasses[i]->generate_datatype_constructor( C, tys, kind);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a datatype constructor function.
+//
+//////////////////////////////////////////////////////////////////////////////
+void DatatypeClass::generate_datatype_constructor
+   (CodeGen& C, Tys tys, DefKind kind)
+{
+  // No datatype descriptor, then no datatype constructor function
+  if (cons == NOcons) return;
+
+  Id prefix = "";
+
+  switch (kind)
+  {
+  case INLINE_IMPLEMENTATION:   prefix = "inline "; break;
+  case INTERFACE_DEFINITION:
+  case EXTERNAL_DEFINITION:     prefix = "extern "; break;
+  case EXTERNAL_IMPLEMENTATION:
+  case EXTERNAL_INSTANTIATION:  prefix = ""; break;
+  }
+
+  // Generate special form constructors for lists and vectors
+  int special_forms = 1;
+  if (is_list)
+    special_forms = 2;
+  else if (is_array)
+    special_forms = options.max_vector_len + 2;
+  Tys params = #[];
+  Ids labels = #[];
+
+  for (int form = 1; form <= special_forms; form++)
+  {
+    Ty formals_ty = cons_arg_ty;
+    Ty actuals_ty = cons_arg_ty;
+    Id formals_name = constructor_name;
+
+    // If it is a list special form, fake the second argument
+
+    if (is_list && form == 2)
+    {
+      match (deref(formals_ty))
+      {
+      TUPLEty #[a,b]:
+        { formals_ty = actuals_ty = mktuplety(#[a]); }
+      | t:
+        { bug("%LDatatypeClass::generate_datatype_constructor: %T\n", t); }
+      }
+    }
+
+    // If it is an array special form, fake the parameter arguments
+
+    if (is_array && form >= 2)
+    {
+      if (form >= 3)
+      {
+        params = #[ cons_arg_ty ... params ];
+        labels = append( labels, #[index_of( form-2)]);
+      }
+      formals_ty = mkrecordty( labels, params, false);
+      formals_name = mangle( constructor_name);
+    }
+
+    switch (kind)
+    {
+    case EXTERNAL_INSTANTIATION:
+    case EXTERNAL_DEFINITION:
+          C.pr(
+                "%^%s%s%P * %S %b",
+                prefix, root->class_name, tys, constructor_name,
+                formals_ty, formals_name, TYsimpleformal
+              );
+          break;
+    default:
+          C.pr(
+                "%^%H%s%s%V * %S %b",
+                parameters,
+                prefix, root->class_name, parameters, constructor_name,
+                formals_ty, formals_name, TYformal
+              );
+          break;
+    }
+
+    //  Don't generate code for interface definitions
+
+    if (kind == INTERFACE_DEFINITION ||
+        kind == EXTERNAL_DEFINITION)
+      { C.pr( ";"); continue; }
+
+    C.pr( "%^{%+");
+
+    //
+    // Generate a temporary array
+    //
+    if (is_array && form >= 2)
+    {
+      C.pr( "%^const int x__len_ = %i;", form - 2);
+      C.pr( "%^%t x_%S[%i];", cons_arg_ty, "", constructor_name, form - 2);
+      for (int i = 0; i < form - 2; i++)
+        C.pr( "%^x_%S[%i] = x__%i;", constructor_name, i, i+1);
+    }
+
+    C.pr( "%^return ");
+
+    //
+    // In the tagged pointer representation, the variant tag is embedded
+    // within the data address.
+    //
+    if (root->optimizations & OPTtaggedpointer)
+    {
+    switch (kind)
+      {
+      case EXTERNAL_INSTANTIATION:
+            C.pr ( "(%s%P*)((unsigned long)(", root->class_name, tys);
+            break;
+      default:
+            C.pr ( "(%s%V*)((unsigned long)(", root->class_name, parameters);
+            break;
+      }
+    }
+
+    //
+    // In the unboxed representation, the argument is embedded within
+    // the address.
+    //
+    if (root->optimizations & OPTunboxed)
+    {
+       int tag_bits = DatatypeCompiler::max_embedded_bits;
+       for (int i = root->unit_constructors;
+            i >= DatatypeCompiler::max_embedded_tags; i >>= 1) tag_bits++;
+         C.pr(
+               "(%s *)(((unsigned long)%b<<(%i+1))|%i)",
+               root->class_name, actuals_ty, constructor_name, TYactual,
+               tag_bits, (1 << tag_bits)
+             );
+    }
+
+    //
+    // The usual boxed implementation
+    //
+    else
+    {
+      C.pr ("new ");
+      switch (kind)
+      {
+      case EXTERNAL_INSTANTIATION:
+            if (is_array)
+              C.pr( "(sizeof(%s%P)+sizeof(%t)*x__len_) ",
+                    class_name, tys, cons_arg_ty, "");
+                    C.pr ("%s%P %b", class_name, tys, actuals_ty,
+                    constructor_name, TYactual);
+            break;
+      default:
+            if (is_array)
+              C.pr( "(sizeof(%s%V)+sizeof(%t)*x__len_) ",
+                    class_name, parameters, cons_arg_ty, "");
+            C.pr( "%s%V %b", class_name, parameters, actuals_ty,
+                  constructor_name, TYactual);
+            break;
+      }
+    }
+
+    if (root->optimizations & OPTtaggedpointer)
+    {
+      switch (kind)
+      {
+      case EXTERNAL_INSTANTIATION:
+            C.pr( ")|%s%P::tag_%S)",
+   	              root->class_name, tys, constructor_name);
+   	        break;
+      default:
+            C.pr( ")|%s%V::tag_%S)",
+   	              root->class_name, parameters, constructor_name);
+   	        break;
+      }
+    }
+
+    C.pr( ";%-%^}\n");
+  }
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate code before the interface
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::gen_class_predefinition( CodeGen& C)
+{
+  match (cons)
+  {
+  ONEcons { ty, name ... }:
+    {
+      cons_arg_ty = ty;
+      C.pr(
+            "%^%/"
+            "%^//"
+            "%^// Class for datatype constructor %s%V::%s"
+            "%^//"
+            "%^%/",
+            root->datatype_name, parameters, name
+          );
+    }
+  | NOcons:
+    {
+      cons_arg_ty = NOty;
+      C.pr(
+            "%^%/"
+            "%^//"
+            "%^// Base class for datatype %s%V"
+            "%^//"
+            "%^%/",
+            root->datatype_name, parameters);
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+// Method to generate the interface of a class
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::gen_class_interface( CodeGen& C)
+{
+   // Generate the internal representation
+   // if there is a constructor descripter and the
+   // argument is not represented in unboxed form.
+
+   C.pr( "%-%^public:%+");
+
+   match (cons)
+   {
+   ONEcons { name, opt, ty, location ... }:
+     {
+       if ((opt & OPTunboxed) == 0)
+       {
+         C.pr( "%#%^%b\n", location->begin_line, location->file_name,
+               ty, name, TYbody);
+       }
+     }
+   | _: // skip
+   }
+
+   DefKind kind = root->inline_methods
+     ? INLINE_IMPLEMENTATION : INTERFACE_DEFINITION;
+
+   // Generate the constructor of the class
+   if (cons != NOcons)
+     gen_class_constructor( C, #[], kind);
+
+   // Generate the destructor of the class
+
+   if ((root->qualifiers & QUALvirtualdestr) ||
+       (qualifiers & QUALvirtualdestr) ||
+       (cons && is_array))
+     gen_class_destructor( C, #[], kind);
+
+   // Generate the method declarations for all different types
+   // of extra functionality
+   if (root->qualifiers & QUALpersistent)
+     generate_persistence_interface(C);
+   //if (root->qualifiers & QUALvariable)    generate_logic_interface(C);
+   if (root->qualifiers & QUALcollectable)
+     generate_gc_interface(C);
+   if (root->qualifiers & QUALrelation)
+     generate_inference_interface(C);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+// Method to generate the interface of a base class
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::gen_class_interface( CodeGen& C)
+{
+  // Generate tags for arg constructors
+
+  if (arg_constructors > 1)
+  {
+    C.pr( "%-%^public:%+");
+    generate_constructor_tags( C, "Tag_", "tag_",
+        arg_constructors, constructor_terms + unit_constructors);
+  }
+
+  // Generate a variant tag and a base class constructor for it
+  // only if we have a variant_tag representation.
+
+  if (has_variant_tag)
+  {
+    C.pr(
+          "%-%^public:%+"
+          "%^const Tag_%s tag__; // variant tag"
+          "%-%^protected:%+"
+          "%^inline %s(Tag_%s t__) : tag__(t__) {%&}",
+          datatype_name, class_name, datatype_name, constructor_code
+        );
+  }
+
+  // Generate the untagging functions
+  generate_untagging_member_functions(C);
+
+  DatatypeClass::gen_class_interface(C);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate untagging functions for a datatype class.
+//  Three untagging functions are generated:
+//      int untag() const  --- returns the variant tag of the class
+//      friend int untag(type * x) -- return a tag for the object x
+//                                    so that each variant (boxed or unboxed)
+//                                    gets a unique tag.
+//      friend int boxed(type * x) -- returns true if object is boxed.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::generate_untagging_member_functions( CodeGen& C)
+{
+   ///////////////////////////////////////////////////////////////////////////
+   // Generate untagger
+   ///////////////////////////////////////////////////////////////////////////
+   // if (has_variant_tag)
+   //    C.pr("%^inline int untag() const { return tag__; }");
+}
+
+void DatatypeHierarchy::generate_untagging_functions( CodeGen& C)
+{
+  if (arg_constructors == 0) return;
+
+  ///////////////////////////////////////////////////////////////////////////
+  // Generate boxed() predicate
+  ///////////////////////////////////////////////////////////////////////////
+
+  if (unit_constructors == 0)
+    C.pr( "%^%Hinline int boxed(const %s%V *) { return 1; }",
+ 	      parameters, class_name, parameters);
+  else if (unit_constructors == 1)
+    C.pr( "%^%Hinline int boxed(const %s%V * x) { return x != 0; }",
+ 	      parameters, class_name, parameters);
+  else
+     C.pr( "%^%Hinline int boxed(const %s%V * x)"
+           " { return (unsigned long)x >= %i; }",
+ 	       parameters, class_name, parameters, unit_constructors);
+
+  ///////////////////////////////////////////////////////////////////////////
+  // Generate function that untags the pointer if
+  // the tags are embedded into a pointer.
+  ///////////////////////////////////////////////////////////////////////////
+
+  if (optimizations & OPTtaggedpointer)
+  {
+  C.pr(
+        "%^%/"
+        "%^//"
+        "%^// Embbeded tag extraction functions"
+        "%^//"
+        "%^%/"
+        "%^%Hinline int untagp(const %s%V * x)"
+        "%^  { return (unsigned long)x & %i; }"
+        "%^%Hinline %s%s%V * derefp(const %s%V * x)"
+        "%^  { return (%s%s%V*)((unsigned long)x & ~%i); }",
+        parameters, class_name, parameters,
+        DatatypeCompiler::max_embedded_tags - 1,
+        parameters,is_const,class_name, parameters, class_name, parameters,
+        is_const, class_name, parameters,
+        DatatypeCompiler::max_embedded_tags - 1
+      );
+  }
+
+  ///////////////////////////////////////////////////////////////////////////
+  // Generate a generic untag function that works on all boxed
+  // and unboxed variants.
+  ///////////////////////////////////////////////////////////////////////////
+
+  if (unit_constructors == 0)
+  {
+    // No unboxed variants.
+    if (optimizations & OPTtaggedpointer)
+      C.pr( "%^%Hinline int untag(const %s%V * x) { return untagp(x); }",
+            parameters, class_name, parameters);
+    else if (arg_constructors == 1)
+      C.pr( "%^%Hinline int untag(const %s%V *) { return 0; }",
+            parameters, class_name, parameters);
+    else
+      C.pr( "%^%Hinline int untag(const %s%V * x) { return x->tag__; }",
+            parameters, class_name, parameters);
+  }
+  else if (unit_constructors == 1)
+  {
+    // Only one unboxed variants.
+    if (optimizations & OPTtaggedpointer)
+      C.pr( "%^%Hinline int untag(const %s%V * x) "
+            "{ return x ? untagp(x)+1 : 0; }",
+            parameters, class_name, parameters);
+    else if (arg_constructors == 1)
+      C.pr( "%^%Hinline int untag(const %s%V * x) { return x ? 1 : 0; }",
+            parameters, class_name, parameters);
+    else
+      C.pr( "%^%Hinline int untag(const %s%V * x)"
+            " { return x ? (x->tag__+1) : 0; }",
+            parameters, class_name, parameters);
+  }
+  else
+  {
+    // More than one unboxed variants.
+    if (optimizations & OPTtaggedpointer)
+      C.pr( "%^%Hinline int untag(const %s%V * x)"
+            " { return boxed(x) ? untagp(x) + %i : (int)x; }",
+            parameters, class_name, parameters, unit_constructors);
+    else if (arg_constructors == 1)
+      C.pr( "%^%Hinline int untag(const %s%V * x)"
+            " { return boxed(x) ? %i : (int)x; }",
+            parameters, class_name, parameters, 1 + unit_constructors);
+    else
+      C.pr( "%^%Hinline int untag(const %s%V * x)"
+            " { return boxed(x) ? x->tag__ + %i : (int)x; }",
+            parameters, class_name, parameters, unit_constructors);
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+// Method to generate downcasting functions
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::generate_downcasting_functions( CodeGen& C)
+{
+  C.pr(
+        "%^%/"
+        "%^//"
+        "%^// Downcasting functions for %s%V"
+        "%^//"
+        "%^%/",
+        datatype_name, parameters
+      );
+  for (int i = 0; i < number_of_subclasses; i++)
+  {
+    DatatypeClass * D = subclasses[i];
+    C.pr( "%^%Hinline %s%V * _%S(const %s%V * _x_) { return (%s%V *)_x_; }",
+          parameters, D->class_name, parameters, D->constructor_name,
+          class_name, parameters, D->class_name, parameters);
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate code right after the main class definition.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::gen_class_postdefinition( CodeGen& C)
+{
+   C.pr( "\n");
+
+   // Interfaces for extra features
+   if (root->qualifiers & QUALprintable) generate_print_interface(C);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate code right after the main class definition.
+//
+//////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::gen_class_postdefinition( CodeGen& C)
+{
+   generate_untagging_functions(C);
+   DatatypeClass::gen_class_postdefinition(C);
+}

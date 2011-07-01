@@ -1,0 +1,122 @@
+graph:{
+   title: "1"
+   yspace: 40
+   xspace: 40
+   layoutalgorithm: minbackward
+   display_edge_labels: yes
+   label: "A Sample Graph"
+   node:{
+      title: "31"
+      shape: ellipse
+      color: lightblue
+      label: "STOP"
+   }
+   node:{
+      title: "28"
+      shape: rhomb
+      color: lightyellow
+      label: "x != 0"
+   }
+   node:{
+      title: "10"
+      color: lightgreen
+      label: "x := x - 2;\nz := x * x;\nq : = q/z;"
+   }
+   graph:{
+      title: "12"
+      color: lightgreen
+      label: "sub region"
+      node:{
+         title: "21"
+         color: lightgreen
+         label: "y := y + x;\nx := z + 1;"
+      }
+      node:{
+         title: "18"
+         color: lightgreen
+         label: "x := x - 1;\ny := y / z;\nq := q[1];"
+      }
+      node:{
+         title: "15"
+         color: lightgreen
+         label: "x := x + 1;\ny := y / z;\nq := q[0];"
+      }
+      node:{
+         title: "13"
+         shape: rhomb
+         color: lightyellow
+         label: "x > 0"
+      }
+      edge:{
+         sourcename: "18"
+         targetname: "21"
+      }
+      edge:{
+         sourcename: "15"
+         targetname: "21"
+      }
+      edge:{
+         sourcename: "13"
+         targetname: "18"
+         label: "false"
+      }
+      edge:{
+         sourcename: "13"
+         targetname: "15"
+         label: "true"
+      }
+   }
+   node:{
+      title: "7"
+      shape: rhomb
+      color: lightyellow
+      label: "q > x"
+   }
+   node:{
+      title: "4"
+      color: lightgreen
+      label: "x := y + z;\nq := r * s;"
+   }
+   node:{
+      title: "2"
+      shape: ellipse
+      color: lightblue
+      label: "START"
+   }
+   backedge:{
+      sourcename: "28"
+      targetname: "4"
+      label: "false"
+   }
+   edge:{
+      sourcename: "28"
+      targetname: "31"
+      label: "true"
+   }
+   edge:{
+      sourcename: "10"
+      targetname: "31"
+   }
+   edge:{
+      sourcename: "21"
+      targetname: "28"
+   }
+   edge:{
+      sourcename: "7"
+      targetname: "13"
+      label: "true"
+   }
+   edge:{
+      sourcename: "7"
+      targetname: "10"
+      label: "false"
+   }
+   edge:{
+      sourcename: "4"
+      targetname: "7"
+   }
+   edge:{
+      sourcename: "2"
+      targetname: "4"
+   }
+}

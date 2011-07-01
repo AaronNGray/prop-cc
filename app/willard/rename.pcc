@@ -1,0 +1,101 @@
+#include <AD/pretty/postream.h>
+#include "rename.ph"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor and destructor for the renaming phase
+//
+///////////////////////////////////////////////////////////////////////////////
+RemoveDuplicateNames::RemoveDuplicateNames() {}
+RemoveDuplicateNames::~RemoveDuplicateNames() {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to create a new variable binding.  We'll only create a
+//  new name if the current binding overshadows some previous name.
+//
+///////////////////////////////////////////////////////////////////////////////
+void RemoveDuplicateNames::new_binding(Id& x) 
+{  if (env.contains(x))
+   {  Id y = gensym(x);
+      env.insert(x,#[y ... env[x]]); 
+   } else
+   {  env.insert(x,#[x]); }
+}
+
+void RemoveDuplicateNames::new_binding(Ids ids)
+{  match while (ids) of
+      #[h ... t]: { new_binding(h); ids = t; }
+   end match;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to remove a variable binding.
+//
+///////////////////////////////////////////////////////////////////////////////
+void RemoveDuplicateNames::old_binding(Id& x) 
+{  Ids names = env[x];
+   match (names) of
+     #[y]:           { env.remove(x); x = y; }
+   | #[y ... rest]:  { env.insert(x,rest); x = y; }
+   | _: // skip
+   end match;
+}
+
+void RemoveDuplicateNames::old_binding(Ids ids)
+{  match while (ids) of
+      #[h ... t]: { old_binding(h); ids = t; }
+   end match;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to rename a variable 
+//
+///////////////////////////////////////////////////////////////////////////////
+void RemoveDuplicateNames::rename(Id& x) 
+{  if (env.contains(x))
+   {  Ids names = env[x];
+      match (names) of
+         #[y ... _]: { x = y; }
+      |  _: // skip
+      end match;
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to invoke the renaming phase.
+//
+///////////////////////////////////////////////////////////////////////////////
+Exp RemoveDuplicateNames::remove_duplicate_names(Exp e) 
+{  message("Renaming phase", e); env.clear(); (*this)(e); return e; }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Transformation rules
+//
+///////////////////////////////////////////////////////////////////////////////
+rewrite RemoveDuplicateNames
+{
+   // We use before and after rules to remove duplicates from variable names.
+   // As each new binding occurrence is found, we enter a new binding
+   // into the current environment.  Identifiers found within
+   // the binding occurrence are then renamed.
+
+preorder: // insert new bindings
+   EXISTS(x,_,_):     { new_binding(x); }
+|  FORALL(x,_,_):     { new_binding(x); }
+|  GENERATOR(xs,_,_): { new_binding(xs); }
+|  LET(x,_,_):        { new_binding(x); }
+
+	// rename variables
+|  ID x:             { rename(x); }
+
+postorder: // removes the binding
+|  EXISTS(x,A,_):      { old_binding(x);  define_range(x,A); }
+|  FORALL(x,A,_):      { old_binding(x);  define_range(x,A); }
+|  GENERATOR(xs,As,_): { old_binding(xs); define_range(xs,As); }
+|  LET(x,_,_):         { old_binding(x); }
+};

@@ -1,0 +1,24 @@
+//
+//  An ambiguious grammar with ambiguity resolved using precedence rules
+//
+
+datatype T :: lexeme = IDENT | INTEGER ;
+
+syntax class Expressions {};
+
+syntax Expressions 
+{  
+    //  '*' and '/' bind tighter to the left
+    //  '+' and '-' have lower precedence
+
+    left: 1 '*' '/';  
+    left: 2 '+' '-';  
+    E(int) : E '+' E		{ $$ = $1 + $3; }
+           | E '-' E		{ $$ = $1 - $3; }
+           | E '*' E		{ $$ = $1 * $3; }
+           | E '/' E		{ $$ = $1 / $3; }
+           | '(' E ')'	{ $$ = $2; }
+           | IDENT
+           | INTEGER
+           ;
+};

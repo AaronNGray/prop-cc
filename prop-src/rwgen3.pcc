@@ -1,0 +1,663 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the dynamic tree parser algorithm, which is
+//  used to parse a tree grammar with associated reduction cost functions.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include <AD/contain/bitset.h>
+#include "funmap.ph"
+#include "ir.ph"
+#include "ast.ph"
+#include "matchcom.ph"
+#include "type.h"
+#include "hashtab.h"
+#include "rwgen.h"
+#include "list.h"
+#include "options.h"
+
+
+extern Id redex_name(Ty);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Top level method to generate a dynamic tree parser.
+//  We use a simple dynamic programming algorithm.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void RewritingCompiler::gen_dynamic_rewriter( FunctorMap& F)
+{
+  generate_state_record(F);        // generate the state record definition
+  generate_accept_rules_tables(F); // generate the accept rule tables
+  generate_closures(F);            // generate the closure routines
+  generate_dynamic_labelers(F);    // generate the labeler functions
+  generate_reducers(F);            // generate the reducer functions
+
+  // Generate report
+
+  if (options.generate_report)
+    F.print_report(open_logfile());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the state record.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void RewritingCompiler::generate_state_record( FunctorMap& F)
+{
+  pr(
+      "\n"
+      "%^%/"
+      "%^// State record for rewrite class %s"
+      "%^%/"
+      "%^struct %s_StateRec {\n"
+      "%^  TreeTables::Cost cost[%i]; // cost for each non-terminal"
+      "%^  struct { // accept rule number",
+      F.class_name, F.class_name, F.nonterm_map.size()+1
+    );
+
+  foreach_entry (e, F.nonterm_rules_bits)
+  {
+    Id  lhs  = Id(e->k);
+    int bits = int(e->v);
+    pr("%^    unsigned int _%S : %i;", lhs, bits);
+  }
+
+  pr("%^  } rule;"
+     "%^};\n\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the accept rule tables.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void RewritingCompiler::generate_accept_rules_tables( FunctorMap& F)
+{
+  pr(
+      "%^%/"
+      "%^// Accept rules tables for rewrite class %s"
+      "%^%/",
+      F.class_name
+    );
+
+  foreach_entry (e, F.nonterm_rules)
+  {
+    Id         lhs   = Id(e->k);
+    MatchRules rules = MatchRules(e->v);
+    int max_rule     = 0;
+
+    match while (rules)
+    {
+      #[ one ... rest ]:
+      {
+        if (max_rule < one->rule_number)
+          max_rule = one->rule_number;
+        rules = rest;
+      }
+    }
+
+    Id storage_class = max_rule < 128 ? "char" : "short";
+
+    pr ("%^const %s %s_%S_accept[] = { -1, ",
+        storage_class, F.class_name, lhs);
+
+    rules = MatchRules(e->v);
+    match while (rules)
+    {
+      #[ one ... rest ]:
+      {
+        pr ("%i%s", one->rule_number, (rest != #[] ? ", " : ""));
+        rules = rest;
+      }
+    }
+    pr (" };\n\n");
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the closure routines for each non-terminal
+//  which appears the rhs of a chain rule.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void RewritingCompiler::generate_closures( FunctorMap& F)
+{
+  pr(
+      "%^%/"
+      "%^// Closure methods for rewrite class %s"
+      "%^%/",
+      F.class_name
+    );
+
+  // Generate the headers first
+  {
+    foreach_entry (e, F.chain_rules)
+    {
+      Id         rhs   = Id(e->k);
+      MatchRules rules = MatchRules(e->v);
+      Ty         ty    = rules->#1->ty; // type of states.
+      pr(
+          "%^static void %s_%S_closure(%t,int cost);\n",
+          F.class_name, rhs, ty, "redex"
+        );
+    }
+  }
+
+  pr("\n");
+
+  // Then generate the definitions.
+  {
+    foreach_entry (e, F.chain_rules)
+    {
+      Id         rhs   = Id(e->k);
+      MatchRules rules = MatchRules(e->v);
+      gen_closure(F,rhs,rules);
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the closure routine for one non-terminal.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void RewritingCompiler::gen_closure( FunctorMap& F, Id rhs, MatchRules rules)
+{
+  Ty ty = rules->#1->ty; // type of states.
+
+  pr(
+      "%^static void %s_%S_closure(%t,int cost__)\n"
+      "%^{%+"
+      "%^%s_StateRec * _state_rec = (%s_StateRec *)(%s->get_state_rec());",
+       F.class_name, rhs, ty, "redex", F.class_name,
+       F.class_name, redex_name(ty)
+    );
+
+  int rule_no = 1;
+  rules = rev(rules);
+  match while (rules)
+  {
+    #[ MATCHrule(lhs,pat,guard,cost,_) ... rest ]:
+    {
+      Exp cost_exp;
+      match (cost)
+      {
+        NOcost:        { cost_exp = LITERALexp(INTlit(0)); }
+      | INTcost i:     { cost_exp = LITERALexp(INTlit(i)); }
+      | EXPcost (e,_):
+        {  // Avoid recomputation of cost
+          Id v = vars.new_label();
+          pr ("%^const int %s = %e;", v, e);
+          cost_exp = IDexp(v);
+        }
+      }
+      int nonterm_number = int(F.var_map[lhs]);
+
+      if (nonterm_number > 0)
+      {
+        pr(
+            "%^if (cost__ + %e < _state_rec->cost[%i])"
+            "%^{  _state_rec->cost[%i] = cost__ + %e;"
+            "%^  _state_rec->rule._%S = %i;",
+            cost_exp, nonterm_number, nonterm_number, cost_exp, lhs, rule_no
+          );
+
+        // Chain rules
+        if (F.chain_rules.contains(lhs))
+        {
+          pr(
+              "%^  %s_%S_closure(redex,cost__ + %e);",
+              F.class_name, lhs, cost_exp
+            );
+        }
+
+        pr ("%^}");
+      }
+      rule_no++;
+      rules = rest;
+    }
+  }
+
+   pr ("%-%^}\n\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the dynamic labelers
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void RewritingCompiler::generate_dynamic_labelers( FunctorMap& F)
+{
+  ////////////////////////////////////////////////////////////////////////////
+  //  Generate a dynamic labeler for each datatype
+  ////////////////////////////////////////////////////////////////////////////
+  foreach_entry (e, F.type_map)
+  {
+    Ty ty = Ty(F.type_map.key(e));
+    debug_msg("[Rewrite class %s: generating dynamic labeler for datatype %T\n",
+               F.class_name, ty);
+    gen_dynamic_datatype_labeler(F, ty);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a labeler routine for one datatype.
+//
+///////////////////////////////////////////////////////////////////////////////
+void RewritingCompiler::gen_dynamic_datatype_labeler( FunctorMap& F, Ty ty)
+{
+  ///////////////////////////////////////////////////////////////////////////
+  // Generate the protocol of this labeler routine
+  ///////////////////////////////////////////////////////////////////////////
+  pr(
+      "%^void %s::labeler (%t)"
+      "%^{%+"
+      "%^int cost__;",
+      F.class_name, ty, "redex"
+    );
+
+  ///////////////////////////////////////////////////////////////////////////
+  // Name of the redex inside this routine.
+  ///////////////////////////////////////////////////////////////////////////
+  Id redex = redex_name(ty);
+
+  ///////////////////////////////////////////////////////////////////////////
+  //
+  // Allocate and initialize a state record.
+  //
+  ///////////////////////////////////////////////////////////////////////////
+  pr(
+      "%^%s_StateRec * _state_rec = (%s_StateRec *)mem[sizeof(%s_StateRec)];"
+      "%^%s->set_state_rec(_state_rec);"
+      "%^_state_rec->cost[0] = 0;",
+      F.class_name, F.class_name, F.class_name, redex
+    );
+
+  for ( int i = 1; i <= F.nonterm_map.size(); i++)
+  {
+    pr("%^_state_rec->cost[%i] = ", i);
+  }
+
+  pr( "%i;\n", TreeTables::infinite_cost);
+
+  ///////////////////////////////////////////////////////////////////////////
+  // Generate code for bottomup traversal on the datatype
+  ///////////////////////////////////////////////////////////////////////////
+  gen_dynamic_traversals( F, ty);
+
+  ///////////////////////////////////////////////////////////////////////////
+  // Update the state record.
+  ///////////////////////////////////////////////////////////////////////////
+
+  ///////////////////////////////////////////////////////////////////////////
+  // End of this routine
+  ///////////////////////////////////////////////////////////////////////////
+  pr( "%^%-%^}\n\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate code for dynamic traversals of one datatype.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void RewritingCompiler::gen_dynamic_traversals( FunctorMap& F, Ty ty)
+{
+  if (!F.rule_map.contains(ty))
+  {
+    bug( "%Lgen_dynamic_traversals: %t\n", ty);
+  }
+
+  MatchRules rules = MatchRules( F.rule_map[ty]);
+  MatchExps  exps  = #[ MATCHexp( IDexp("redex"), 0) ];
+  rules = rev( rules);
+  gen_match_stmt( exps, rules,
+     MATCHnocheck + MATCHnotrace + MATCHall + MATCHwithtreecost);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to annotate the matching tree with tree reduction cost nodes.
+//  Return the set of rules that matches.  The idea is to hoist
+//  the cost minimalization rules as near the root as possible.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+const BitSet * label_treecost( Match& m, int, MatchRules rules);
+const BitSet * label_treecost( Match& m, int, MatchRules rules, Match&, Match&);
+const BitSet * label_treecost( Match& m, int, MatchRules rules, int, Match[], Match&, Bool);
+
+const BitSet * label_treecost( Match& m, int N, MatchRules rules)
+{
+  match (m)
+  {
+    FAILmatch || SUCCESSmatch _:    { return 0; }
+  | TREECOSTmatch(m, set, rules):   { return set; }
+  | COSTmatch(n, cost, set, rules): { return set; }
+  | SUCCESSESmatch(_, set, _):      { return set; }
+  | GUARDmatch(e, a, b):
+    {  return label_treecost(m,N,rules,a,b); }
+  | CONSmatch(pos, _, _, _, n, a, b):
+    {  return label_treecost(m,N,rules,n,a,b,true); }
+  | LITERALmatch(pos, e, ls, n, a, b):
+    {  return label_treecost(m,N,rules,n,a,b,false); }
+  | RANGEmatch(pos, e, lo, hi, a, b):
+    {  return label_treecost(m,N,rules,a,b); }
+  | _:  { bug("label_treecost: %M", m); return 0; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to annotate the matching tree with tree reduction cost nodes.
+//  Return the set of rules that matches.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+const BitSet * label_treecost( Match& m, int N, MatchRules rules, Match& a, Match& b)
+{
+  const BitSet * s1 = label_treecost(a,N,rules);
+  const BitSet * s2 = label_treecost(b,N,rules);
+  if (s1 == 0 || s2 == 0)
+    return 0;
+  BitSet * S = new (mem_pool, N) BitSet;
+  S->Intersect(*s1,*s2);
+  if (S->count() == 0)
+    return 0;
+  m = TREECOSTmatch(m,S,rules);
+  m->label = 0; m->shared = 0;
+  return S;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to annotate the matching tree with tree reduction cost nodes.
+//  Return the set of rules that matches.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+const BitSet * label_treecost( Match& m, int N, MatchRules rules,
+                              int fanout, Match a[], Match& b, Bool ignore)
+{
+  const BitSet * Sb = label_treecost(b,N,rules);
+  BitSet * S = new (mem_pool, N) BitSet;
+  Bool empty = ! ignore && Sb == 0;
+
+  if (! ignore)
+    S->copy(*Sb);
+  else
+    S->complement();
+
+  for (int i = 0; i < fanout; i++)
+  {
+    const BitSet * Sa = label_treecost(a[i],N,rules);
+    if (Sa)
+    {
+      if (!empty)
+        S->Intersect(*Sa);
+    }
+    else
+      empty = true;
+  }
+
+  if (empty || S->count() == 0)
+    return 0;
+  m = TREECOSTmatch(m,S,rules);
+  debug_msg("[NEW TREE]\n");
+  m->label = 0; m->shared = 0;
+  return S;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to prune the matching tree with tree reduction cost nodes.
+//  We reduce unnecessary cost minimalization nodes.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void prune_treecost( Match& m, const BitSet * ignore)
+{
+  match (m)
+  {
+    FAILmatch || SUCCESSmatch _: { return; }
+  | COSTmatch(n, cost, set, rules):
+    {
+      if (ignore)
+      {
+        set->Difference(*ignore);
+        if (set->count() == 0)
+          m = FAILmatch;
+      }
+    }
+  | SUCCESSESmatch(_, set, _):
+    {
+      if (ignore)
+      {
+        set->Difference(*ignore);
+        if (set->count() == 0)
+          m = FAILmatch;
+      }
+    }
+  | TREECOSTmatch(a, set, rules):
+    {
+      BitSet * new_ignore;
+      if (ignore)
+      {
+        new_ignore = new (mem_pool, ignore->size()) BitSet;
+        new_ignore->Union(*set);
+      }
+      else
+        new_ignore = set;
+
+      prune_treecost(a,new_ignore);
+
+      if (ignore)
+      {
+        set->Difference(*ignore);
+        if (set->count() == 0) m = a;
+      }
+    }
+  | GUARDmatch(e, a, b):
+    {
+      prune_treecost(a,ignore);
+      prune_treecost(b,ignore);
+    }
+  | RANGEmatch(pos, e, lo, hi, a, b):
+    {
+      prune_treecost(a,ignore);
+      prune_treecost(b,ignore);
+    }
+  | CONSmatch(pos, _, _, _, n, a, b):
+    {
+      for (int i = 0; i < n; i++)
+        prune_treecost(a[i],ignore);
+      prune_treecost(b,ignore);
+    }
+  | LITERALmatch(pos, e, ls, n, a, b):
+    {
+      for (int i = 0; i < n; i++)
+        prune_treecost(a[i],ignore);
+      prune_treecost(b,ignore);
+    }
+  | _:
+    { bug("prune_treecost: %M", m); }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to insert traversal code
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void add_traversal( Match& m)
+{
+  match (m)
+   {
+     CONSmatch(_, _, ty, alg_ty, n, a, _):
+     {
+       for (int i = 0; i < n; i++)
+         a[i] = TREELABELmatch(a[i],ty,alg_ty,i);
+     }
+   | TREECOSTmatch(m,_,_):
+     { add_traversal(m); }
+   | _:
+     { bug ("add_traversal: %M", m); }
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to translate the matching tree into a tree with
+//  tree reduction cost nodes.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Match translate_treecost( Match m, MatchRules rules)
+{
+  debug_msg( "%Ltranslating rules into treecost\n");
+  label_treecost( m, length( rules), rules);
+  prune_treecost( m, 0);
+  add_traversal( m);
+  return m;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Return the encoded rule number.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+static int rule_of( FunctorMap *Fmap, Id lhs, int r)
+{
+  int rule_no = 1;
+  MatchRules rules = MatchRules( Fmap->nonterm_rules[lhs]);
+  match while (rules)
+  {
+    #[ one ... rest ]:
+    {
+      if (one->rule_number == r)
+        return rule_no;
+      rules = rest;
+      rule_no++;
+    }
+  }
+  bug( "rule_of");
+  return 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method for generating labeling code for pattern parsing.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void RewritingCompiler::gen_treelabel_match( Match m, Ty ty, Ty alg_ty, int k)
+{  // Generate traversal code
+  match (alg_ty) and (deref_all ty)
+  {
+    DATATYPEty({ terms ... },_), TYCONty(_,tys):
+    {
+      Cons cons = terms[k];
+      Ty arg_ty = apply_ty(cons->cons_ty,tys);
+      Exp e     = select(IDexp("redex"),cons);
+	  if (cons->ty == NOty)
+      {
+        error("%Ltree parsing mode cannot be used on datatype with unit constructors: %T\n", alg_ty);
+      }
+
+      match (arg_ty)
+      {
+        NOty:         // skip
+      | TUPLEty tys:
+        {
+          int i = 1;
+          for_each(Ty, t, tys)
+          {
+            if (Fmap->is_rewritable_type(t))
+              pr("%^labeler(%e);", DOTexp(e,index_of(i))); i++;
+          }
+        }
+      | RECORDty (labels,_,ts):
+        {
+          Ids ids; Tys xtys = tys = ts;
+          for (ids = labels; ids && ts; ids = ids->#2, tys = tys->#2)
+          {
+            if (Fmap->is_rewritable_type(tys->#1))
+              pr( "%^labeler(%e);", DOTexp(e,ids->#1));
+          }
+        }
+      | ty: { if (Fmap->is_rewritable_type(ty)) pr("%^labeler(%e);",e); }
+      }
+    }
+  |  _:
+    { bug( "RewritingCompiler::gen_treelabel_match"); }
+  }
+
+  // Generate labeling code
+  gen( m);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method for generating treecost minimalization code from a pattern
+//  matching tree.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void RewritingCompiler::gen_treecost_match( Match m, const BitSet * set,
+                                            MatchRules rules)
+{
+  gen(m);
+  int rule_no = 0;
+  match while (rules)
+  {
+    #[r as MATCHrule(lhs,pat,guard,cost,_) ... rest]:
+    {
+      if (set->contains(rule_no))
+      {
+        if (lhs)
+        {
+          pr ("%^// %r\n", r);
+          Exp cost_exp;
+          match (cost)
+          {
+            NOcost:        { cost_exp = LITERALexp(INTlit(0)); }
+          | INTcost i:     { cost_exp = LITERALexp(INTlit(i)); }
+          | EXPcost (e,_):
+            {
+              cost_exp = IDexp(vars.new_label());
+              pr("%^int %e = %e;",cost_exp,e);
+            }
+          }
+          int nonterm_number = int(Fmap->var_map[lhs]);
+          pr(
+              "%^cost__ = %e + %e;"
+              "%^if (cost__ < _state_rec->cost[%i])"
+              "%^{   _state_rec->cost[%i] = cost__;"
+              "%^    _state_rec->rule._%S = %i;",
+              cost_exp, Fmap->cost_expr(lhs,pat),
+              nonterm_number, nonterm_number,
+              lhs, rule_of(Fmap,lhs,r->rule_number)
+            );
+
+          if (Fmap->chain_rules.contains(lhs))
+            pr( "%^  %s_%S_closure(redex, cost__);",
+                Fmap->class_name, lhs);
+          pr( "%^}");
+        }
+      }
+      rules = rest; rule_no++;
+    }
+  }
+}

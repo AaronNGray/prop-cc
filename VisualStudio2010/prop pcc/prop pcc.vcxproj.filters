@@ -1,0 +1,280 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Prop_Compiler Include="..\..\prop-src\aggen.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\ast.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\bitfield.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\classdef.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\codegen.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\collection.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\compiler.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\constr.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\constraint.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\dataflow.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\datagen.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\datatype.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\documentation.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\env.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\funmap.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\gcgen.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\graphops.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\graphrep.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\graphreport.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\graphtype.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\grsgen.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\indexing.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\infgen.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\instance.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\lawgen.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\lexeme.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\lexer.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\logicgen.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\matchcom.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\matchgen.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\metasyntax.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\parsegen.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\parser-util.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\parser.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\pat.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\persistgen.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\printgen.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\printing.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\prop-main.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\querydecomp.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\rwgen.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\rwgen2.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\rwgen3.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\rwgen4.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\rwgen5.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\rwmix.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\selector.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\setl-ast.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\setlgen.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\setltype.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\timespace.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\trs.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\trs2.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\trs3.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\type.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\visual2.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\visualize.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\wam.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\adaptgen.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\aggen.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\ast.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\basics.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\bitfield.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\collection.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\constraint.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\dataflow.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\datatype.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\env.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\funmap.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\graphedges.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\graphtype.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\grsgen.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\ir.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\keywords.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\list.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\logicgen.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\matchcom.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\metasyntax.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\parsegen.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\parser.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\pat.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\rwmix.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\setl-ast.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\setlgen.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\timespace.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\trs.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\prop-src\wam.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+  </ItemGroup>
+</Project>

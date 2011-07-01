@@ -1,0 +1,51 @@
+//
+//  Testing the rewriting features
+//
+#include <iostream.h>
+
+datatype EXP = num (int)
+             | add (EXP, EXP)
+             | sub (EXP, EXP)
+             | mul (EXP, EXP)
+             | div (EXP, EXP)
+             ;
+
+rewrite class Simplify( EXP ) {};
+
+
+rewrite Simplify {
+   case add (num 0, x):     x;
+   case add (x, num 0):     x; 
+   case sub (x, num 0):     x; 
+   case mul (x, num 0):     num(0); 
+   case mul (num 0, x):     num(0); 
+   case mul (x, num 1):     x;
+   case mul (num 1, x):     x;
+   case mul (x, num 2):     add(x,x);
+   case mul (num 2, x):     add(x,x);
+   case div (x, num 1):     x; 
+   case add (num x, num y): num(x + y);
+   case sub (num x, num y): num(x - y);
+   case mul (num x, num y): num(x * y);
+   case div (num x, num y): num(x / y);
+};
+
+datatype NAT = zero
+             | succ (NAT)
+             ;
+
+rewrite class Number (NAT, EXP)
+{  
+};
+
+rewrite Number {
+   case zero:
+   case succ(zero): 
+   case succ(succ(X)): 
+   case succ(succ(zero)):
+   case succ(succ(succ(succ(X)))): 
+   case add (num x, num y): num(x + y);
+   case sub (num x, num y): num(x - y);
+   case mul (num x, num y): num(x * y);
+   case div (num x, num y): num(x / y);
+};

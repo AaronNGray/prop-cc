@@ -1,0 +1,60 @@
+//////////////////////////////////////////////////////////////////////////////
+//  This program tests regular expressions string matching.
+//////////////////////////////////////////////////////////////////////////////
+
+#include <assert.h>
+#include <iostream.h>
+
+lexeme digits    = /[0-9]+/
+     | sign      = /[\+\-]/
+     | integer   = /{sign}?{digits}/
+     | exponent  = /[eE]{integer}/
+     | mantassa  = /({digits}(\.{digits})?|\.{digits})/
+     | real      = /{sign}?{mantassa}{exponent}?/
+     | ident     = /[a-zA-Z_][a-zA-Z_0-9]*/
+     | string    = /"([^"\n]|\\.)*"/ 
+     | character = /'([^'\n]|\\.)*'/
+     ;
+
+int get_token(const char * s) 
+{
+   match (s)
+   {  case /if/ /* this is a comment, not a regexp */: 
+                              cout << "[if]" << flush;       return 1;
+      case /then/:            cout << "[then]" << flush;     return 2;
+      case /else/:            cout << "[else]" << flush;     return 3;
+      case /while/:           cout << "[while]" << flush;    return 4;
+      case /break/:           cout << "[break]" << flush;    return 5;
+      case /exit|bye|quit/:   cout << "[exit]" << flush;     return 6;
+      case "continue":        cout << "[continue]" << flush; return 7;
+      case /{ident}/:         cout << "[id]" << flush; return 8;
+      case /{string}/:        cout << "[string]" << flush;   return 9;
+      case /{character}/:     cout << "[char]" << flush;     return 10;
+      case /{integer}/:       cout << "[integer]" << flush;  return 11;
+      case /{real}/:          cout << "[real]" << flush;     return 12;
+      case _:                 cout << s << flush;            return 0;
+   }
+}
+
+int main() 
+{  const char * tokens[] =
+      { "if", "then", "else", "for", "do", "while", "continue", "break",
+        "if0", "the", "exit", "exity", "quit", "0elSe", "\"foo\"",
+        "'bar\\''", "+1.98e-20", "+31415926", ".3141596e+1",
+        "(31415926"
+      };
+   int expected[] =
+      {  1,    2,     3,      8,     8,    4,       7,          5,
+         8,    8,     6,      8,        6,      0,      9,    
+         10,   12,    11,    12,    0
+      };
+
+   for (int i = 0; i < sizeof(tokens)/sizeof(tokens[0]); i++) {
+      cout << tokens[i] << " = "; 
+      int tok = get_token (tokens[i]);
+      cout << '\n';
+      assert (tok == expected[i]);
+   }
+   cout << "Regular expression string matching is ok.\n";
+   return 0;     
+}

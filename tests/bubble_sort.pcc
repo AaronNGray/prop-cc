@@ -1,0 +1,49 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Test garbage collection using bubble sort and rewriting .
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <iostream.h>
+#include <AD/gc/gc.h>
+
+//  A collectable integer list
+
+datatype List :: collectable rewrite = #[] | #[ int ... List ];
+
+//  Instantiate the list datatype
+
+instantiate datatype List;
+
+//  Pretty print a list
+
+ostream& operator << (ostream& f, List l)
+{  match (l)
+   {  #[]:             { return f; }
+   |  #[one]:          { return f << one; }
+   |  #[one ... rest]: { return f << one << ", " << rest; }
+   }
+}
+
+List sort (List l)
+{  rewrite (l) type (List) of
+      #[x, y ... l] | x > y: #[y, x ... l]
+   end rewrite;
+   return l;
+}
+
+//  Create a list from hi to lo in descending order
+
+List range (int hi, int lo)
+{  return hi < lo ? #[] : #[hi ... range(hi-1,lo)]; }
+
+//  Sorting the list #[1000, 9999, 9998 ... 1] 
+//  Use 1 megabyte for heap space.
+
+int main()
+{  GC::get_default_gc().set_initial_heap_size(1024*1024);
+   List l = range(300,1);
+   cout << sort(l) << '\n';
+   GC::get_default_gc().print_statistics(cout);
+   return 0;
+}

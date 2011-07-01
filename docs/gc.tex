@@ -1,0 +1,575 @@
+\def\ADLib{{\sf ADLib}}
+\def\Prop{{\sf Prop}}
+\def\CPP{C{\tt ++}}
+
+\documentstyle{article}
+   \title{Garbage Collection in the \ADLib{} Library(Draft)}
+   \author{Allen Leung \\ {\tt leun7056@cs.nyu.edu}}
+
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %  Readjust the margins
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   \setlength{\textheight}{8.3in}
+   \setlength{\textwidth}{6.5in}
+   \setlength{\oddsidemargin}{-.10in}
+   \setlength{\topmargin}{-.5in}
+
+\begin{document}
+   \maketitle
+   \begin{abstract} 
+      We describe the design and implementation of a garbage collector
+based on the Customisable Memory Management framework(CMM)\cite{CMM} in our
+\ADLib{} \CPP{} class library.  Like the previous approach, we have 
+implemented a mostly copying conservative collector based on the work
+of Bartlett\cite{Mostly-copying}.  
+ Similar to CMM, our architecture provides a protocol to allow 
+multiple garbage collectors using different algorithms to coexist in the 
+same memory space.  A few improvements are made to
+improve the performance, the flexibility and the functionality of 
+our collector: to reduce retention due to false roots identification,
+blacklisting\cite{Boehm} is used to identify troublesome heap
+addresses; the architecture of the system has been generalized so that it is 
+now possible to have multiple instantiations of Bartlett-style heaps; 
+finally, object finalization and weak pointer support
+are added.  Our collector has been tested on gcc 2.5.8 under Linux 
+and SunOS 4.1.3.
+   \end{abstract}
+
+   \bibliographystyle{alpha}
+\section{Introduction}
+   The \Prop{} project involves the design and implementation of 
+an environment and an extension language based on \CPP{} 
+for compiler construction and program transformation.  
+An outgrowth of this project is the \ADLib{} 
+\CPP{} class library, which contains an extensive set of support algorithms 
+and data structures.  Since a typical compiler manipulates many complex tree,
+dag and graph objects with extended lifetime, manual memory management using
+\CPP's constructors and destructors, reference counting smart pointers, or
+some other techniques is frequently complex and error prone.  
+Furthermore, with the advent of new algorithms for garbage collection,
+manual memory management techniques do not necessarily provide better 
+performance or space utilization.  To make it possible to make use of garbage 
+collection as a viable alternative for memory management in
+\CPP\cite{Safe-C++-GC}, we have implemented a garbage collection class 
+hierarchy as part of the \ADLib{} library.  The class library can be used
+directly by the users who'd like to program in \CPP; it can also be
+used as part of the runtime system of a highly level language implemented
+in \CPP, as we have done for \Prop.
+
+   We have several good reasons to prefer garbage collection over manual 
+memory management.  The \Prop{} language contains many declarative constructs 
+and extensions such as algebraic datatypes, pattern matching, rewriting, and
+logical inference.  When a user programs in \Prop{} using these constructs, 
+an applicative style of programming is the most natural paradigm.  
+
+\section{The Framework}
+
+   We base our design on the work on the Customisable Memory Management(CMM)
+system\cite{CMM}.  In this framework, multiple independent heaps(including
+the usually non-collectable heap) can coexist with each other.
+Bartlett's mostly copying garbage collector is used as the primary collector.
+CMM extends the work of Bartlett\cite{Mostly-copying} 
+by allowing cross heap pointers and unrestricted interior pointers.
+
+  However, all collectable objects are required to derive from a base class 
+and reimplement a tracing method, which identifies the internal pointers of 
+an object.  This burden is usually quite small and in fact can be
+automated from the type definition\footnote{In \Prop, a special keyword
+\verb|collectable| is used to identify garbage collected classes and types.
+The \Prop{} translator uses this type annotation to derive the appropriate  
+tracing methods.}
+
+  One of the major advantages of the CMM framework is that multiple
+coorperating collectors can coexist at the same time, which makes it
+possible to customize the behavior of each collector with respect to
+the lifetime behavior of the objects.  In \cite{CMM}, examples are
+given in which the lifetime of certain class of objects exhibit
+first-in/first-out behavior.  In this case a special collector can be
+written to take full advantage of this property.
+
+\subsection{Our Framework}
+   Our framework retains all the benefits and flexibilities of CMM, 
+while extending it in several minor but useful ways:  
+\begin{itemize}
+   \item Like CMM, interior pointers(i.e. pointers to the middle of an object)
+and crossheap pointers (i.e. complex data structures linking nodes locating
+in multiple logical heaps.) are supported.  Pointers to collectable
+objects are non-intrusive: i.e. they are normal \CPP{} pointers 
+and not encapsulated in templates.
+   \item Also like CMM, we allow multiple garbage collectors using different
+algorithms to coexist.  Unlike CMM, however, we allow multiple 
+Bartlett-style collectors to be instantiated.  Most of the services 
+involving low level page management and object marking have been relegated
+to a separate heap manager.   
+   \item We provide support for finalization and weakpointers.
+   \item We have implemented blacklisting\cite{Boehm} to reduce the chance
+of false roots identification.
+\end{itemize}
+
+\subsection{The Implementation}
+
+   Our implementation has been completely written from scratch since
+we do not desire to utilize copyrighted code and, more importantly,
+we have to make a few important architectural changes:
+ All low level memory management services, such as management of
+the page table and the object bitmap, is now relegated to the class 
+{\sf GCHeapManager}.  Collectors now act as clients as of the heap manager
+and the Bartlett-style collector no longer has any special status. 
+
+\subsection{Architecture}
+
+   The architecture of the memory management system is partitioned into
+a few classes, each responsible for providing distinct services:
+
+\begin{itemize}
+   \item {\sf GCHeapManager} --- The heap manager.  The heap manager
+    manages the heap table, performs page level
+    allocation and deallocation, and provides miscellaneous services
+    like blacklisting.  It also manages the object bitmaps.
+   \item {\sf GC} --- The base class for all garbage collectors.
+    This base class describes the protocol used by all the collector
+    classes\footnote{This base class is also inherited from class
+    {\sf Mem}, so that it adheres to the \ADLib{} memory management
+    protocol.}
+   \item {\sf CGC} --- The base class for conservative collectors.
+     This class is inherited from class {\sf GC} and implements some
+     methods for locating the stack, heap, and static data areas.
+   \item {\sf BGC} --- Bartlett-style mostly copying collector.
+      This class is inherited from class {\sf CGC} and implements
+      the Bartlett mostly copying algorithm.
+   \item {\sf MarkSweepGC} --- Mark/sweep style conservative collector.
+      This class is inherited from class {\sf CGC} and implements
+      a mark/sweep collection algorithm.
+   \item {\sf WeakPointerManager} --- The weakpointer manager.
+      This class manages the weak pointer table and provides a few
+      weak pointer scavenging services for the collectors.
+\end{itemize}
+  
+\section{The Programmatic Interface}
+
+   The programmatic interface to the garbage collector involves two
+base classes, {\sf GC} and {\sf GCObject}.  The base class {\sf GC}
+provides an uniform interface to all types of collectors and memory
+managers while class {\sf GCObject} provides the interface to all 
+collectable classes.  Table~\ref{GC-Classes} contains a listing
+of the classes in our hierarchy.
+
+\begin{table}
+   \begin{center}
+      \begin{tabular}{|l|l|} \hline
+        Class           & Purpose \\ \hline \hline
+        \sf GCObject    & Collectable object base class \\
+        \sf GC          & Garbage collector base class \\
+        \sf CGC         & Conservative garbage collector base class \\
+        \sf BGC         & Bartlett style mostly copying collector \\
+        \sf MarkSweepGC & A mark-sweep collector \\
+        \sf GCVerifier  & A heap walker that verifies the integrity of a 
+                          structure \\
+      \hline 
+      \end{tabular}
+   \end{center}
+   \caption{\label{GC-Classes} Garbage Collection Classes.}
+\end{table}
+
+Class {\sf GCObject} is extremely simple: it redefines the operators
+\verb|new| and \verb|delete| to allocate memory from the default collector,
+and declares a virtual method ``\verb|trace|'' to be defined by subclasses
+(more on this later.)
+
+Memory for a {\sf GCObject} is allocated and freed using the usually
+\verb|new| and \verb|delete| operators.  Of course, freeing memory explicitly
+using \verb|delete| is optional for many subclasses of {\sf GC}. 
+
+\begin{verbatim}
+   class GCObject {
+   public:
+      inline void * operator new(size_t n, GC& gc = *GC::default_gc) 
+         { return gc.m_alloc(n); }
+      inline void * operator new(size_t n, size_t N, GC& gc = *GC::default_gc) 
+         { return gc.m_alloc(n > N ? n : N); }
+      inline void   operator delete(void *);
+      virtual void trace(GC *) = 0;
+   };
+\end{verbatim}
+
+\subsection{Memory Allocation}
+
+The base class {\sf GC} is slightly more complex, as it has to provide
+a few different functionalities.  The first service that class {\sf GC} must 
+provide is of course memory allocation and deallocation.  As a time saving
+device we can specify what the default collector is using the methods
+\verb|get_default_gc| and \verb|set_default_gc|.  Method \verb|GCObject::new| 
+will use this collector by default, unless placement syntax is used.
+Method \verb|GCObject::delete|, on the other hand, can correctly infer the 
+proper collector to use by the address of the object.
+
+The low level methods to allocate and deallocate memory are \verb|m_alloc|
+and \verb|free| respectively.  The programmers usually do not have to
+use these methods directly. 
+
+The method to invoke a garbage collection of a specific level is 
+\verb|collect(int level)|.  This forces an explicit collection.
+Method \verb|grow_heap(size_t)| can also be used to explicitly increase
+the heap size of a collector.  Depending of the actual behavior
+of the subclasses, these methods may have different effects.
+
+\begin{verbatim}
+   class GC {
+   protected:
+      static GC * default_gc;
+   public:
+      static GC&  get_default_gc()       { return *default_gc; }
+      static void set_default_gc(GC& gc) { default_gc = &gc; }
+      virtual void * m_alloc   (size_t) = 0;
+      virtual void   free      (void *);
+      virtual void   collect   (int level = 0) = 0;
+      virtual void   grow_heap (size_t) = 0;
+      static  void garbage_collect() { default_gc->collect(); }
+      virtual void set_gc_ratio(int);
+      virtual void set_initial_heap_size (size_t);
+      virtual void set_min_heap_growth   (size_t);
+   };
+\end{verbatim}
+
+\subsection{The GC Protocol}
+The collector and collectable objects must cooperate with
+each other by abiding to a simple protocol:
+\begin{itemize}
+   \item All objects that are to be garbage collected must be derived
+from {\sf GCObject}.  The application programmer must also supply a
+``{\bf tracing}'' method.  The purpose of this method is to identify
+all internal pointers to other {\sf GCObject}'s.   This method is not
+used by the application programmer directly but only used internally
+by the garbage collectors.
+   \item The tracing method of each collectable must in turn call
+    the tracing method in the class {\sf GC} with each pointer to
+    a collectable object that the object owns:
+\begin{verbatim}
+   class GC {
+   public:
+      virtual GCObject * trace (GCObject *) = 0;
+      inline  void trace (GCObject& obj);
+   };
+\end{verbatim}
+    
+     Briefly, the rules are as follows:
+   \begin{enumerate}
+      \item The tracing method of a collectable {\sf Foo} has the following
+         general form:
+          \begin{verbatim}
+             void Foo::trace(GC * gc) 
+             {
+                ...
+             }
+          \end{verbatim} 
+      \item If class {\sf Foo} has a member that is a pointer \verb|p|
+            to a collectable object of type {\sf Bar}, then add:
+           \begin{verbatim}
+               p = (Bar)gc->trace(p);
+           \end{verbatim}
+            to the body of \verb|Foo::trace|. 
+     \item  If class {\sf Foo} has a member object
+            \verb|x| that is a subclass of {\sf GCObject}, also add:
+           \begin{verbatim}
+               gc->trace(x);
+           \end{verbatim}
+            to the body of \verb|Foo::trace|.
+     \item  If class {\sf Foo} is derived from a class \verb|Bar| that
+            is a subclass of {\sf GCObject}, add:
+           \begin{verbatim}
+               Bar::trace(gc);
+           \end{verbatim}
+            to the body of \verb|Foo::trace|.
+   \end{enumerate} 
+    Notice that these methods can be arranged in any order.
+\end{itemize}
+
+This protocol can be used by both copying and non-copying collectors.
+In addition, the class {\sf GCVerifier} also uses this protocol to 
+walk the heap in order to verify the integrity of a garbage collected 
+data structure.
+
+\subsection{Messages and Statistics}
+    All garbage collectors use the following protocols for status
+reporting and statistics gathering.  
+  
+\begin{verbatim}
+   class GC {
+   public:
+      enum GCNotify {
+         gc_no_notify               = 0
+         gc_notify_minor_collection = 1,
+         gc_notify_major_collection = 2,
+         gc_print_collection_time   = 4,
+         gc_print_debugging_info    = 8
+      }
+      virtual int      verbosity() const;
+      virtual void     set_verbosity(int);
+      virtual ostream& get_console() const;
+      virtual void     set_console(ostream&);
+   };
+\end{verbatim}
+
+\begin{verbatim}
+   class GC {
+   public:
+      struct Statistics {
+         const char *   algorithm;
+         const char *   version;
+         size_t         bytes_used;
+         size_t         bytes_managed;
+         size_t         bytes_free;
+         struct timeval gc_user_time;
+         struct timeval gc_system_time;
+         struct timeval total_gc_user_time;
+         struct timeval total_gc_system_time;
+      }
+      virtual Statistics statistics();
+   };
+\end{verbatim}
+
+    Each collector has a current verbosity level, which can be set
+and reset using the methods \verb|set_verbosity(int)| and
+\verb|verbosity() const|.  The verbosity level is actually a bit
+set containing flags of the type \verb|GC::GCNotify|.  A combination
+of these options can be used.
+\begin{itemize}
+  \item \verb|gc_no_notify| --- no messages at all.
+  \item \verb|gc_notify_minor_collection| --- all minor collections
+    will be notified by printing a message on the current console.
+  \item \verb|gc_notify_major_collection| --- similarly for all major
+    collections.
+  \item \verb|gc_print_collection_time| --- this option will let the
+    collector to print the time spent during collection (and finalization).
+  \item \verb|gc_print_debugging_info| --- this option will print additional
+    information such as stack and heap addresses during garbage collection.
+\end{itemize}
+
+   The current console of a collector is defaulted to the \CPP{} stream
+\verb|cerr|.  It can be set and inspected with the methods
+\verb|set_console(ostream&)| and \verb|ostream& get_console()| respectively.
+For example, the user can redirect all garbage collection messages
+to a log file \verb|"gc.log"| by executing the following during initialization:
+
+\begin{verbatim}
+   ofstream gc_log("gc.log");
+   GC::get_default_gc().set_console(gc_log); 
+\end{verbatim}
+
+\subsection{The Bartlett style mostly copying collector}
+
+   Currently a Bartlett-style mostly copying collector has been implemented.
+The current version is non-generational but we expect that a generational
+version will be available in the near future.
+
+   The Bartlett-style collector is implemented as the concrete class
+{\sf BGC}.  Aside from all the services provided by class {\sf GC},
+{\sf BGC} also provides the following method:
+
+\begin{verbatim}
+   class BGC : public CGC {
+   public:
+      virtual void set_gc_ratio(int);
+      virtual void set_initial_heap_size (size_t);
+      virtual void set_min_heap_growth   (size_t);
+   }
+\end{verbatim}
+
+  The gc ratio refers to the ratio of used heap space versus
+total heap space.  Class {\sf BGC} will invoke the garbage collection
+if this is exceeded.  The default gc ratio for {\sf BGC} is 75\%.
+
+  The initial size of the heap and the minimal number of bytes to 
+request from the system during a heap expansion can be adjusted using 
+the methods \verb|set_initial_heap_size| and \verb|set_min_heap_growth|
+respectively.  These methods are declared in the {\sf GC}
+protocol.   By default, the initial heap size for this collector
+is 128K and each heap expansion will increase the heap by 512K. 
+
+If an application uses a lot garbage collected storage it is a good
+idea to set the heap size to larger capacity during initialization.
+Otherwise, the collector will have to perform more garbage collection
+and heap expansions to reach a stable state. 
+
+\subsection{The Mark Sweep collector}
+
+   An alternative to the copying collector is the the mark sweep collector.
+Like the previous collector, this collector also uses conservative scanning 
+to locate roots.  Unlikely the Boehm collector, type accurate marking
+is used through the user supplied tracing method.
+
+   Since the default collector is of the {\sf BGC} variety, the user must
+create an instance of {\sf MarkSweepGC} if the mark sweep collector
+is to be used.  
+
+\begin{verbatim}
+   class MarkSweepGC : public CGC {
+   public:
+      virtual void set_gc_ratio(int);
+      virtual void set_initial_heap_size (size_t);
+      virtual void set_min_heap_growth   (size_t);
+   }
+\end{verbatim}
+
+   The gc ratio in class {\sf MarkSweepGC} determines whether heap
+expansion is to be performed after a collection.  The default gc ratio
+is 50\%, thus if after garbage collection the ratio of used versus total
+heap space exceeds one half, the heap will be expanded. 
+
+   For most purposes the two collectors are interchangeable.  Since
+all types of garbage collectors under our framework use the same protocol, 
+applications can be written without fixing a specific garbage collection
+algorithm before hand.  
+
+\subsection{Finalization} 
+
+   One common \CPP{} idiom uses constructor and destructor for
+resource allocation: resources (including memory but may include others,
+such as file handles, graphical widgets, etc) that are acquired
+in a class constructor are released(finalized) in the class'es destructor.
+
+   There are, however, two opposing views in how finalization should be handled
+in a garbage collector.  The first assumes that garbage collection
+simulates an infinite amount of memory and so automatic finalization is
+inapproriate.   The second takes a more pragmatic view, and assumes that
+automatic finalization should be provided since otherwise explicit resource
+tracking must be provided by the user for collectable datatypes, making garbage 
+collection much less useful than it can be.
+
+   We will refrain from participating in any religious and philosophical
+wars on which dogma is the One True Way.  Instead, both types of collectors
+are provided.
+
+   By default, class {\sf BGC} does not perform finalization on garbage 
+collected objects.  If object finalization is desired then the user
+can do one of two things:
+\begin{itemize}
+   \item Enable the finalization of the default heap by putting
+\begin{verbatim}
+   GC::get_default_gc().set_finalization(true);
+\end{verbatim}
+   in the initialization code, or
+   \item Instantiate a different instance of {\sf BGC} and
+    allocate objects needing finalization from this collector.
+    This may be a better method since not all objects need finalization
+    and those that do not can still be allocated from the default collector.
+    This way we only have to pay for the performance penalty (if any)
+    proportional to the usage of finalization.
+\end{itemize}
+
+   For example, if a collectable class named {\sf Foo} should be properly
+finalized we can declare it in the following manner:
+
+\begin{verbatim}
+   extern BGC bgc_f;  // somewhere an instance is defined
+
+   class Foo : public GCObject {
+      Resource r;
+   public:
+      Foo() { r.allocate(); /* allocate resource */ }
+     ~Foo() { r.release(); /* release all resource */ }
+
+      // Make object allocate from bgc_f instead
+      // of the default non-collectable gc.
+      void * operator new (size_t n) { return bgc_f.m_alloc(n); }
+   };
+\end{verbatim}
+
+   When an instance of class \verb|Foo| is identified as garbage, its
+destructor will be called.  [Aside: {\it currently issue such as 
+finalization synchronization is not handled directly by the collector.
+So if there is synchronization constraints during finalization it must
+be handled by the object destructor.  Future versions of \ADLib{} will
+provide subclasses with more sophisticated finalization mechanisms.} ]
+
+   Notice that the default \verb|delete| operator of class {\sf BGC} will 
+call the object explicitly destructor.  It is a good idea to use
+explicit \verb|delete| if finalization is a rare need since this service
+involves an explicit scan of the garbage memory, which may degrade performace
+with excessive swapping: without finalization the garbage pages will not 
+have to be referenced with a copying collector.
+
+   It should also be noted that since the collector is conservative, there
+is no guarantee that garbage will be identified as such:
+there is no guarantee that all garbage resources will be released.
+In general, however, the efficacy of the collector is quite good and
+so non-critical or plentiful resources can be safely finalized with
+this collector.
+
+\subsection{Weak Pointers}
+
+   It is frequently very useful to be able to keep track of garbage
+collectable objects through the use of ``{\bf weak pointers}.''
+Collectors ignore the presense of weak pointers to garbage collected
+objects; objects with only referencing weak pointers will still be
+collected.  Weak pointers to objects that become garbage will
+be reset to null. 
+ 
+   Weak pointers are provided thru a smart pointer template 
+{\sf WeakPointer}, whose definition is shown below: 
+
+\begin{verbatim}
+template <class T> class WeakPointer {
+   public:
+      inline WeakPointer();
+      inline WeakPointer(const WeakPointer<T>& wp); 
+      inline WeakPointer(T * ptr); 
+      inline WeakPointer<T>& operator = (const WeakPointer<T>& wp);
+      inline WeakPointer<T>& operator = (T * ptr);
+      inline bool is_null() const;
+      inline operator const T * () const;
+      inline operator       T * ();
+      inline const T * operator -> () const;
+      inline       T * operator -> ();
+      inline const T&  operator *  () const;
+      inline       T&  operator *  ();
+   };
+\end{verbatim}
+
+\subsection{The Heap Walker}
+
+   There is a simple class called {\sf GCVerify} that can be used
+to verify the integrity of a complex allocated data structure.
+This is frequently useful during the development of a new collector,
+or a complex class derive class of {\sf GCObject.}  
+
+   The interface of this class is shown below.
+
+\begin{verbatim}
+   class GCVerifier : protected GC {
+   public:
+      virtual bool is_valid_pointer          (GCObject *);
+      virtual bool is_valid_interior_pointer (GCObject *);
+      virtual bool is_valid_structure        (GCObject *);
+      virtual bool is_valid_pointer          (GCObject *, GC *);
+      virtual bool is_valid_interior_pointer (GCObject *, GC *);
+      virtual bool is_valid_structure        (GCObject *, GC *);
+      size_t number_of_nodes() const;
+   };
+\end{verbatim}
+
+   Class {\sf GCVerify} is derived from class {\sf GC} so that the
+same object tracing protocol can be used.  Briefly, three different methods 
+are provided for verification:
+\begin{itemize}
+   \item Call to \verb|is_valid_pointer(p,gc)| verifies that
+    \verb|p| is a valid pointer to an object within the collector \verb|gc|. 
+   \item Call to \verb|is_valid_pointer(p,gc)| verifies that
+    \verb|p| is a valid interior pointer to an object 
+     within the collector \verb|gc|. 
+   \item Call to \verb|is_valid_structure(p,gc)| verifies the entire
+     structure reachable by \verb|p| is valid.  This method uses
+     \verb|GCObject::trace| to locate the correct sub-structures.
+\end{itemize}
+
+   There are alternative versions of the same methods that assumes
+the default collector is used.   Furthermore
+\begin{itemize}
+   \item Method \verb|number_of_nodes()| returns the node count of the
+last structure traced using \verb|is_valid_structure|, and 
+   \item If \verb|set_verbosity(GC::gc_print_debugging_info)| is used
+then error messages will be printed during structure tracing.
+\end{itemize}
+
+   \bibliography{gc}
+\end{document}

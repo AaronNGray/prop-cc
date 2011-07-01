@@ -1,0 +1,81 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the time and space complexity
+//  datatypes.  These datatypes are used to represent time and space
+//  complexity in the SETL-like extension language.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <math.h>
+#include <iostream>
+#include "basics.ph"
+#include "timespace.ph"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Instantiate the time and space datatypes
+//
+///////////////////////////////////////////////////////////////////////////////
+
+instantiate datatype Complexity, Time, Space;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print the complexity
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Complexity c)
+{
+  match (c)
+  {
+    Var   id:     { f << id; }
+  | Add   (a, b): { f << '(' << a << " + " << b << ')'; }
+  | Mul   (a, b): { f << '(' << a << " * " << b << ')'; }
+  | Div   (a, b): { f << '(' << a << " / " << b << ')'; }
+  | Power (a, b): { f << '(' << a << " ^ " << b << ')'; }
+  | Log   e:      { f << "log " << e; }
+  | Const (i):    { f << i; }
+  | BigOh c:      { f << "O(" << c << ')'; }
+  | Omega c:      { f << "Omega(" << c << ')'; }
+  | LittleOh c:   { f << "o(" << c << ')'; }
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print the time complexity
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Time t)
+{  return f << "Time(" << t << ")"; }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print the space complexity
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Space s)
+{  return f << "Space(" << s << ")"; }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Function to simplify a complexity expression
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Complexity simplify (Complexity c)
+{
+  rewrite (c) type (Complexity) of
+    Add   (Const i, Const j): Const(i+j)
+  | Mul   (Const i, Const j): Const(i*j)
+  | Div   (Const i, Const j): Const(i/j)
+  | Power (Const i, Const j): Const(exp(log(i)*j))
+  | Log   (Const i):          Const(log(i))
+  end rewrite;
+  return c;
+}

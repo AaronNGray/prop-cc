@@ -1,0 +1,147 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the basic routines on definitions and statements
+//  ASTs.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include "ir.h"
+#include "ast.ph"
+#include "setl-ast.ph"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Instantiate the AST datatypes.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+instantiate datatype Def, Sig, Stmt,
+                     List<Def>, List<Sig>, List<LabSig>,
+                     List<Stmt>;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  The rest of pretty printing functions for definitions and statements
+//
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print a signature
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Sig s)
+{
+  match (s)
+  {
+    NOsig:           { f << "none"; }
+  | IDsig id:        { f << id; }
+  | DOTsig (s,id):   { f << s << '.' << id; }
+  | APPsig (s,ss):   { f << s << '(' << ss << ')'; }
+  | DEFsig def:      { f << "<def>"; }
+  | LAMBDAsig (_,_): { f << "<lambda>"; }
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print a signature list
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Sigs ss)
+{
+  match while (ss)
+  {
+    #[one]:          { f << one; ss = #[]; }
+  | #[one ... rest]: { f << one << ", "; ss = rest; }
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print a statement
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Stmt s)
+{
+  match (s)
+  {
+    NOstmt:                   { f << "skip;"; }
+  | ASSIGNstmt  (a, b):       { f << a << " := " << b << ';'; }
+  | BLOCKstmt   (_, stmts):   { f << stmts; }
+  | WHILEstmt   (e, s):
+      { f << "while " << e <<  " loop " << s << " end loop"; }
+  | IFstmt      (e, y, n):
+      { f << "if " << e << " then " << y << " else " << n << "end if"; }
+  | FORALLstmt  (bs, s):
+      { f << "forall " << bs << " loop " << s << "end loop"; }
+  | RETURNstmt e:
+      { f << "return " << e << ';'; }
+  | MATCHstmt m:
+      { f << "match ..."; }
+  | REWRITEstmt m:
+      { f << "rewrite ..."; }
+  | REPLACEMENTstmt m:
+      { f << "rewrite ..."; }
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print a list of statements
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Stmts s)
+{
+  match while (s)
+  {
+    #[one]:     { f << one; s = #[]; }
+  | #[h ... t]: { f << h << " "; s = t; }
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print a generator expression
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Generator b)
+{
+  match (b)
+  {
+  GENERATOR{ pat,guard,exp }:
+    {
+      f << pat;
+      if (guard != NOexp)
+        f << " | " << guard;
+      f << " <- " << exp;
+    }
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty print a list of generator expressions
+//
+///////////////////////////////////////////////////////////////////////////////
+std::ostream& operator << (std::ostream& f, Generators b)
+{
+  match while (b)
+  {
+    #[one]:     { f << one; b = #[]; }
+  | #[h ... t]: { f << h << ", "; b = t; }
+  }
+  return f;
+}

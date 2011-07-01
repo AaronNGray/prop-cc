@@ -1,0 +1,49 @@
+
+Functor encoding for constructors:
+datatype Complexity:
+	Var	=	0
+	Add	=	1
+	Mul	=	2
+	Div	=	3
+	Power	=	4
+	Log	=	5
+	Const	=	6
+	BigOh	=	7
+	Omega	=	8
+	LittleOh	=	9
+
+Index compression is disabled
+Algorithm is TreeGen
+Canonical grammar:
+[0]	<_> : Add(Const(_), Const(_))
+[1]	<_> : Mul(Const(_), Const(_))
+[2]	<_> : Div(Const(_), Const(_))
+[3]	<_> : Power(Const(_), Const(_))
+[4]	<_> : Log(Const(_))
+
+
+Statistics of the tree automaton:
+   Number of functors      = 10
+   Number of non-terminals = 1
+   Number of states        = 7
+   Memory used             = 28 k-bytes
+
+Index compression statistics:
+   Uncompressed index entries = 70
+   Non-empty index entries    = 15
+   Compressed table entries   = 30
+   Compression rate           = 75%
+
+Table sizes:
+   Using 1-byte state representation
+   Using 1-byte rule representation
+   Theta tables entries = 19 (19 bytes)
+   Mu table entries     = 63 (63 bytes)
+   Total table size     = 82 bytes
+
+Items:
+{0}	_
+{1}	Const(_)
+{2}	Log(Const(_))
+{3}	Power(Const(_), Const(_))
+{4}	Div(Const

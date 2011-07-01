@@ -1,0 +1,43 @@
+#include <AD/persist/pstream.h>
+#include <fstream.h>
+
+
+datatype Exp :: collectable persistent =
+    NOexp                  => "<none>" 
+  | IDexp  (Id)            => _
+  | LITexp (Literal)       => _
+  | ADDexp (Exp, Exp)      => "(" _ "+" _ ")"
+  | SUBexp (Exp, Exp)      => "(" _ "-" _ ")"
+  | MULexp (Exp, Exp)      => "(" _ "*" _ ")"
+  | DIVexp (Exp, Exp)      => "(" _ "/" _ ")"
+  | IFexp  (Exp, Exp, Exp) => "if" _ "then" { _ } "else " { _ } "endif"
+
+and Literal :: collectable persistent
+  = NOlit                    => "<???>"
+  | INTlit (int)             => _
+  | REALlit (double)         => _
+  | STRINGlit (const char *) => "\"" _ "\""
+
+where type Id = const char *
+  ;
+
+refine persistent Exp      => "Expressions"
+                | Literal  => "Literals"
+  ;
+
+instantiate datatype Exp, Literal;
+
+int main()
+{  Exp e2, e3;
+   {  ifstream F("persist2.dat");
+      Pistream P(F,GC::get_default_gc());
+      cout << "[Reading object from file 'persist2.dat']\n";
+      e2 = (Exp)read_object(P);
+      e3 = (Exp)read_object(P);
+      F.close();
+   } 
+   cout << "e2 = " << e2 << " aka " << (void*)e2 << '\n';
+   cout << "e3 = " << e3 << " aka " << (void*)e3 << '\n';
+   cout << "Okay\n";
+   return 0;
+}

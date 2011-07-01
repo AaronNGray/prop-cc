@@ -1,0 +1,24 @@
+Before:
+begin 
+   var x : integer;
+   var y : integer;
+   var z : array (10 * 30) of integer;
+   
+   x := (0 + (y * 1));
+   while (1 <> 1) do
+      y := (y + 1);
+   end while;
+   print (not false);
+   
+end
+
+After:
+begin 
+   var x : integer;
+   var y : integer;
+   var z : array 300 of integer;
+   
+   x := y;
+   print true;
+   
+end

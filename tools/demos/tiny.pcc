@@ -1,0 +1,77 @@
+#include "tiny.ph"
+
+Env eval(Statement stmt, Env env)
+{  match (stmt) {
+      case ASSIGN(x,e):    return env.update(x,eval(e,env)); 
+      case WHILE(e, s):    match (eval(e,env)) {
+                              case BOOL b: if (b) return eval(stmt,eval(s,env));
+                                           else return env; 
+                              case _:  return env;
+                           }             
+      case IF(e, yes, no): match (eval(e,env)) {
+                              case BOOL b: if (b)  return eval(yes,env);
+                                           else return eval(no,env); 
+                              case _:  return env;
+                           }
+      case SEQ(s1, s2):    return eval(s2,eval(s1,env));
+   }
+}
+
+Exp fold(Exp e)
+{  match (e) {
+      case BINOP(_,e1,e2): e1 = fold(e1); e2 = fold(e2);
+      case _:
+   }
+
+   match (e) {
+      case BINOP(ADD,CONST(INT i),CONST(INT j)):      e = CONST(INT(i+j));
+      case BINOP(ADD,CONST(REAL i),CONST(INT j)):     e = CONST(REAL(i+j));
+      case BINOP(ADD,CONST(INT i),CONST(REAL j)):     e = CONST(REAL(i+j));
+      case BINOP(ADD,CONST(REAL i),CONST(REAL j)):    e = CONST(REAL(i+j));
+      case BINOP(SUB,CONST(INT i),CONST(INT j)):      e = CONST(INT(i-j));
+      case BINOP(SUB,CONST(REAL i),CONST(INT j)):     e = CONST(REAL(i-j));
+      case BINOP(SUB,CONST(INT i),CONST(REAL j)):     e = CONST(REAL(i-j));
+      case BINOP(SUB,CONST(REAL i),CONST(REAL j)):    e = CONST(REAL(i-j));
+      case BINOP(MUL,CONST(INT i),CONST(INT j)):      e = CONST(INT(i-j));
+      case BINOP(MUL,CONST(REAL i),CONST(INT j)):     e = CONST(REAL(i*j));
+      case BINOP(MUL,CONST(INT i),CONST(REAL j)):     e = CONST(REAL(i*j));
+      case BINOP(MUL,CONST(REAL i),CONST(REAL j)):    e = CONST(REAL(i*j));
+      case BINOP(DIV,CONST(INT i),CONST(INT j)):      e = CONST(INT(i/j));
+      case BINOP(DIV,CONST(REAL i),CONST(INT j)):     e = CONST(REAL(i/j));
+      case BINOP(DIV,CONST(INT i),CONST(REAL j)):     e = CONST(REAL(i/j));
+      case BINOP(DIV,CONST(REAL i),CONST(REAL j)):    e = CONST(REAL(i/j));
+      case BINOP(MOD,CONST(INT i),CONST(INT j)):      e = CONST(INT(i%j));
+      case BINOP(EQ,CONST(INT i),CONST(INT j)):       e = CONST(BOOL(i==j));
+      case BINOP(EQ,CONST(REAL i),CONST(INT j)):      e = CONST(BOOL(i==j));
+      case BINOP(EQ,CONST(INT i),CONST(REAL j)):      e = CONST(BOOL(i==j));
+      case BINOP(EQ,CONST(REAL i),CONST(REAL j)):     e = CONST(BOOL(i==j));
+      case BINOP(EQ,CONST(STRING a),CONST(STRING b)): e = CONST(BOOL(strcmp(a,b) == 0));
+      case BINOP(NE,CONST(INT i),CONST(INT j)):       e = CONST(BOOL(i!=j));
+      case BINOP(NE,CONST(REAL i),CONST(INT j)):      e = CONST(BOOL(i!=j));
+      case BINOP(NE,CONST(INT i),CONST(REAL j)):      e = CONST(BOOL(i!=j));
+      case BINOP(NE,CONST(REAL i),CONST(REAL j)):     e = CONST(BOOL(i!=j));
+      case BINOP(NE,CONST(STRING a),CONST(STRING b)): e = CONST(BOOL(strcmp(a,b) != 0)); 
+      case BINOP(GT,CONST(INT i),CONST(INT j)):       e = CONST(BOOL(i>j));
+      case BINOP(GT,CONST(REAL i),CONST(INT j)):      e = CONST(BOOL(i>j));
+      case BINOP(GT,CONST(INT i),CONST(REAL j)):      e = CONST(BOOL(i>j));
+      case BINOP(GT,CONST(REAL i),CONST(REAL j)):     e = CONST(BOOL(i>j));
+      case BINOP(GT,CONST(STRING a),CONST(STRING b)): e = CONST(BOOL(strcmp(a,b) > 0)); 
+      case BINOP(LT,CONST(INT i),CONST(INT j)):       e = CONST(BOOL(i<j));
+      case BINOP(LT,CONST(REAL i),CONST(INT j)):      e = CONST(BOOL(i<j));
+      case BINOP(LT,CONST(INT i),CONST(REAL j)):      e = CONST(BOOL(i<j));
+      case BINOP(LT,CONST(REAL i),CONST(REAL j)):     e = CONST(BOOL(i<j));
+      case BINOP(LT,CONST(STRING a),CONST(STRING b)): e = CONST(BOOL(strcmp(a,b) < 0)); 
+      case BINOP(GE,CONST(INT i),CONST(INT j)):       e = CONST(BOOL(i>=j));
+      case BINOP(GE,CONST(REAL i),CONST(INT j)):      e = CONST(BOOL(i>=j));
+      case BINOP(GE,CONST(INT i),CONST(REAL j)):      e = CONST(BOOL(i>=j));
+      case BINOP(GE,CONST(REAL i),CONST(REAL j)):     e = CONST(BOOL(i>=j));
+      case BINOP(GE,CONST(STRING a),CONST(STRING b)): e = CONST(BOOL(strcmp(a,b) >= 0)); 
+      case BINOP(LE,CONST(INT i),CONST(INT j)):       e = CONST(BOOL(i<=j));
+      case BINOP(LE,CONST(REAL i),CONST(INT j)):      e = CONST(BOOL(i<=j));
+      case BINOP(LE,CONST(INT i),CONST(REAL j)):      e = CONST(BOOL(i<=j));
+      case BINOP(LE,CONST(REAL i),CONST(REAL j)):     e = CONST(BOOL(i<=j));
+      case BINOP(LE,CONST(STRING a),CONST(STRING b)): e = CONST(BOOL(strcmp(a,b) <= 0)); 
+      case _:
+   }
+   return e;
+}

@@ -1,0 +1,34 @@
+#include <AD/gc/gcobject.h>
+#include <iostream.h>
+
+datatype Operator
+  = OP (const char *)
+  ;
+
+datatype Expr
+  = ID (const char *)
+  | INT (int)
+  | BINARY (Operator, Expr, Expr)
+  ;
+
+rewrite class Foo (Expr)  // Error: should be (Expr,Operator)
+{
+  public:
+    Foo() {}
+};
+
+rewrite Foo 
+{
+   BINARY(OP("+"), INT(x), INT(y)) : INT(x+y)
+ | BINARY(OP("-"), INT(x), INT(y)) : INT(x-y)
+};
+
+int
+main()
+{
+  Foo f;
+  Expr ex = BINARY(OP("+"),INT(1),INT(2));
+
+  f(ex);
+  return 0;
+}

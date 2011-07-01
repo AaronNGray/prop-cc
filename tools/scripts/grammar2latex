@@ -1,0 +1,539 @@
+#!/usr/bin/perl 
+#@
+#@ grammar2latex:  Generate typesetted LaTeX grammar from Prop's report.
+#@ usage: grammar2latex [options] <report-file>
+#@     options: 
+#@        [-S]              Generate section only
+#@        [-t]              Emit output at stdout
+#@        [-v]              Verbose mode
+#@        [-o<output-file>] Send output to a specified file
+#@        [-D]              Depth first presentation
+#@        [-B]              Breadth first presentation
+
+require "getopts.pl";
+
+$DEPTH_FIRST  = 1;
+$BAD = Getopts("hStvo:DB");
+$HELP         = $opt_h;
+$TO_STDOUT    = $opt_t;
+$SECTION_ONLY = $opt_S;
+$VERBOSE      = $opt_v;
+$OUTPUT_FILE  = $opt_o;
+$DEPTH_FIRST  = 0 if $opt_B;
+
+print_help_and_die() if (!$BAD || $HELP || $#ARGV != 0);
+
+###############################################################################
+#
+#  Initialization.
+#
+###############################################################################
+$GRAMMAR2LATEX_VERSION="0.1";
+$USER=$ENV{"USER"};
+$DATE=`date`; chop($DATE);
+$DOCUMENT_STYLE      = "\\documentclass{article}";
+$BAR                 = "|";
+$STARTRC             = "~$USER/.grammar2latex";
+$INPUT_FILE          = $ARGV[0];
+$QUOTED_INPUT_FILE   = quote($INPUT_FILE);
+$SECTION             = "\\section";
+$SUBSECTION          = "\\subsection";
+$OUTPUT_FILE         = "${INPUT_FILE}.tex" if ! $OUTPUT_FILE;
+$NON_TERMINAL_FONT   = "\\nonterm";
+$EPSILON             = '\epsilon';
+$LINES_PER_PAGE      = 50;
+$CHARACTERS_PER_LINE = 66;
+$CHARACTERS_PER_PRODUCTION = 40;
+$HTTP                = quote('http://chimera.cs.nyu.edu:8888/~leunga');
+$EMAIL               = quote('leunga@valis.cs.nyu.edu');
+$LATEX_MARGINS = 
+'
+   \setlength{\textwidth}{6.5in}
+   \setlength{\evensidemargin}{-.2in}
+   \setlength{\oddsidemargin}{-.2in}
+   \setlength{\textheight}{9.00in}
+   \setlength{\topmargin}{-0.5in}
+   \setlength{\parskip}{2mm}
+   \setlength{\parindent}{0mm}
+';
+if ($OUTPUT_FILE =~ /^.*\/([^\/]+)$/)
+{  $OUTPUT_FILE = $1;
+}
+require "$STARTRC" if (-r $STARTRC);
+
+###############################################################################
+#
+#  Setup data structures.
+#
+###############################################################################
+$SYNTAX_CLASS  = "";
+%terminals     = ();
+%symbols       = ();
+%keywords      = ();
+%others        = ();
+%non_terminals = ();
+%P             = ();
+%Alts          = ();
+%children      = ();
+%child_list    = ();
+%non_term_no   = ();
+
+###############################################################################
+#
+#  Scan output file
+#
+###############################################################################
+open(INPUT,$INPUT_FILE) || die("$0: $!: $INPUT_FILE\n");
+$line_no = 0;
+while (<INPUT>)
+{  $line_no++;
+   if (/^{\d+}\s+(\<.*\>)\s+->\s+(.*)\s+/)   # A special production
+   {  $lhs = $1;
+      $rhs = $2;
+      if ($lhs eq '<start>')
+      {  $non_terminals{$lhs} = 0;
+         my($toks) = split_rhs($rhs);
+         $P{$lhs}[$Alts{$lhs}++] = $toks;
+         build_graph("<start>",$toks);
+      }
+      next;
+   }
+   if (/^{\d+}\s+(.*)\s+->\s+(.*)\s+/)   # A production
+   {  $lhs = $1;
+      $rhs = $2;
+      $non_terminals{$lhs} = $line_no;
+      my($toks) = split_rhs($rhs);
+      $P{$lhs}[$Alts{$lhs}++] = $toks;
+      build_graph($lhs,$toks);
+      print STDERR '.' if $VERBOSE;
+      next;
+   }
+   if (/^{\d+}\s+\|\s+(.*)\s+/)          # continuing
+   {  $rhs = $1;
+      my($toks) = split_rhs($rhs);
+      $P{$lhs}[$Alts{$lhs}++] = $toks;
+      build_graph($lhs,$toks);
+      next;
+   }
+   $number_of_states        = $1 if /^Number of states\s+=\s+(\d+)/;
+   $number_of_items         = $1 if /^Number of items\s+=\s+(\d+)/;
+   $shift_reduce_conflicts  = $1 if /^Number of shift\/reduce conflicts\s+=\s+(\d+)/;
+   $reduce_reduce_conflicts = $1 if /^Number of reduce\/reduce conflicts\s+=\s+(\d+)/;
+   $next_check_size         = $1 if /^Max next\/check\s+=\s+(\d+)/;
+   $SYNTAX_CLASS            = $1 if /^\[Syntax class (\S+)\]/;
+}
+
+###############################################################################
+#
+#  Check for consistency
+#
+###############################################################################
+if ($SYNTAX_CLASS eq "")
+{  print STDERR "$0: no syntax class found in file '$INPUT_FILE'\n";
+   exit(1);
+}
+$SYNTAX_CLASS = quote($SYNTAX_CLASS);
+
+###############################################################################
+#
+#  Generate output
+#
+###############################################################################
+if ($TO_STDOUT)
+{  local(*OUTPUT) = *STDOUT; }
+else
+{  open(OUTPUT,">$OUTPUT_FILE") || die("$0: $!: $OUTPUT_FILE\n");
+}
+
+print STDERR '[Printing header]' if $VERBOSE;
+print_header();
+print STDERR '[Building keyword list]' if $VERBOSE;
+print_keywords();
+print STDERR '[Computing index]' if $VERBOSE;
+compute_nonterm_index();
+print STDERR '[Printing grammar]' if $VERBOSE;
+print_grammar();
+print_diagnostics();
+print_footer();
+print STDOUT "$OUTPUT_FILE\n";
+exit(0);
+
+###############################################################################
+#
+#  Print help and die.
+#
+###############################################################################
+sub print_help_and_die
+{  open (HELP,$0) || die("$!: $0\n");
+   while (<HELP>)
+   {  print STDERR $1, "\n" if /^#@ (.*)/;
+   }
+   exit(1);
+}
+
+###############################################################################
+#
+#  Quote LaTeX 
+#
+###############################################################################
+sub quote 
+{  my($text) = @_;
+   my($dollar) = '$';
+   $text =~ s/([_%&^$@!{}])/\\\1/g;
+   $text =~ s/\</${dollar}\\langle${dollar}/g;
+   $text =~ s/\>/${dollar}\\rangle${dollar}/g;
+   $text =~ s/~/{\\char126}/g;
+   return $text;
+}
+
+###############################################################################
+#
+#  Verbatim LaTeX 
+#
+###############################################################################
+sub verbatim 
+{  my($text) = @_;
+   if (! ($text =~ /\|/))
+   {  return "\\verb|${text}|"; }
+   if (! ($text =~ /\./))
+   {  return "\\verb.${text}."; }
+   if (! ($text =~ /\!/))
+   {  return "\\verb!${text}!"; }
+   if (! ($text =~ /\@/))
+   {  return "\\verb@${text}@"; }
+   die ("$0: can't verbatimize: $text\n");
+}
+
+###############################################################################
+#
+#  Make a LaTeX label
+#
+###############################################################################
+sub make_label
+{  my($label) = @_;
+   $label =~ s/_/--/g;
+   return $label;
+}
+
+###############################################################################
+#
+#  Check if a token is a symbol
+#
+###############################################################################
+sub is_symbol
+{  my($tok) = @_;
+   if ($tok =~ /^"[a-zA-Z_]/) { return 0; }
+   else                       { return 1; }
+}
+
+###############################################################################
+#
+#  Split string into tokens 
+#
+###############################################################################
+sub split_rhs
+{  my($text) = @_;
+   my(@tokens) = ();
+   while (! $text =~ /^\s*$/)
+   {  if ($text =~ /^("(([^"]|\\.)*)")\s*(.*)$/)
+      {  push @tokens, $1; $text = $4; 
+         if (is_symbol($1)) { $symbols{$2} = 1; }
+         else               { $keywords{$2} = 1; }
+         next;
+      }
+      if ($text =~ /^('(([^']|\\.)*)')\s*(.*)$/)
+      {  push @tokens, $1; $text = $4; $symbols{$2} = 1; next; }
+      if ($text =~ /^\?\s+(.*)$/)
+      {  push @tokens, "<error>"; $text = $1; next; }
+      if ($text =~ /^\$\s+(.*)$/)
+      {  push @tokens, "<EOF>"; $text = $1; next; }
+      if ($text =~ /^\<\d+\>\s+(.*)$/)
+      {  $text = $1; next; }
+      if ($text =~ /^(\S+)\s+(.*)$/)
+      {  push @tokens, $1; $text = $2; $others{$1} = 1; next; }
+   }
+   return \@tokens;
+}
+
+###############################################################################
+#
+#  Build the dependency graph 
+#
+###############################################################################
+sub build_graph
+{  my($lhs,$rhs) = @_;
+   for $i (@{$rhs})
+   {  if (! $children{$lhs}{$i})
+      {  push @{$child_list{$lhs}}, $i;
+         #print STDERR "{$lhs -> $i}";
+         $children{$lhs}{$i} = 1;
+      }
+   }
+}
+
+###############################################################################
+#
+#  Print header 
+#
+###############################################################################
+sub print_header
+{
+   if (! $SECTION_ONLY)
+   {  print OUTPUT <<EOF;
+$DOCUMENT_STYLE
+$LATEX_MARGINS 
+\\title{\\Large \\bf Syntax class $SYNTAX_CLASS\\thanks{
+            Generated from the file ``\\tt $QUOTED_INPUT_FILE'' using
+            {\\em grammar2latex} version $GRAMMAR2LATEX_VERSION on $DATE.
+            {\\em grammar2latex} is part of the {\\sf Prop} tool set.
+            Please visit {\\tt $HTTP} for more details.
+         }
+       }
+\\author{User $USER}
+\\begin{document}
+   \\newfont{\\nonterm}{cmssq9}
+   \\maketitle
+EOF
+   }
+}
+
+###############################################################################
+#
+#  Print footer 
+#
+###############################################################################
+sub print_footer
+{  
+   if (! $SECTION_ONLY)
+   {
+       print OUTPUT <<EOF;
+\\end{document}
+EOF
+   }
+}
+
+###############################################################################
+#
+#  Print keywords
+#
+###############################################################################
+sub print_keywords
+{  print OUTPUT <<END;
+${SECTION}\{Lexical structure}
+\\begin{description}
+   \\item[keywords:]
+      \\begin{verbatim}
+END
+ 
+   my($line,$k,$s) = "";
+   for $k (sort keys %keywords)
+   {  $line = "$line  $k";
+      if (length($line) >= $CHARACTERS_PER_LINE)
+      {  print OUTPUT "$line\n"; $line = ""; }
+   }
+   if ($line ne "") { print OUTPUT "$line\n"; }
+   $line = "";
+
+   print OUTPUT <<END;
+      \\end{verbatim}
+   \\item[symbols:]
+      \\begin{verbatim}
+END
+
+   for $s (sort keys %symbols)
+   {  $line = "$line  $s";
+      if (length($line) >= $CHARACTERS_PER_LINE)
+      {  print OUTPUT "$line\n"; $line = ""; }
+   }
+   if ($line ne "") { print OUTPUT "$line\n"; }
+   $line = "";
+
+   print OUTPUT <<END;
+      \\end{verbatim}
+   \\item[others:]
+      \\begin{verbatim}
+END
+
+   for $k (sort keys %others)
+   {  if (! $keywords{$k} && ! $symbols{$k} && ! $non_terminals{$k})
+      {  $line = "$line  $k";
+         if (length($line) >= $CHARACTERS_PER_LINE)
+         {  print OUTPUT "$line\n"; $line = ""; }
+      }
+   }
+   if ($line ne "") { print OUTPUT "$line\n"; }
+   $line = "";
+
+   print OUTPUT <<END;
+      \\end{verbatim}
+   \\end{description}
+END
+}
+
+###############################################################################
+#
+#  Print diagnostics 
+#
+###############################################################################
+sub print_diagnostics
+{
+   print OUTPUT <<EOF;
+$SECTION\{Diagonsistics}
+   \\begin{quotation}
+      \\begin{tabular}{ll} 
+         \\bf Number of states        & $number_of_states \\\\
+         \\bf Number of items         & $number_of_items \\\\
+         \\bf Shift/reduce conflicts  & $shift_reduce_conflicts \\\\
+         \\bf Reduce/reduce conflicts & $reduce_reduce_conflicts \\\\
+         \\bf Next/check table size   & $next_check_size \\\\
+      \\end{tabular}
+   \\end{quotation}
+EOF
+}
+
+###############################################################################
+#
+#  Topological sort to determine the non-terminal number
+#
+###############################################################################
+sub compute_nonterm_index
+{
+   my (@ready)     = ("<start>");
+   my (%processed) = ();
+   my ($index)     = 1;
+   while ($#ready >= 0)
+   {  if ($DEPTH_FIRST)
+      {  $lhs = pop @ready;
+      } else
+      {  ($lhs,@rest) = @ready;
+         @ready = @rest;
+      }
+      print STDERR "+" if $VERBOSE;
+      $non_term_no{$lhs} = $index++;
+      $n = $Alts{$lhs};
+      for ($i = 0; $i < $n; $i++)
+      {  if ($DEPTH_FIRST)
+         {  # Depth first
+            for $child (reverse @{$child_list{$lhs}})
+            {  if ($non_terminals{$child} && ! $processed{$child})
+               {  push @ready, $child;
+                  $processed{$child} = 1;
+               }
+            }
+         } else
+         {  # Breadth first
+            for $child (@{$child_list{$lhs}})
+            {  if ($non_terminals{$child} && ! $processed{$child})
+               {  push @ready, $child;
+                  $processed{$child} = 1;
+               }
+            }
+         }
+      }
+   }
+}
+
+###############################################################################
+#
+#  Print grammar 
+#
+###############################################################################
+sub print_grammar
+{  
+   print OUTPUT <<END;
+\\newpage
+$SECTION\{Grammar}
+\\begin{quotation}
+\\begin{math}
+   \\begin{array}{llcl}
+END
+
+   my ($lines)     = 0;
+   my (@ready)     = ("<start>");
+   my (%processed) = ();
+
+   while ($#ready >= 0)
+   {  if ($DEPTH_FIRST)
+      {  $lhs = pop @ready;
+      } else
+      {  ($lhs,@rest) = @ready;
+         @ready = @rest;
+      }
+      print STDERR "[$lhs]" if $VERBOSE;
+      $n = $Alts{$lhs};
+      if ($lines + $n > $LINES_PER_PAGE)
+      {  $lines = 0;
+         print OUTPUT <<END;
+   \\end{array}
+\\end{math}
+\\end{quotation}
+\\newpage
+\\begin{quotation}
+\\begin{math}
+   \\begin{array}{llcl}
+END
+      }
+      for ($i = 0; $i < $n; $i++)
+      {  if ($i == 0)
+         {  my($quoted_lhs) = quote($lhs);
+            my($lhs_label)  = $non_term_no{$lhs};
+            printf OUTPUT
+               "\\langle{\\sf $lhs_label}\\rangle & ", $lhs_label;
+            printf OUTPUT "\\mbox{${NON_TERMINAL_FONT} %s} ", $quoted_lhs;
+            print OUTPUT "& ::= &";
+         } else {
+            printf OUTPUT "& & | &";
+         }
+         my(@rhs) = @{$P{$lhs}[$i]};
+         print OUTPUT "$EPSILON" if ($#rhs == -1);
+         my($line) = "";
+         for ($j = 0; $j <= $#rhs; $j++)
+         {  my($tok) = $rhs[$j];
+            $line = "$line $tok";
+            if (length($line) >= $CHARACTERS_PER_PRODUCTION)
+            {  $line = "";
+               printf OUTPUT "\\\\\n& & &\\quad ";
+               $lines++;
+            }
+            if (! $non_terminals{$tok})
+            {  printf OUTPUT "%s", verbatim($tok); }
+            else 
+            {  my($quoted_tok) = quote($tok);
+               printf OUTPUT "\\mbox{${NON_TERMINAL_FONT} %s}", $quoted_tok; 
+               if ($non_terminals{$tok})
+               {  printf OUTPUT "_{\\sf %s} ", $non_term_no{$tok};
+               }
+            }
+            printf OUTPUT "\\ "; 
+         }
+         print OUTPUT "\\\\\n";
+         $lines++;
+
+         if ($DEPTH_FIRST)
+         {  # Depth first
+            for $child (reverse @{$child_list{$lhs}})
+            {  if ($non_terminals{$child} && ! $processed{$child})
+               {  push @ready, $child;
+                  $processed{$child} = 1;
+               }
+            }
+         } else
+         {
+            # Breadth first
+            for $child (@{$child_list{$lhs}})
+            {  if ($non_terminals{$child} && ! $processed{$child})
+               {  push @ready, $child;
+                  $processed{$child} = 1;
+               }
+            }
+         }
+      }
+      print OUTPUT "\\\\\n";
+      $lines++;
+   }
+   print OUTPUT <<END;
+   \\end{array}
+\\end{math}
+\\end{quotation}
+END
+}

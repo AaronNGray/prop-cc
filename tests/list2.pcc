@@ -1,0 +1,57 @@
+//////////////////////////////////////////////////////////////////////////////
+//
+//  Testing all the list constructors. 
+//
+//////////////////////////////////////////////////////////////////////////////
+#include <iostream.h>
+
+//////////////////////////////////////////////////////////////////////////////
+//  Define some list types.
+//  I'm lazy so I just let the system to generate the printing methods.
+//////////////////////////////////////////////////////////////////////////////
+datatype LIST1 :: printable = #[] | #[ char * ... LIST1 ]
+and      LIST2 :: printable = #() | #( char * ... LIST2 )
+and      LIST3 :: printable = #{} | #{ char * ... LIST3 }
+;
+
+instantiate datatype LIST1, LIST2, LIST3;
+
+//////////////////////////////////////////////////////////////////////////////
+//  Try the new list constructor in expressions.
+//////////////////////////////////////////////////////////////////////////////
+int main()
+{ 
+ { LIST1 fruits  = #["apple", "orange", "pear"];
+   LIST1 scums   = #["marketing", "lawyers", "Republicans"];
+   LIST1 animals = #["weasels", "skunks" ... scums]; 
+   cout << "Fruits        = " << fruits  << '\n';
+   cout << "Animals       = " << animals << '\n';
+   cout << "Mathematicans = " << #["Skolem", "Curry", "Thue", "Church"] << '\n';
+ }
+
+ { LIST2 fruits  = #("apple", "orange", "pear");
+   LIST2 scums   = #("marketing", "lawyers", "Republicans");
+   LIST2 animals = #("weasels", "skunks" ... scums); 
+   cout << "Fruits        = " << fruits  << '\n';
+   cout << "Animals       = " << animals << '\n';
+   cout << "Mathematicans = " << #("Skolem", "Curry", "Thue", "Church") << '\n';
+ }
+
+ { LIST3 fruits  = #{"apple", "orange", "pear"};
+   LIST3 scums   = #{"marketing", "lawyers", "Republicans"};
+   LIST3 animals = #{"weasels", "skunks" ... scums}; 
+   cout << "Fruits        = " << fruits  << '\n';
+   cout << "Animals       = " << animals << '\n';
+   cout << "Mathematicans = " << #{"Skolem", "Curry", "Thue", "Church"} << '\n';
+ }
+
+/*
+   LIST4 fruits  = #<"apple", "orange", "pear">;
+   LIST4 scums   = #<"marketing", "lawyers", "Republicans">;
+   LIST4 animals = #<"weasels", "skunks" ... scums>; 
+   cout << "Fruits        = " << fruits  << '\n';
+   cout << "Animals       = " << animals << '\n';
+   cout << "Mathematicans = " << #<"Skolem", "Curry", "Thue", "Church"> << '\n';
+*/
+   return 0;
+}

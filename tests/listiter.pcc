@@ -1,0 +1,34 @@
+//////////////////////////////////////////////////////////////////////////////
+//  Testing the standard template library style iterator with lists.
+//////////////////////////////////////////////////////////////////////////////
+#include <prop/list.h>
+#include <AD/stl/algorithm.h>
+#include <AD/stl/streamiter.h>
+#include <iostream.h>
+
+datatype LIST<T> = #[] | #[ T ... LIST<T> ];
+
+instantiate datatype LIST<int>, LIST<char *>;
+
+int main()
+{
+   LIST<char *> fruits = 
+      #[ "lemons", "apple", "oranges", "pears", "pineapple", "kiwi" ];
+
+   ostream_iterator<char *> p(cout, " ");
+
+   copy(list_iterator<LIST<char *>, char *>(fruits), 
+        list_iterator<LIST<char *>, char *>(list_nil(fruits)),
+        p);
+   cout << "\n";
+
+   LIST<int> primes = #[2, 3, 5, 7, 11, 13, 17, 19, 23];
+   
+   ostream_iterator<int> q(cout, " ");
+   copy(list_iterator<LIST<int>, int>(primes), 
+        list_iterator<LIST<int>, int>(list_nil(primes)),
+        q);
+   cout << "\n";
+
+   cout << "OK\n";
+};

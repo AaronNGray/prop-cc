@@ -1,0 +1,76 @@
+#include <AD/pretty/postream.h>
+#include "proj.ph"
+#include "list.ph"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor and destructor for projection recognition 
+//
+///////////////////////////////////////////////////////////////////////////////
+Projection::Projection() {}
+Projection::~Projection() {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to invoke projection recognition 
+//
+///////////////////////////////////////////////////////////////////////////////
+Exp Projection::projection_recognition(Exp e) 
+{ message("Projection recognition phase", e); (*this)(e); return e;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to create a projection 
+//
+///////////////////////////////////////////////////////////////////////////////
+Exp Projection::make_projection
+   (const IdSet& Invisible, Ids xs, Exps As, Exp P, Exp exp)
+{  Ids  visible_xs = #[];
+   Exps visible_As = #[];
+   match while (xs) and (As) of
+      #[a ... b], #[c ... d]:
+      {  if (Invisible.contains(a))
+	 {  P = EXISTS(a,c,P); }
+         else
+	 {  visible_xs = #[a ... visible_xs];
+	    visible_As = #[c ... visible_As];
+         }
+	 xs = b; As = d;
+      }
+   end match;
+   changed = true;
+   Exp body = P == True ? exp : GUARD(P,exp);
+   return GENERATOR(rev(visible_xs),rev(visible_As),body);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Transformation to recongize projections and transform them into
+//  existential queries.  Assume the set comprehensions are in flatten form.
+//
+///////////////////////////////////////////////////////////////////////////////
+rewrite Projection
+{
+//
+// Locate all set comprehension quantifiers. 
+//
+// { es : xs in As | p }  where FV(xs) - FV(es) > 0
+//
+   GENERATOR(xs,As,GUARD(p,e)) | length(xs) == length(As): 
+   {  IdSet S1;
+      IdSet S2;
+      free_vars(xs,S1);
+      free_vars(e,S2);
+      remove_vars(S1,S2);
+      if (S1.size() > 0) rewrite(make_projection(S1,xs,As,p,e));
+   }
+|  GENERATOR(xs,As,e) | length(xs) == length(As): 
+   {  IdSet S1;
+      IdSet S2;
+      free_vars(xs,S1);
+      free_vars(e,S2);
+      remove_vars(S1,S2);
+      if (S1.size() > 0) rewrite(make_projection(S1,xs,As,True,e));
+   }
+};

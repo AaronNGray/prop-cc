@@ -1,0 +1,101 @@
+//
+//  Test the view mechanism
+//
+
+#include <assert.h>
+#include <iostream.h>
+
+enum exp_tag { Int = 1, Ident, Add, Sub, Mul, Div };
+
+struct exp {
+   enum exp_tag tag;
+   union {
+      int number;
+      const char * ident;
+      struct { struct exp * l, * r; } children;
+   } u;
+};
+
+typedef struct exp * Exp;
+
+Exp INT(int i) 
+{  Exp e = new exp; e->tag = Int; e->u.number = i; return e; }
+
+Exp ID(const char * id) 
+{  Exp e = new exp; e->tag = Ident; e->u.ident = id; return e; }
+
+Exp ADD(Exp a, Exp b)
+{  Exp e = new exp; e->tag = Add; e->u.children.l = a; e->u.children.r = b;
+   return e;
+}
+   
+Exp SUB(Exp a, Exp b)
+{  Exp e = new exp; e->tag = Sub; e->u.children.l = a; e->u.children.r = b;
+   return e;
+}
+   
+Exp MUL(Exp a, Exp b)
+{  Exp e = new exp; e->tag = Mul; e->u.children.l = a; e->u.children.r = b;
+   return e;
+}
+   
+Exp DIV(Exp a, Exp b)
+{  Exp e = new exp; e->tag = Div; e->u.children.l = a; e->u.children.r = b;
+   return e;
+}
+   
+datatype Exp :: view
+    = match (this ? this->tag : 0)
+      view 0     => NONE
+    | view Int   => INT (int = this->u.number) 
+    | view Ident => ID (const char * = this->u.ident) 
+    | view Add   => ADD (Exp = this->u.children.l, Exp = this->u.children.r)
+    | view Sub   => SUB (Exp = this->u.children.l, Exp = this->u.children.r)
+    | view Mul   => MUL (Exp = this->u.children.l, Exp = this->u.children.r)
+    | view Div   => DIV (Exp = this->u.children.l, Exp = this->u.children.r)
+    ;
+
+ostream& operator << (ostream& s, const Exp& e)
+{  match (e)
+   {  NONE:      { return s << "NONE"; }
+   |  INT i:     { return s << i; }
+   |  ID x:      { return s << x; }
+   |  ADD (x,y): { return s << '(' << x << " + " << y << ')'; }
+   |  SUB (x,y): { return s << '(' << x << " - " << y << ')'; }
+   |  MUL (x,y): { return s << '(' << x << " * " << y << ')'; }
+   |  DIV (x,y): { return s << '(' << x << " / " << y << ')'; }
+   }
+}
+
+int eval(const Exp& e)
+{  match (e) 
+   {  NONE:      { return 0; }
+   |  INT i:     { return i; }
+   |  ID x:      { return 0; }
+   |  ADD (x,y): { return eval(x) + eval(y); }
+   |  SUB (x,y): { return eval(x) - eval(y); }
+   |  MUL (x,y): { return eval(x) * eval(y); }
+   |  DIV (x,INT 0): { cerr << "Division by zero\n"; return 0; }
+   |  DIV (x,y): { return eval(x) / eval(y); }
+   }
+}
+
+void simplify(Exp& e)
+{
+   rewrite (e) type (Exp)
+   {  ADD(INT i, INT j): INT(i+j)
+   |  SUB(INT i, INT j): INT(i-j)
+   |  MUL(INT i, INT j): INT(i*j)
+   |  DIV(INT i, INT j): INT(i/j)
+   }
+}
+
+int main()
+{  Exp e = ADD(MUL(INT(5),INT(2)),DIV(INT(30),INT(6)));
+   cout << "Expression = " << e << endl;
+   cout << "Eval(" << e << ") = " << eval(e) << endl;
+   simplify(e);
+   cout << "Simplified = " << e << endl;
+   assert(eval(e) == 15);
+   return 0;
+}

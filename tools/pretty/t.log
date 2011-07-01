@@ -1,0 +1,140 @@
+This is TeX, Version 3.1415N (C version 6.1) (format=latex 94.9.13)  4 AUG 1995 01:30
+**t.tex
+(t.tex
+LaTeX2e <1994/06/01> patch level 3
+Hyphenation patterns for english, usa, german, swedish, loaded.
+(/usr/lib/texmf/tex/latex/latex/latex209.def
+File: latex209.def 1994/06/01 Standard LaTeX file
+
+Entering LaTeX 2.09 compatibility mode.
+\footheight=\dimen102
+\@maxsep=\dimen103
+\@dblmaxsep=\dimen104
+(/usr/lib/texmf/tex/latex/latex/tracefnt.sty
+Package: tracefnt 1994/05/29 v2.3k Standard LaTeX package (font tracing)
+\tracingfonts=\count82
+LaTeX Info: Redefining \selectfont on input line 113.
+)
+\symbold=\mathgroup4
+\symsans=\mathgroup5
+\symtypewriter=\mathgroup6
+\symitalic=\mathgroup7
+\symsmallcaps=\mathgroup8
+\symslanted=\mathgroup9
+LaTeX Font Info:    Redeclaring math alphabet \mathbf on input line 179.
+LaTeX Font Info:    Redeclaring math alphabet \mathsf on input line 180.
+LaTeX Font Info:    Redeclaring math alphabet \mathtt on input line 181.
+LaTeX Font Info:    Redeclaring math alphabet \mathit on input line 187.
+LaTeX Info: Redefining \em on input line 197.
+
+(/usr/lib/texmf/tex/latex/latex/latexsym.sty
+Package: latexsym 1994/05/27 v2.1e Standard LaTeX package (lasy symbols)
+\symlasy=\mathgroup10
+LaTeX Font Info:    Overwriting symbol font `lasy' in version `bold'
+(Font)                  U/lasy/m/n --> U/lasy/b/n on input line 47.
+)
+LaTeX Font Info:    Redeclaring math delimiter \lgroup on input line 262.
+LaTeX Font Info:    Redeclaring math delimiter \rgroup on input line 264.
+LaTeX Font Info:    Redeclaring math delimiter \bracevert on input line 266.
+)
+(/usr/lib/texmf/tex/latex/latex/article.cls
+Document Class: article 1994/07/13 v1.2u Standard LaTeX document class
+(/usr/lib/texmf/tex/latex/latex/size10.clo
+File: size10.clo 1994/07/13 v1.2u Standard LaTeX file (size option)
+)
+\c@part=\count83
+\c@section=\count84
+\c@subsection=\count85
+\c@subsubsection=\count86
+\c@paragraph=\count87
+\c@subparagraph=\count88
+\c@figure=\count89
+\c@table=\count90
+\abovecaptionskip=\skip41
+\belowcaptionskip=\skip42
+Compatibility mode: definition of \rm ignored.
+Compatibility mode: definition of \sf ignored.
+Compatibility mode: definition of \tt ignored.
+Compatibility mode: definition of \bf ignored.
+Compatibility mode: definition of \it ignored.
+Compatibility mode: definition of \sl ignored.
+Compatibility mode: definition of \sc ignored.
+\bibindent=\dimen105
+) (t.aux)
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 4.
+LaTeX Font Info:    ... okay on input line 4.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 4.
+LaTeX Font Info:    ... okay on input line 4.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 4.
+LaTeX Font Info:    ... okay on input line 4.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 4.
+LaTeX Font Info:    ... okay on input line 4.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 4.
+LaTeX Font Info:    ... okay on input line 4.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 4.
+LaTeX Font Info:    ... okay on input line 4.
+LaTeX Info: Redefining \" on input line 4.
+LaTeX Info: Redefining \" on input line 4.
+LaTeX Font Info:    No math setup on input line 5.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 5.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 5.
+
+Overfull \hbox (203.10843pt too wide) in paragraph at lines 5--64
+[][] 
+ []
+
+[1
+
+]
+Overfull \vbox (154.0pt too high) has occurred while \output is active []
+
+ [2]
+Overfull \hbox (203.10843pt too wide) in paragraph at lines 65--87
+[][] 
+ []
+
+
+Overfull \hbox (203.10843pt too wide) in paragraph at lines 88--134
+[][] 
+ []
+
+[3]
+Overfull \hbox (203.10843pt too wide) in paragraph at lines 135--148
+[][] 
+ []
+
+[4]
+Overfull \hbox (203.10843pt too wide) in paragraph at lines 149--178
+[][] 
+ []
+
+
+Overfull \hbox (203.10843pt too wide) in paragraph at lines 179--274
+[][] 
+ []
+
+[5]
+Overfull \vbox (586.0pt too high) has occurred while \output is active []
+
+ [6]
+Overfull \hbox (203.10843pt too wide) in paragraph at lines 275--322
+[][] 
+ []
+
+
+Overfull \vbox (10.0pt too high) has occurred while \output is active []
+
+ [7]
+(t.aux) ) 
+Here is how much of TeX's memory you used:
+ 346 strings out of 10935
+ 3266 string characters out of 67003
+ 61231 words of memory out of 262141
+ 3262 multiletter control sequences out of 9500
+ 11265 words of font info for 37 fonts, out of 200000 for 512
+ 14 hyphenation exceptions out of 607
+ 19i,8n,19p,185b,167s stack positions out of 300i,40n,60p,3000b,4000s
+
+Output written on t.dvi (7 pages, 19744 bytes).

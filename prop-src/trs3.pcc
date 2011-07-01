@@ -1,0 +1,189 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  These are the routines for code generation after partial evaluation
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include "trs.ph"
+#include "ir.ph"
+#include "ast.ph"
+#include "type.h"
+#include "list.h"
+#include "rwgen.h"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to clear statistics
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void TRS::clear_statistics()
+{
+  number_of_specializations = 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print statistics
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void TRS::print_report( std::ostream& log) const
+{
+  print(log);
+
+  log << "Number of specializations = " << number_of_specializations
+      << "\n\nSpecializations follow:\n\n";
+
+  print_specializations(log);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print the specializations
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void TRS::print_specializations( std::ostream& log) const
+{
+  for (Rule r = 0; r < number_of_rules; r++)
+  {
+    MatchRule rule = rule_map[r];
+
+    for (int i = 0; i < num_var_map[r]; i++)
+    {
+      if (residue_map[r][i] == #[])
+        continue;
+      for_each (Residue, res, residue_map[r][i])
+	  {
+	    log << "line " << rule->begin_line << ": " << rule << ' ';
+	    print(log,rhs_map[r]); log << '\n';
+	    log << "\twhen " << var_pat_map[r][i] << " is in state:\n";
+	    treeauto.print_state(log,res.#1);
+	    log << "\toptimize rhs to ";
+	    print(log,res.#2);
+	    log << "\n\n";
+	  }
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate residue
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void TRS::generate_residue( Rule rule, int arity, State state, Term rhs)
+{
+  number_of_specializations++;
+  // print_residue(rule,rhs);
+  residue_map[rule][arity] = #[.(state, rhs) ... residue_map[rule][arity]];
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to translate a term into code
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exp TRS::make_exp(Term term) const
+{
+  match (term)
+  {
+    CONSterm(f,NOcons,_,_):  { return LITERALexp(literal_map[f]); }
+  | CONSterm(_,cons,0,args): { return CONSexp(cons,#[],NOexp); }
+  | CONSterm(_,cons,1,args): { return CONSexp(cons,#[],make_exp(args[0])); }
+  | CONSterm(f,cons,2,args) | is_list_constructor(cons):
+    {
+      Exps heads = #[];
+	  Term t = term;
+	  match while (t)
+      {
+      CONSterm(g,_,2,args) | f == g:
+	    { heads = #[ make_exp(args[0]) ... heads ]; t = args[1]; }
+      | CONSterm(_,nil,0,_) | is_list_constructor(nil):
+	    { return LISTexp(cons,nil,rev(heads),NOexp); }
+      |  _:
+	    {  return LISTexp(cons,NOcons,rev(heads),make_exp(term)); }
+	  }
+    }
+  | CONSterm(_,cons,n,args):
+    { return CONSexp( cons, #[], TUPLEexp( make_exp( n, args))); }
+  | VARterm(_,_,e):          { return e; }
+  | CODEterm e:              { return e; }
+  | _:                       { bug("TRS::make_exp"); return NOexp; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to translate a term into code
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exps TRS::make_exp(int n, Term terms[]) const
+{
+  Exps exps = #[];
+  for (int i = n - 1; i >= 0; i--)
+     exps = #[make_exp(terms[i]) ... exps];
+  return exps;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to emit replacement code for the rhs, taking into account
+//  of the specializations.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool TRS::gen_replacement(CodeGen& C, Rule r, Exp default_rhs)
+{
+  int levels = 0;
+  MatchRule rule = rule_map[r];
+  Bool optimized = false;
+
+  for (int i = 0; i < num_var_map[r]; i++)
+  {
+    Residues residues = residue_map[r][i];
+    if (residues != #[])
+    {
+      levels++;
+      optimized = true;
+	  if (levels == 1)
+	  {
+	    C.pr("%^%t repl__;", rule->ty, "");
+	  }
+      Pat pat     = var_pat_map[r][i];
+      Exp pat_exp = pat->selector;
+      Ty  pat_ty  = pat->ty;
+    Id  state_var = compiler.gen_get_rewrite_state(pat_ty,pat_exp);
+    C.pr("%^switch (%s) {%+", state_var);
+    for_each(Residue, res, residues)
+    {
+      C.pr("%^case %i: repl__ = %e; break;", res.#1, make_exp(res.#2));
+    }
+    C.pr("%^default: ");
+    }
+  }
+
+  if (levels > 0)
+  {
+    if (optimized_map[r] != NOexp)
+      default_rhs = optimized_map[r];
+    C.pr("%^repl__ = %e; break;", default_rhs);
+    for (int j = 0; j < levels; j++)
+    {
+      C.pr("%-%^}");
+    }
+  }
+  else if (optimized_map[r] != NOexp)
+  {
+    C.pr("%^%t repl__ = %e;", rule->ty, "", optimized_map[r]);
+    optimized = true;
+  }
+
+  return optimized;
+}

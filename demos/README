@@ -1,0 +1,18 @@
+Here are some standalone sample programs developed using Prop.
+
+Programs       Uses
+=============================================================================
+logic          |  datatypes, parsing, pretty printing, rewriting
+inference      |  inference 
+persistence    |  datatypes, pretty printing, persistence 
+prog           |  datatypes, pretty printing, rewriting
+exp            |  datatypes, parsing, pretty printing, tree parsing
+               |
+rewrite-trick1 |
+rewrite-trick2 |  Various ways of preventing the rewriter from retransforming
+rewrite-trick3 |  a replacement term
+rewrite-trick4 |
+
+rewrite-trick5 |  How to specify and use secondary internal index for
+	       |  rewriting.
+=============================================================================

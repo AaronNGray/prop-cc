@@ -1,0 +1,813 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the inference rules compiler of Prop.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include <AD/memory/mempool.h>
+#include <AD/generic/ordering.h>
+#include "ir.ph"
+#include "ast.ph"
+#include "type.h"
+#include "hashtab.h"
+#include "config.h"
+#include "infgen.h"
+#include "datagen.h"
+#include "datatype.h"
+#include "list.h"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor and destructor for the inference compiler
+//
+///////////////////////////////////////////////////////////////////////////////
+
+InferenceCompiler:: InferenceCompiler() {}
+InferenceCompiler::~InferenceCompiler() {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Import some type definitions.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+typedef HashTable::Key   Key;
+typedef HashTable::Value Value;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to create an inference class.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+InferenceClass::InferenceClass(Id id, Inherits i, TyQual qual, Decls body)
+  : ClassDefinition( INFERENCE_CLASS, id, #[], add_inherit( "Rete", #[], i), qual, body)
+  {}
+
+InferenceClass::~InferenceClass() {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the interface for an inference class.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void InferenceClass::gen_class_interface( CodeGen& C)
+{
+  C.pr(
+        "%^%s(const %s&);"
+        "%^void operator = (const %s&);%-"
+        "%^public:%+"
+        "%^static const Node          network_table[];"
+        "%^static const RelationTable relation_table[];%-"
+        "%^public:%+"
+        "%^%s();"
+        "%^virtual const char * name_of() const;"
+        "%^void initialise_axioms();%-"
+        "%^protected:%+"
+        "%^virtual void alpha_test (int, int, Fact *);"
+        "%^virtual int  beta_test  (Join, Fact * []);"
+        "%^virtual void action     (RuleId, Fact * []);%-"
+        "%^private:%+",
+        class_name, class_name, class_name, class_name
+      );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Forward declarations.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool partition( Exp e1, Exp e2, int &obj);
+Bool partition( Exps exp, int &obj);
+Bool partition( LabExps exp, int &obj);
+int  partition_inference_rules
+        (int n, InferenceRule Rs[], HashTable& rule_map, HashTable& join_map);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Flatten an expression into conjuncts.  Also try to push down negation
+//  as much as possible.  Notice that C++ short circuited ands and ors are not
+//  commutative (but they are associative.)
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exp * flatten( Exp exp, Exp * cnf, Bool neg)
+{
+  match while (exp)
+  {
+    MARKEDexp(_,e):             { exp = e; }
+  | PREFIXexp("!",e):           { exp = e; neg = !neg; }
+  | BINOPexp("&&",e1,e2) | !neg:{ cnf = flatten(e1,cnf,neg); exp = e2; }
+  | BINOPexp("||",e1,e2) | neg: { cnf = flatten(e1,cnf,neg); exp = e2; }
+  | BINOPexp(">",e1,e2)  | neg: { *cnf = BINOPexp("<=",e1,e2); return cnf+1;}
+  | BINOPexp(">=",e1,e2) | neg: { *cnf = BINOPexp("<",e1,e2);  return cnf+1;}
+  | BINOPexp("<",e1,e2)  | neg: { *cnf = BINOPexp(">=",e1,e2); return cnf+1;}
+  | BINOPexp("<=",e1,e2) | neg: { *cnf = BINOPexp(">",e1,e2);  return cnf+1;}
+  | BINOPexp("==",e1,e2) | neg: { *cnf = BINOPexp("!=",e1,e2); return cnf+1;}
+  | BINOPexp("!=",e1,e2) | neg: { *cnf = BINOPexp("==",e1,e2); return cnf+1;}
+  | e | neg:                    { *cnf = PREFIXexp("!",e); return cnf+1;}
+  | e:                          { *cnf = e; return cnf+1; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Returns true if an expression involves only one object.
+//  Also returns the highest numbered object involved.
+//  As a convention, the object number is -1 if the expression is a constant.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool partition( Exp exp, int &obj)
+{
+  match (exp)
+  {
+    MARKEDexp(_,e):        { return partition(e,obj); }
+  | PREFIXexp(_,e):        { return partition(e,obj); }
+  | POSTFIXexp(_,e):       { return partition(e,obj); }
+  | DEREFexp e:            { return partition(e,obj); }
+  | SELECTORexp(e,_,_):    { return partition(e,obj); }
+  | DOTexp (e,_):          { return partition(e,obj); }
+  | ARROWexp(e,_):         { return partition(e,obj); }
+  | CONSexp(_,_,e):        { return partition(e,obj); }
+  | HASHexp(_,e):          { return partition(e,obj); }
+  | CASTexp(_,e):          { return partition(e,obj); }
+  | RELexp i:              { obj = i; return true; }
+  | APPexp(e1,e2):         { return partition(e1,e2,obj); }
+  | INDEXexp(e1,e2):       { return partition(e1,e2,obj); }
+  | ASSIGNexp(e1,e2):      { return partition(e1,e2,obj); }
+  | BINOPexp(_,e1,e2):     { return partition(e1,e2,obj); }
+  | EQexp(_,e1,e2):        { return partition(e1,e2,obj); }
+  | UNIFYexp(_,e1,e2):     { return partition(e1,e2,obj); }
+  | LTexp(_,e1,e2):        { return partition(e1,e2,obj); }
+  | TUPLEexp es:           { return partition(es,obj); }
+  | RECORDexp es:          { return partition(es,obj); }
+  | SENDexp(_, es):        { return partition(es,obj); }
+  | VECTORexp(_,es):       { return partition(es,obj); }
+  | LISTexp(_,_,es,e):     { return partition(#[e ... es], obj); }
+  | SETLexp(_,es):         { return partition(es,obj); }
+  | IFexp (e1,e2,e3):      { return partition(#[e1,e2,e3],obj); }
+  | IDexp _ || LITERALexp _ || NOexp: { obj = -1; return true; }
+  | _: { bug("partition: %e", exp); return false; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Categorize two expressions.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool partition( Exp e1, Exp e2, int &obj) { return partition(#[e1,e2],obj); }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Categorize an list of expressions.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool partition( Exps es, int &obj)
+{
+  obj = -1;
+  Bool single = true;
+  for_each(Exp, e, es)
+  {
+    int obj1 = -1;
+    if ( !partition( e, obj1) || (obj >= 0 && obj1 >= 0 && obj1 != obj))
+      single = false;
+    if (obj1 > obj)
+      obj = obj1;
+  }
+  return single;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Categorize an labeled list of expressions.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool partition( LabExps es, int &obj)
+{
+  obj = -1;
+  Bool single = true;
+  for_each(LabExp, e, es)
+  {
+    int obj1 = -1;
+    if (! partition(e.exp,obj1) || (obj >= 0 && obj1 >= 0 && obj1 != obj))
+      single = false;
+    if (obj1 > obj) obj = obj1;
+  }
+  return single;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//  Create an and expression.
+///////////////////////////////////////////////////////////////////////////////
+
+Exp mkandexp( Exp a, Exp b)
+{
+  if (a == NOexp)
+    return b;
+  if (b == NOexp)
+    return a;
+  return BINOPexp("&&",a, b);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Decompose guard expressions in conjunctive normal form into
+//  selections and (theta) joins.
+//
+//  We are given $n$ objects and $n$ booleans expressions.
+//  We want to decompose these $n$ expressions into (at most)
+//  $n$ single object selects and (at most) $n$ joins.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+int decompose( int n, Exp exps[], Exp selects[], Exp joins[])
+{
+  int i;
+  int max_object = 0;
+  for (i = 0; i < n; i++)
+    selects[i] = joins[i] = NOexp;
+  for (i = 0; i < n; i++)
+  {
+    debug_msg ("decomposing: %e\n", exps[i]);
+    Exp cnf[MAX_CONJUNCTS];  // assume we don't have more than 256 conjuncts.
+    Exp * last = flatten( exps[i], cnf, false); // flatten expression.
+    int conjuncts = last - cnf;
+    if (conjuncts > MAX_CONJUNCTS)
+       bug ("Conjuncts exceeded %i in decompose()", MAX_CONJUNCTS);
+    for (int j = 0; j < conjuncts; j++)
+    {
+      int obj;
+      //////////////////////////////////////////////////////////////////////
+      // Checks whether the conjunct depends on only one variable.
+      // If so it can be executed as a guard during pattern matching.
+      // Otherwise, it is a join and must be executed by the
+      // RETE engine.  In any case hoist the conjunct as far up as possible
+      // to minimize the sizes of intermediate relations.
+      //////////////////////////////////////////////////////////////////////
+
+      debug_msg ("partitioning: %e\n", cnf[j]);
+      Bool depends_on_one_variable = partition( cnf[j], obj);
+      if (obj < 0) obj = 0;
+      if (depends_on_one_variable)
+      { // expression is a select
+        if (selects[obj] == NOexp)
+          selects[obj] = cnf[j];
+        else
+          selects[obj] = mkandexp( selects[obj], cnf[j]);
+        debug_msg ("select: %e\n", cnf[j]);
+      }
+      else
+      { // expression is a join
+        if (joins[obj] == NOexp)
+          joins[obj] = cnf[j];
+        else
+          joins[obj] = mkandexp( joins[obj], cnf[j]);
+        debug_msg ("join: %e\n", cnf[j]);
+      }
+      if (obj > max_object)
+        max_object = obj;
+    }
+  }
+  return max_object;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Decompose a set of pattern matching rules and extract out the joins
+//  from each of the guards.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+int decompose( MatchRules rules, Exp joins[], Exp guard_exp)
+{
+  Exp guards  [MAX_INFERENCE_RULE_ARITY];
+  Exp selects [MAX_INFERENCE_RULE_ARITY];
+  int n = 0;
+
+  {
+    for_each (MatchRule, r, rules)
+    {
+      match (r)
+       {  MATCHrule(_,_,g,_,_): { guards[n++] = g; } }
+    }
+  }
+  guards[n++] = guard_exp;
+
+  if (n >= MAX_INFERENCE_RULE_ARITY)
+    bug( "%Linference rule arity exceeds %i in decompose()",
+         MAX_INFERENCE_RULE_ARITY);
+
+  // take all the guard expressions and decompose them.
+  int max_object = decompose( n, guards, selects, joins);
+
+  // rebuild the guards.  Now they must all involve at most one
+  // single object.
+
+  {
+    int i = 0;
+    for_each (MatchRule, r, rules)
+    {
+      match (r)
+       {  MATCHrule(_,_,g,_,_): { g = selects[i]; i++; } }
+    }
+  }
+
+  return n;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Top level method to compile a set of inference rules.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void InferenceCompiler::gen_inference_rules( Id id, InferenceRules rules)
+{
+  MemPoolMark marker = mem_pool.getMark(); // get heap marker
+
+  ////////////////////////////////////////////////////////////////////////////
+  // Mapping from type id to list of rules.
+  ////////////////////////////////////////////////////////////////////////////
+  HashTable rule_map( string_hash, string_equal, 129);
+  HashTable join_map( integer_hash, integer_equal);
+
+  ////////////////////////////////////////////////////////////////////////////
+  // Map the rules into an array
+  ////////////////////////////////////////////////////////////////////////////
+  int n = length(rules);
+  int max_arity;
+  InferenceRule * Rs = (InferenceRule *) mem_pool[n * sizeof( InferenceRule)];
+  { int i = 0; for_each (InferenceRule, r, rules) Rs[i++] = r; }
+
+  max_arity = partition_inference_rules( n, Rs, rule_map, join_map);
+  pr( "const char * %s::name_of() const { return \"%s\"; }\n\n", id, id);
+  gen_alpha_tests           ( id, max_arity, rule_map);
+  gen_beta_tests            ( id, n, Rs, join_map);
+  gen_inference_actions     ( id, rules);
+  gen_dispatch_table        ( id, rule_map);
+  int m = gen_network_table ( id, n, Rs, join_map);
+  gen_inference_axioms      ( id, rules);
+  gen_inference_constructor ( id, m, rule_map);
+
+  ////////////////////////////////////////////////////////////////////////////
+  //  Clean up
+  ////////////////////////////////////////////////////////////////////////////
+
+  mem_pool.setMark(marker); // reclaim memory
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to partition the left hand side of each inference rule according
+//  to the type of the pattern.  Patterns of the same type are grouped
+//  together and compiled using the pattern matching compiler.  The steps are:
+//    (a) Decompose the guard expression into selections (predicates on a
+//        single object object) and joins (predicates on 2 or more objects.)
+//        Both of these are hoisted upward as much as possible.
+//    (b) Perform type inference on the pattern.
+//    (c) Enter all the rules of the same type in the same entry of the rule
+//        map
+//
+///////////////////////////////////////////////////////////////////////////////
+
+int partition_inference_rules
+   (int n, InferenceRule Rs[], HashTable& rule_map, HashTable& join_map)
+{
+  int max_arity = 0;
+  int node_number = 0;  // node number in network table.
+  for (int rule_no = 0; rule_no < n; rule_no++)
+  {
+    int positive_clauses = 0;
+    int negative_clauses = 0;
+    match (Rs[rule_no])
+    {
+    INFERENCErule( As, guard_exp, _):
+      {
+        int object_count = 0;
+        Exp joins[MAX_INFERENCE_RULE_ARITY];
+        // decompose multi-object test
+        int n = decompose (As, joins, guard_exp);
+        int i = 0;
+        for_each (MatchRule, r, As)
+        {
+          r->set_loc();
+          match (r)
+          {
+          MATCHrule (_,pat,_,_,action):
+            {
+              match (r->ty = type_of(pat))
+              {
+              TYCONty(DATATYPEtycon { id, qualifiers ... },_)
+                     where qualifiers & QUALrelation:
+                {  // add to table
+                  HashTable::Entry * e = rule_map.lookup(id);
+                  if (e) rule_map.insert( id, #[ r ... MatchRules( rule_map.value(e))]);
+                  else rule_map.insert( id, #[ r ]);
+                  r->rule_number = node_number;
+                  if (joins[i] != NOexp)
+                  {
+                    HashTable::Entry * e =
+                      join_map.lookup( (HashTable::Key) node_number);
+                    if (e)
+                    {
+                      join_map.insert( (HashTable::Key) node_number,
+                         BINOPexp( "&&", (Exp) join_map.value(e), joins[i]));
+                    }
+                    else
+                      join_map.insert( (HashTable::Key) node_number, joins[i]);
+                  }
+                  if (positive_clauses == 0 && !r->negated)
+                    action = #[ INJECTdecl( node_number, LEFTdirection) ];
+                  else
+                  {
+                    action = #[ INJECTdecl( node_number, RIGHTdirection) ];
+                    node_number++;
+                  }
+                  if (r->negated)
+                    negative_clauses++;
+                  else
+                    positive_clauses++;
+                }
+              | NOty: // skip
+              | ty:
+                {  error("%Lnon-relation type %T in pattern: %p\n", ty, pat); }
+              }
+            }
+          }
+          i++;
+          object_count++;
+        }
+        node_number++;
+        if (max_arity < object_count)
+          max_arity = object_count;
+      }
+    }
+  }
+  return max_arity;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the alpha (single object) tests.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void InferenceCompiler::gen_alpha_tests
+   (Id id, int max_arity, HashTable& rule_map)
+{
+  pr(
+      "%^%/%^//  Single object tests for inference class %s%^%/"
+      "%^void %s::alpha_test(int predicate__, int i__, Fact * fact__)"
+      "%^{%+"
+      "%^Fact * f__[%i];"
+      "%^switch (predicate__) {%+",
+      id, id, max_arity
+    );
+  {
+    Bool save = same_selectors;
+    same_selectors = true;
+    int type_number = 1;
+    foreach_entry(e, rule_map)
+    {
+      Id         ty_name = (Id)rule_map.key(e);
+      MatchRules rules   = (MatchRules)rule_map.value(e);
+      pr(
+          "%^case %i: {%+"
+          "%^%s _0 = (%s)(f__[0] = fact__);",
+          type_number, ty_name, ty_name
+        );
+      gen_match_stmt (#[], rules, MATCHall | MATCHnocheck);
+      pr ("} break; %-");
+      type_number++;
+    }
+    same_selectors = save;
+  }
+  pr(
+      "%-%^}"
+      "%-%^}\n\n"
+    );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the beta tests(joins)
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void InferenceCompiler::gen_beta_tests
+   (Id id, int n, InferenceRule rules[], HashTable& join_map)
+{
+  pr(
+      "%^%/%^//  Joins for inference class %s%^%/"
+      "%^int %s::beta_test(Join join__, Fact * f__[])"
+      "%^{%+"
+      "%^switch (join__) {%+",
+      id, id
+    );
+
+  for (int i = 0; i < n; i++)
+  {
+    match (rules[i])
+    {
+    INFERENCErule(As,_,_):
+      {
+        for(MatchRules rs = As; rs; rs = rs->#2)
+        {
+          if (rs->#2 == #[] ||
+               rs->#1->rule_number != rs->#2->#1->rule_number)
+          {
+            MatchRule r = rs->#1;
+            int rule_no = r->rule_number;
+            HashTable::Entry * e =
+                join_map.lookup((HashTable::Key)rule_no);
+            if (e)
+            {
+              Exp join = (Exp)join_map.value(e);
+              int j = 0;
+              pr( "%^case %i: {%+", rule_no);
+              for_each (MatchRule, mr, As)
+              {
+                pr(
+                    "%^%t _%i = (%t)f__[%i];",
+                    mr->ty, "", j, mr->ty, "", j
+                  );
+                j++;
+                if (mr == r)
+                  break;
+              }
+              pr ("%^return %e;%-%^}", join);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  pr ("%^default: return 0;"
+      "%-%^}"
+      "%-%^}\n\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate the dispatch table.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void InferenceCompiler::gen_dispatch_table(Id id, HashTable& rule_map)
+{
+  pr(
+      "%^%/%^//  Dispatch table for inference class %s%^%/"
+      "%^const %s::RelationTable %s::relation_table[] = {%+",
+      id, id, id
+    );
+  {
+    int type_number = 1;
+    Bool comma = false;
+    foreach_entry (e, rule_map)
+    {
+      Id ty_name = (Id)rule_map.key(e);
+      if (comma) pr (",");
+      pr(
+          "%^{ &a_%s::relation_tag, %i, \"%s\" }",
+          ty_name, type_number, ty_name
+        );
+      comma = true;
+      type_number++;
+    }
+  }
+  pr( "%-%^};\n\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate the network table.
+//
+///////////////////////////////////////////////////////////////////////////////
+int InferenceCompiler::gen_network_table
+   (Id id, int n, InferenceRule rules[], HashTable& join_table)
+{
+  pr(
+      "%^%/%^//  Network table for inference class %s%^%/"
+      "%^const %s::Node %s::network_table[] = {%+",
+      id, id, id
+    );
+
+   int entries = 0;
+   Bool comma = false;
+   for (int i = 0; i < n; i++)
+   {
+     match (rules[i])
+     {
+     INFERENCErule(As,_,_):
+       {
+         int max_arity = length(As);
+         int last_rule_number = -1;
+         int arity = 1;
+         for_each (MatchRule, r, As)
+         {
+           if (last_rule_number != r->rule_number
+                && (max_arity > 1 || r->negated) )
+           {
+             if (comma) pr( ",");
+             Id  typ  = r->negated ? "Not" : "And";
+             int join =
+                 join_table.contains((HashTable::Key)r->rule_number)
+                   ? r->rule_number : 0;
+             pr ( "%^{ %i, %i, ReteNet::Node::%s, %i, %i } /* %i */",
+                 arity, max_arity, typ, join, r->rule_number + 1, entries);
+             comma = true;
+             arity++;
+             entries++;
+           }
+           last_rule_number = r->rule_number;
+         }
+         if (comma) pr( ",");
+         pr(
+             "%^{ 0, %i, ReteNet::Node::Bot, %i, %i } /* %i */",
+             max_arity, 0, i, entries
+           );
+         entries++;
+         comma = true;
+       }
+     }
+   }
+
+   pr( "%-%^};\n\n");
+
+   return entries;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate the axioms of the inference class.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void InferenceCompiler::gen_inference_axioms( Id id, InferenceRules rules)
+{
+   pr(
+       "%^%/%^//  Axioms for inference class %s%^%/"
+       "%^void %s::initialise_axioms()"
+       "%^{%+",
+       id, id
+     );
+   for_each ( InferenceRule, r, rules)
+   {
+     match (r)
+     {
+       INFERENCErule(#[], _, conclusions): { gen_conclusions( conclusions); }
+     |  _: // skip
+     }
+   }
+   pr ("%-%^}\n\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate the action routine of the inference class
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void InferenceCompiler::gen_inference_actions( Id id, InferenceRules rules)
+{
+  pr(
+      "%^%/%^//  Actions for inference class %s%^%/"
+      "%^void %s::action(%s::RuleId r__, Fact * f__[])"
+      "%^{%+"
+      "%^switch (r__) {%+",
+      id, id, id
+    );
+
+  int rule_no = 0;
+  for_each ( InferenceRule, r, rules)
+  {
+    match (r)
+    {
+    INFERENCErule( mrs as ! #[], _, conclusions):
+      {
+        pr ("%^case %i: {%+", rule_no);
+        int i = 0;
+        for_each (MatchRule, mr, mrs)
+        {
+          pr ("%^%t _%i = (%t)f__[%i];", mr->ty, "", i, mr->ty, "", i);
+          i++;
+        }
+        gen_conclusions( conclusions);
+        pr ("%-%^} break;");
+      }
+    | _: // skip
+    }
+    rule_no++;
+  }
+  pr(
+      "%-%^}"
+      "%-%^}\n\n"
+    );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate the conclusions of the inference class.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void InferenceCompiler::gen_conclusions( Conclusions cs)
+{
+  for_each (Conclusion, c, cs)
+    gen_conclusion(c);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate one conclusion of the inference class.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void InferenceCompiler::gen_conclusion( Conclusion c)
+{
+  match (c)
+  {
+    ASSERTaction e:   { pr( "%^assert_fact(%e);\n", e); }
+  | RETRACTaction e:  { pr( "%^retract_fact(%e);\n", e); }
+  | STMTaction decls: { pr( "%^%&", decls); }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate the constructor of the inference class.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void InferenceCompiler::gen_inference_constructor
+   (Id id, int entries, HashTable& rule_map)
+{
+   pr(
+       "%^%/%^//  Constructor for inference class %s%^%/"
+       "%^%s::%s()%+"
+       "%^: Rete(%i,%s::network_table,%i,%s::relation_table)%+"
+       "%^{ initialise_axioms(); }%-%-\n\n",
+       id, id, id,
+       entries, id, rule_map.size(), id
+     );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate the interface of a relation object.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::generate_inference_interface( CodeGen& C)
+{
+  if (this != root) return;
+
+  C.pr(
+        "%^%/"
+        "%^//"
+        "%^// Inference methods"
+        "%^//"
+        "%^%/"
+        "%^static RelTag relation_tag;"
+        "%^virtual RelTag get_tag() const;"
+      );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generate the implementation of a relation object.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::generate_inference_implementation
+   (CodeGen& C, Tys tys, DefKind k)
+{
+  if (this != root) return;
+
+  C.pr(
+        "%^%/"
+        "%^//"
+        "%^// Relation datatype %s%P"
+        "%^//"
+        "%^%/"
+        "%^Fact::RelTag %s%P::relation_tag = 0;"
+        "%^static InitialiseFact %s_dummy__(%s%P::relation_tag);"
+        "%^Fact::RelTag %s%P::get_tag() const"
+        " { return %s%P::relation_tag; }\n \n",
+        root->datatype_name, tys,
+        class_name, tys,
+        DatatypeCompiler::temp_vars.new_label(), class_name, tys,
+        class_name, tys,
+        class_name, tys
+      );
+}

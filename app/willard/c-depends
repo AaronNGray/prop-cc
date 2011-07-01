@@ -1,0 +1,25 @@
+willard-ast.o: willard-ast.cc willard-ast.h
+paige.o: paige.cc paige.h willard-ast.h idset.h willard-ast.ph smap.h
+paige-aux.o: paige-aux.cc paige.h willard-ast.h idset.h willard-ast.ph \
+ smap.h
+rename.o: rename.cc rename.h willard-ast.h paige.h idset.h \
+ willard-ast.ph smap.h
+querygraph.o: querygraph.cc querygraph.h paige.h willard-ast.h idset.h \
+ willard-ast.ph smap.h
+phase1.o: phase1.cc phase1.h paige.h willard-ast.h idset.h \
+ willard-ast.ph smap.h
+phase2.o: phase2.cc phase2.h paige.h willard-ast.h idset.h \
+ willard-ast.ph smap.h
+phase3.o: phase3.cc phase3.h paige.h willard-ast.h idset.h \
+ willard-ast.ph smap.h list.h
+phase4.o: phase4.cc list.h willard-ast.h phase4.h paige.h idset.h \
+ willard-ast.ph smap.h
+phase5.o: phase5.cc phase5.h paige.h willard-ast.h idset.h \
+ willard-ast.ph smap.h
+proj.o: proj.cc proj.h paige.h willard-ast.h idset.h willard-ast.ph \
+ smap.h list.h
+parser.o: parser.cc willard-ast.h parser.h paige.h idset.h \
+ willard-ast.ph smap.h
+willard.o: willard.cc willard-ast.h parser.h willard.h paige.h idset.h \
+ willard-ast.ph smap.h rename.h querygraph.h proj.h phase1.h phase2.h \
+ phase3.h phase4.h phase5.h

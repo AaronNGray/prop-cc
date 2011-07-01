@@ -1,0 +1,211 @@
+//////////////////////////////////////////////////////////////////////////////
+//
+//  This example program performs idiom matching on a simple expression
+//  language.    We'll also define a parser to parse an expression
+//  from the input.
+//
+///////////////////////////////////////////////////////////////////////////////
+#include <stdlib.h>
+#include <iostream.h>
+#include <AD/strings/quark.h>
+#include <AD/automata/iolexerbuf.h>
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  First, we define the type Exp to represent
+//  our expressions.  Identifiers (type Id) are represented as 
+//  atomic strings so that equality testing can be done quickly.  
+//
+//  We also use pretty printing annotations to
+//  indicate to Prop to generate a simple print routine.
+//
+///////////////////////////////////////////////////////////////////////////////
+datatype Exp :: rewrite
+   = Int int              => _
+   | Id  (class Quark)    => _
+   | Add (Exp, Exp)       => "(" _ "+" _ ")"
+   | Sub (Exp, Exp)       => "(" _ "-" _ ")"
+   | Mul (Exp, Exp)       => "(" _ "*" _ ")"
+   | Div (Exp, Exp)       => "(" _ "/" _ ")"
+
+   | Sqr    (Exp)         => "sqr(" _ ")"
+   | MulAdd (Exp,Exp,Exp) => "muladd(" _ "," _ "," _ ")"
+   | Neg    (Exp)         => "neg(" _ ")"
+;
+
+instantiate datatype Exp;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Next, we define the set of symbols used for our Exp parser.
+//
+///////////////////////////////////////////////////////////////////////////////
+datatype ExpToken :: lexeme =
+   "[" | "]" | "(" | ")" | "*" | "+" | "-" | "/" | ";" 
+|  ID  /[a-zA-Z][a-zA-Z0-9]*/
+|  INT /[0-9]+/
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Next, we declare the interface of the parser.
+//
+///////////////////////////////////////////////////////////////////////////////
+syntax class ExpParser
+{  IOLexerBuffer lexbuf;
+public:
+   int get_token();      // retrieve a token
+   void process (Exp);   // process a Exp
+};
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  The lexer simply returns the tokens one by one; it also skip over the
+//  spaces and newlines.  If any unrecognized tokens are encountered,
+//  the program will terminate.
+//
+///////////////////////////////////////////////////////////////////////////////
+int ExpParser::get_token()
+{  matchscan while (lexbuf) 
+   {  lexeme class ExpToken:  { return ?lexeme; }
+   |  /[ \t\n]/: // skip spaces
+   }
+   return EOF;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  The parser is defined below.  Notice that the exps are separated
+//  by semi-colons.  We call process() to simplify each one.
+//
+///////////////////////////////////////////////////////////////////////////////
+syntax ExpParser
+{
+
+   ////////////////////////////////////////////////////////////////////////////
+   //
+   //  Precedences.   Note that implication associates to the right. 
+   //
+   ////////////////////////////////////////////////////////////////////////////
+left:  1 "*" "/";
+left:  2 "+" "-";
+
+command:	
+|	exp ";" { process($1); } command	
+|	? ";" command  // for error recover, just skip to the next ;
+;
+
+exp Exp:  exp "+" exp	{ $$ = Add($1,$3); }
+|         exp "-" exp	{ $$ = Sub($1,$3); }
+|         exp "*" exp	{ $$ = Mul($1,$3); }
+|         exp "/" exp	{ $$ = Div($1,$3); }
+|	  "(" exp ")"	{ $$ = $2; }
+|	  "[" exp "]"	{ $$ = $2; }
+|	  ID		{ $$ = Id(lexbuf.text()); }
+|	  INT		{ $$ = Int(atol(lexbuf.text())); }
+;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  For processing, we'll define a rewrite class IdiomMatcher
+//  in treeparser mode.  It'll take an expression and transform it into
+//  another expression.
+//
+///////////////////////////////////////////////////////////////////////////////
+rewrite class IdiomMatcher (Exp : Exp) :: treeparser
+{
+public:
+   IdiomMatcher() {}
+};
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Within the IdiomMatcher we'll define the tree grammar of the input.
+//  The input only contains integers, identifiers, and the operators
+//  +, -, *, and /.   Since this is a simple grammar, we only have one
+//  non-terminal `exp'.
+//
+//  The idioms that we'll recognize are simply:
+//
+//   (i)  a * (b + c)  ==>  muladd(a,b,c)
+//   (ii) 0 - a        ==>  neg(a)
+//   
+//  Notice that the tree grammar is ambiguious; to resolve the ambiguity,
+//  we annotate each production with a cost.   The tree parser will
+//  try to locate a derivation with minimal cost.  The cost of a
+//  production is the cost of the current rule plus the cost of all
+//  its subderivations.  Since the base cost of the production MulAdd is 2
+//  while the costs of Mul and Add together is 3, the idiom MulAdd
+//  will be choosen whenever possible. 
+//  
+//  For example, if the user inputs
+//
+//    0 - (a * (b + (0 - c)));
+//
+//  Then will be transformed into
+//
+//   neg(muladd(a, b, neg(c))
+//
+//  During transformation, the synthesized attributes are written
+//  using the '#' prefix.  For example #a refers the synthesized
+//  attribute of the parse associated with the subderivation starting
+//  from 'a'.  Note that this is different that just 'a', which refers
+//  to the a-component of the original pattern.  The current synthesized
+//  attribute is written as '##'.  If the synthesized attribute
+//  and the type of the current redex is the same, then by default
+//  the current redex will be returned as the synthesized attribute. 
+//
+///////////////////////////////////////////////////////////////////////////////
+rewrite IdiomMatcher
+{  exp -> Int i \ 1:    // do nothing 
+|  exp -> Id id \ 1:    // do nothing              
+|  exp -> Add (a as exp, b as exp) \ 1: { ## = Add(#a,#b); } 
+|  exp -> Sub (a as exp, b as exp) \ 1: { ## = Sub(#a,#b); }
+|  exp -> Mul (a as exp, b as exp) \ 2: { ## = Mul(#a,#b); }
+|  exp -> Div (a as exp, b as exp) \ 2: { ## = Div(#a,#b); }
+|  exp -> Mul (a as exp, Add(b as exp, c as exp)) \ 2:
+      {  cout << "multiply/add idiom found\n";
+         ## = MulAdd(#a,#b,#c); 
+      }
+|  exp -> Sub (Int 0, a as exp) \ 1: 
+      {  cout << "negation idiom found\n";
+         ## = Neg(#a); 
+      }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  For processing, we just transform the input formula a bit, 
+//  then prints it out.  The rules are by no means exhaustive. 
+//
+///////////////////////////////////////////////////////////////////////////////
+void ExpParser::process(Exp exp)
+{
+   cout << "input = " << exp << '\n';
+
+   IdiomMatcher M;
+   M(exp);                // construct a tree parse
+   Exp e = M.reduce(exp); // reduces it according to the found derivation.
+
+   cout << "output = " << e << '\n';
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Finally, the main program simply instantiates a copy of the parser,
+//  and invoke the parse method.   By default, the input is from
+//  the standard input.
+//
+///////////////////////////////////////////////////////////////////////////////
+int main()
+{
+   ExpParser P;
+
+   cerr << "Enter expressions terminated by a semicolon:\n";
+
+   P.parse();
+
+   exit(0);
+}

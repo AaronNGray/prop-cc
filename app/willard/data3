@@ -1,0 +1,1 @@
+{ [x,y] : x in A, y in B | exists z in C. x = z and y = z }

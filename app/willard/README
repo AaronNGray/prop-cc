@@ -1,0 +1,31 @@
+This program implements the query decomposition algorithm 
+of Bob Paige and Deepak Goyal for a linear time fragment for Willard's 
+relational calculus.
+
+The algorithm is described in ``The Formal Reconstruction and Speedup
+of the Linear Time Fragment of Willard's Relational Calculus Subset'',
+Deepak Goyal and Bob Paige.  In IFIP TC2 Working Conf. Algorithmic Languages 
+and Calculi, Feb 1997.
+
+The program is called 'willard.'  It is quite primitive at this point:
+it simply takes a query from the standard input and splits out the immediate
+decompositions.  The files data* contain sample inputs.
+
+The system is composed of the following files:
+
+FILE               DESCRIPTION
+---------------    -----------
+willard-ast.ph     The abstract syntax tree definition
+willard-ast.pcc    Pretty printer for the AST
+parser.pcc         The parser for the query language
+paige.ph           The base class of the query decomposer
+paige.pcc          The main algorithm used in the query decomposer
+paige-aux.pcc      Auxiliary routines
+rename.pcc         Transformation to rename duplicate variable names
+phase1.pcc         Transformation to simplify query and construct DNF
+phase2.pcc         Transformation to eliminate quantifiers
+phase3.pcc         Transformation to eliminate disjunctions
+phase4.pcc         Transformation to eliminate conjunctions 
+phase5.pcc         Transformation to process simple find/count queries
+proj.pcc           Transformation to rewrite projections into existentials
+willard.pcc        Main program

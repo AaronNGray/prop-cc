@@ -1,0 +1,49 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the analysis and type inference methods for
+//  SETL-style collection types.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include "collection.ph"
+#include "type.h"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Instantiate the collection type descriptor.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+instantiate datatype CollectionDesc, List<CollectionDesc>;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Functions for constructing some SETL-like type constructors.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Ty mklistty( Ty a)
+{  return TYCONty( COLtycon( COLdesc'{ name = "list" }), #[a]); }
+
+Ty mksetty( Ty a)
+{  return TYCONty( COLtycon( COLdesc'{ name = "set" }), #[a]); }
+
+Ty mkbagty( Ty a)
+{  return TYCONty( COLtycon( COLdesc'{ name = "bag" }), #[a]); }
+
+Ty mkmapty( Ty a, Ty b)
+{  return TYCONty( COLtycon( COLdesc'{ name = "bag" }), #[a,b]); }
+
+Ty mkmultimapty( Ty a, Ty b)
+{  return TYCONty( COLtycon( COLdesc'{ name = "bag" }), #[a,b]); }
+
+Ty mkqueuety( Ty a)
+{  return TYCONty( COLtycon( COLdesc'{ name = "bag" }), #[a]); }
+
+Ty mkpriqueuety( Ty a)
+{  return TYCONty( COLtycon( COLdesc'{ name = "bag" }), #[a]); }
+
+Ty mkdequety( Ty a)
+{  return TYCONty( COLtycon( COLdesc'{ name = "bag" }), #[a]); }

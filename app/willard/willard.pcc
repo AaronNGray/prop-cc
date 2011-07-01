@@ -1,0 +1,29 @@
+#include <iostream.h>
+#include <AD/pretty/postream.h>
+#include "willard-ast.ph"
+#include "parser.ph"
+#include "willard.ph"
+
+Willard::Willard() {}
+Willard::~Willard() {}
+
+int main()
+{  QueryParser P;
+   
+   Exp q = P.read();
+
+   PrettyOStream S;
+
+   Willard W;
+
+   W.set_log(cout);
+
+   S << "Input:" << newline << q << newline;
+  
+   q = W.decompose(q);
+
+   S << "Output:" << newline << q << newline;
+
+   cerr << "Cons = " << ConsCounter::count << '\n';
+   return 0;
+}

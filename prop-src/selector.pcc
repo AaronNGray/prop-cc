@@ -1,0 +1,262 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the selection/projection code generation.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <string.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <AD/strings/quark.h>
+#include "ir.ph"
+#include "ast.ph"
+#include "matchcom.ph"
+#include "type.h"
+#include "options.h"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to compute the proper selector into a component argument
+//  of a constructor
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exp select( Exp e, Cons c, Ty t) { return SELECTORexp( e, c, t); }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to compute the proper selector into a component argument
+//  of a constructor
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exp MatchCompiler::make_select
+    (
+      Exp  e,             // the expression
+      Cons c,             // constructor
+      Ty   expected_ty,   // expected type (if applicable)
+      Id   component      // component to extract
+    )
+{
+  Exp  result         = e;
+  Bool use_projection = component != 0;
+  match (c)
+  {
+  ONEcons
+    {
+      name,
+      alg_ty = DATATYPEty({ qualifiers ... },_),
+      ty ...
+    }
+  | qualifiers & QUALview:   // A view
+    {
+      Ty comp_ty = ty;
+      if (component)
+	  {
+	  match (ty)
+	    {
+	    TUPLEty _:
+	      {
+	        use_projection = false;
+			comp_ty = component_ty(ty,atol(component+1));
+		  }
+	    | RECORDty(_,_,_):
+	      {
+	        use_projection = false;
+			comp_ty = component_ty(ty,component);
+		  }
+	    | ty:
+	      { comp_ty = ty; }
+	    }
+      }
+      Exp selector_exp = default_val(comp_ty);
+      if (selector_exp == NOexp)
+      {
+        error( "%Lview accessor is undefined for constructor %s\n", name);
+        return NOexp;
+      }
+      result = subst(selector_exp,&e);
+    }
+  | ONEcons
+      {
+        name,
+        alg_ty = DATATYPEty({ opt, id, tyvars ... },_),
+        tag,
+        opt = this_opt,
+        ty ...
+      }:      // Normal datatype
+    {
+      Bool simple;
+
+      match (ty)
+      {
+      TYCONty(TUPLEtycon || RECORDtycon _,_): { simple = false; }
+        | _: { simple = true; }
+      }
+
+      if ( is_array_constructor( name))
+        simple = false;
+
+      Id nm = mangle(name);
+
+      if (this_opt & OPTunboxed)
+         result = APPexp( IDexp( #"deref_" + name), e);
+      else
+      {
+        if ((opt & OPTtaggedpointer) && tag != 0)
+          e = APPexp( IDexp( #"derefp"), e);
+        if (opt & OPTsubclassless) // No subclass hierarchy
+        {
+          if (simple)
+            result = ARROWexp( e, nm);
+          else
+            result = DEREFexp( e);
+        }
+        else // with subclass hierachy
+        {
+          // Dereference the pointer if the pointer needs to be stripped
+          // of the tag.
+          Exp downcast_exp = NOexp;
+          if (options.inline_casts && tyvars == #[])
+          {
+            downcast_exp =
+                CASTexp( mkptrty( mkidty( id + #"_" + nm, #[])), e);
+          }
+          else if (options.inline_casts && expected_ty != NOty)
+          {
+		    match (deref_all(expected_ty))
+		    {
+		    TYCONty(_,tys):
+              {
+                downcast_exp =
+                        CASTexp( mkptrty( mkidty( id + #"_" + nm, tys)), e);
+              }
+            | _:
+              { bug( "%Lmake_select"); }
+            }
+          }
+          else
+            downcast_exp = APPexp( IDexp( #"_" + nm), e);
+
+          if (simple)
+            result = ARROWexp( downcast_exp, nm);
+          else
+            result = DEREFexp( downcast_exp);
+        }
+      }
+    }
+  |  _: // skip
+  }
+  return use_projection ? DOTexp(result,component) : result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to compute the tag name of a constructor
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exp MatchCompiler::tag_name_of( Cons cons, Bool normalized)
+{
+  match (cons)
+  {
+  ONEcons { name, alg_ty = DATATYPEty({ qualifiers ... },_), view_predicate ... }
+	    | qualifiers & QUALview:
+    {
+      if (view_predicate == NOexp)
+      {
+        error("%Lview case for constructor %s is undefined\n",name);
+          return NOexp;
+	  }
+	  return view_predicate;
+    }
+  | ONEcons { name, ty = NOty, alg_ty = DATATYPEty({ arg ... },_) ... }
+        | arg == 0:
+    {
+      return IDexp( mangle( name));
+    }
+  | ONEcons { name, ty = NOty, alg_ty = DATATYPEty({ arg ... },_) ... }:
+    {
+      return CASTexp( integer_ty, IDexp( mangle( name)));
+    }
+  | ONEcons { name, alg_ty = DATATYPEty({ id, arg, unit, tyvars ... },_) ... }
+	    | !normalized && tyvars == #[] && arg > 1:
+    {
+      return IDexp( Quark( "a_", id, "::tag_", mangle( name)));
+    }
+  | ONEcons { alg_ty = DATATYPEty({ arg, unit ... },_) ... }:
+    {
+      int this_tag = tag_of(cons) + (normalized ? unit : 0);
+      return LITERALexp(INTlit(this_tag));
+    }
+  | _:
+    { return NOexp; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to extract the tag from a term
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exp MatchCompiler::untag( Exp e, Ty ty)
+{
+  match (deref(ty))
+  {
+  DATATYPEty ({ view_match, qualifiers ... }, _) | qualifiers & QUALview: // a view
+    {
+      if (view_match == NOexp)
+      {
+        error("%Lview test for datatype %T is undefined\n", ty);
+        return NOexp;
+      }
+      return subst(view_match,&e);
+    }
+  | DATATYPEty ({ arg ... },_) | arg > 0:
+    {
+      return APPexp( IDexp( #"untag"), e);
+    }
+  | _:
+    { return e; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to extract the tag from a term (optimized for arg/unit constructors)
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exp MatchCompiler::untag_one( Exp e, Cons c)
+{
+  match (c)
+  {
+  ONEcons { name, alg_ty = DATATYPEty ({ view_match, qualifiers ... }, _) ... }
+        | qualifiers & QUALview: // a view
+    {
+      if (view_match == NOexp)
+      {  error("%Lview test for constructor %s is undefined\n",name);
+         return NOexp;
+      }
+      return subst(view_match,&e);
+    }
+  | ONEcons { ty = NOty, alg_ty = DATATYPEty ({ arg ... },_) ... }
+        | arg == 0:
+    { return e; }
+  | ONEcons { ty = NOty ... }:
+    { return CASTexp( integer_ty, e); }
+  | ONEcons { alg_ty = DATATYPEty({ qualifiers, opt ... }, _) ... }:
+    {
+      if (opt & OPTtaggedpointer)
+        e = APPexp( IDexp( #"untagp"),e);
+      else if (opt & OPTtagless)
+        e = LITERALexp( INTlit(0));
+      else
+        e = ARROWexp( e, #"tag__");
+      return e;
+    }
+  | _:
+    { return NOexp; }
+  }
+}

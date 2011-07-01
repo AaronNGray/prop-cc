@@ -1,0 +1,393 @@
+//////////////////////////////////////////////////////////////////////////////
+// NOTICE:
+//
+// ADLib, Prop and their related set of tools and documentation are in the
+// public domain.   The author(s) of this software reserve no copyrights on
+// the source code and any code generated using the tools.  You are encouraged
+// to use ADLib and Prop to develop software, in both academic and commercial
+// settings, and are free to incorporate any part of ADLib and Prop into
+// your programs.
+//
+// Although you are under no obligation to do so, we strongly recommend that
+// you give away all software developed using our tools.
+//
+// We also ask that credit be given to us when ADLib and/or Prop are used in
+// your programs, and that this notice be preserved intact in all the source
+// code.
+//
+// This software is still under development and we welcome any suggestions
+// and help from the users.
+//
+// Allen Leung
+// 1994
+//////////////////////////////////////////////////////////////////////////////
+
+#include <string.h>
+#include <assert.h>
+#include <AD/automata/treegram.ph>
+#include <AD/contain/bitset.h>
+
+//////////////////////////////////////////////////////////////////////////////
+//  Make hidden types visible
+//////////////////////////////////////////////////////////////////////////////
+
+typedef TreeGrammar::TreeProduction TreeProduction;
+typedef TreeGrammar::Functor        Functor;
+typedef TreeGrammar::Arity          Arity;
+
+//////////////////////////////////////////////////////////////////////////////
+//  Function to allocate a new term
+//////////////////////////////////////////////////////////////////////////////
+
+TreeTerm new_term( Mem& mem, short int f, unsigned char n, TreeTerm * subterms)
+{  TreeTerm * S = n > 0 ? (TreeTerm*)mem.c_alloc(sizeof(TreeTerm) * n) : 0;
+   if (subterms) for (int i = n - 1; i >= 0; i--) S[i] = subterms[i];
+   return tree_term'(mem)(f,n,S);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//  Method to initialize an instance
+//////////////////////////////////////////////////////////////////////////////
+
+void TreeGrammar::init()
+{
+  productions           = 0;
+  arities               = 0;
+  minimum_functor       = maximum_functor =
+  minimum_variable      = maximum_variable = 0;
+  maximum_arity         = 0;
+  number_of_productions = 0;
+  number_of_variables   = 0;
+  number_of_functors    = 0;
+  functor_names         = 0;
+  variable_names        = 0;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//  Constructors and destructor
+//////////////////////////////////////////////////////////////////////////////
+
+TreeGrammar::TreeGrammar() { init(); }
+
+TreeGrammar::TreeGrammar(int n, TreeProduction P[], const char * f[], const char * v[])
+   { init(); compile(n,P,f,v); }
+
+TreeGrammar::~TreeGrammar()
+{
+  delete [] productions;
+  delete [] arities;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Method to compile a set of tree productions
+//////////////////////////////////////////////////////////////////////////////
+
+void TreeGrammar::compile
+     (
+     int                  n,       // number of productions
+     TreeProduction       P[],     // an array of tree productions
+     const char *         f_names[], // names of functors
+     const char *         v_names[], // names of variables(non-terminals)
+     Functor              min_f,   // user supplied minimal functor encoding
+     Functor              max_f,   // user supplied maximal functor encoding
+     Variable             min_v,   // user supplied minimal variable encoding
+     Variable             max_v    // user supplied maximal variable encoding
+     )
+{
+  ///////////////////////////////////////////////////////////////////////////
+  //  (1)  Allocate the productions array and initialize various members.
+  ///////////////////////////////////////////////////////////////////////////
+  productions           = new TreeProduction [n];
+  minimum_functor       = min_f;
+  maximum_functor       = max_f;
+  minimum_variable      = min_v;
+  maximum_variable      = max_v;
+  maximum_arity         = 0;
+  number_of_productions = n;
+  functor_names         = f_names;
+  variable_names        = v_names;
+  memcpy(productions,P,n * sizeof(TreeProduction));
+
+  ///////////////////////////////////////////////////////////////////////////
+  //  (2) Compute the ranges of non-terminals and functors.
+  ///////////////////////////////////////////////////////////////////////////
+  int i;
+  for (i = 0; i < n; i++)
+  {
+    Variable v = P[i].var;
+    if (v < minimum_variable)
+      minimum_variable = v;
+    if (v > maximum_variable)
+      maximum_variable = v;
+    tabulate(P[i].term);
+  }
+  if (minimum_functor  > maximum_functor )
+    minimum_functor  = maximum_functor = 0;
+  if (minimum_variable > maximum_variable)
+    minimum_variable = maximum_variable = 0;
+
+  number_of_variables = maximum_variable - minimum_variable + 1;
+  number_of_functors  = maximum_functor - minimum_functor + 1;
+
+  ///////////////////////////////////////////////////////////////////////////
+  //  (3) Compute the mapping from functors to their rank.
+  ///////////////////////////////////////////////////////////////////////////
+
+  arities = new Arity [number_of_functors];
+  memset(arities, 0, number_of_functors * sizeof(Arity));
+  for (i = 0; i < n; i++)
+    tabulate_arity(P[i].term);
+
+  assert(minimum_variable >= 0);
+  assert(minimum_functor >= 0);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//  Auxiliary method to compute the ranges of non-terminals and functors.
+//////////////////////////////////////////////////////////////////////////////
+
+void TreeGrammar::tabulate(const TreeTerm t)
+{
+  match (t)
+  {
+    case wild_term:   // do nothing
+    case var_term(v):
+      if (v < minimum_variable)
+        minimum_variable = v;
+      if (v > maximum_variable)
+        maximum_variable = v;
+    case and_term(x,y):
+      tabulate(x);
+      tabulate(y);
+    case or_term(x,y):
+      tabulate(x);
+      tabulate(y);
+    case not_term(n):
+      tabulate(n);
+    case tree_term( f, n, subterms):
+       if (f < minimum_functor)
+         minimum_functor = f;
+       if (f > maximum_functor)
+         maximum_functor = f;
+       for (int i = n - 1; i >= 0; i--)
+         tabulate(subterms[i]);
+    case set_term _:  // do nothing
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//  Auxiliary method to compute the arity of functors.
+//////////////////////////////////////////////////////////////////////////////
+
+void TreeGrammar::tabulate_arity(const TreeTerm t)
+{
+  match (t)
+  {
+    case and_term(x,y):
+      tabulate_arity(x);
+      tabulate_arity(y);
+    case or_term(x,y):
+      tabulate_arity(x);
+      tabulate_arity(y);
+    case not_term(n):
+      tabulate_arity(n);
+    case tree_term( f, n, subterms):
+      arities[f] = n;
+      for (int i = n - 1; i >= 0; i--)
+        tabulate_arity(subterms[i]);
+      if (n > maximum_arity)
+        maximum_arity = n;
+    case _:          // do nothing
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////
+//  Equality for terms.   Shallow comparison only
+///////////////////////////////////////////////////////////////////////////
+
+Bool equal(const TreeTerm a, const TreeTerm b)
+{
+  match (a) and (b)
+  {
+    case (wild_term,        wild_term):        return true;
+    case (var_term u,       var_term v):       return u == v;
+    case (or_term(a,b),     or_term(c,d)):     return a == c && b == d;
+    case (and_term(a,b),    and_term(c,d)):    return a == c && b == d;
+    case (set_term a,       set_term b):       return a == b;
+    case (tree_term(f,n,s), tree_term(g,m,t)):
+      if (f != g || n != m)
+        return false;
+      for (int i = n - 1; i >= 0; i--)
+        if (s[i] != t[i])
+          return false;
+      return true;
+    case _:
+      return false;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////
+//  Hash function for terms
+///////////////////////////////////////////////////////////////////////////
+
+unsigned int hash(const TreeTerm a)
+{
+  match (a) {
+    case wild_term:      return 73;
+    case var_term v:     return v;
+    case or_term(x,y):   return 493 + (unsigned int)x + (unsigned int)y;
+    case and_term(x,y):  return 245 + (unsigned int)x + (unsigned int)y;
+    case not_term(n):    return 127 + (unsigned int)n;
+    case tree_term( f, n, subterms):
+      unsigned int h = f;
+      for (int i = n - 1; i >= 0; i--)
+        h += h + (unsigned int)subterms[i];
+      return h;
+    case set_term s:     return (unsigned int)s;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////
+//  Printing methods.
+///////////////////////////////////////////////////////////////////////////
+
+const char* TreeGrammar::functor_name( Functor f) const
+{
+  if (functor_names && f >= min_functor() && f <= max_functor())
+    return functor_names[f];
+  else
+    return "F";
+}
+
+const char* TreeGrammar::variable_name(Variable v) const
+{
+  if (variable_names && v >= min_variable() && v <= max_variable() &&
+      variable_names[v] != 0)
+    return variable_names[v];
+  else
+    return "V";
+}
+
+///////////////////////////////////////////////////////////////////////////
+//  Method to print a functor name.
+///////////////////////////////////////////////////////////////////////////
+
+ostream& TreeGrammar::print_functor( ostream& out, Functor f) const
+{
+  if (functor_names && f >= min_functor() && f <= max_functor())
+    return out << functor_names[f];
+  else
+    return out << 'F' << f;
+}
+
+///////////////////////////////////////////////////////////////////////////
+//  Method to print a variable name.
+///////////////////////////////////////////////////////////////////////////
+
+ostream& TreeGrammar::print_variable( ostream& out, Variable v) const
+{
+  if (variable_names && v >= min_variable() && v <= max_variable() &&
+      variable_names[v] != 0)
+    return out << '<' << variable_names[v] << '>';
+  else
+    return out << v;
+}
+
+///////////////////////////////////////////////////////////////////////////
+//  Method to print a tree term.
+///////////////////////////////////////////////////////////////////////////
+
+ostream& TreeGrammar::print( ostream& S, const TreeTerm term) const
+{
+  match (term)
+  {
+    case wild_term:     S << '_';
+    case var_term v:    print_variable(S, v);
+    case or_term(x,y):  S << '('; print(S,x); S << " or: "; print(S,y); S << ')';
+    case and_term(x,y): S << '('; print(S,x); S << " and: "; print(S,y); S << ')';
+    case not_term n:    S << "not: "; print(S,n);
+    case set_term s:    S << *s;
+    case tree_term( f, n, subterms):
+    {
+      const char * f_name = functor_name(f);
+      Bool first = true;
+      TreeTerm t = term;
+      if (f_name[0] == '#')
+      {
+        char begin_ch = f_name[1];
+        char end_ch   = f_name[strlen(f_name)-1];
+        S << '#' << begin_ch;
+        match while (t)
+        {
+          tree_term(f,2,subterms):
+          {
+            if (! first)
+              S << ", ";
+            print(S,subterms[0]);
+            first = false;
+            t = subterms[1];
+          }
+        | tree_term(f,0,subterms) | (functor_name(f))[0] == '#':
+          {
+          return S << end_ch;
+          }
+        |  _:
+          {
+          if (! first)
+            S << " ... ";
+          print(S,t);
+          return S << end_ch;
+          }
+        }
+      }
+      else if (f_name[0] != '\0' && f_name[1] == '|')
+      {
+        S << f_name[0] << "| ";
+        for (int i = 0; i < n; i++)
+        {
+          print( S, subterms[i]); if (i < n - 1) S << ", ";
+        }
+        S << ' ' << (f_name + 5);
+      }
+      else
+      {
+        print_functor(S,f);
+        if (n > 0)
+        {
+          S << '(';
+          for (int i = 0; i < n; i++) {
+            print( S, subterms[i]); if (i < n - 1) S << ", ";
+          }
+          S << ')';
+        }
+      }
+    }
+  }
+  return S;
+}
+
+///////////////////////////////////////////////////////////////////////////
+//  Method to print a tree production.
+///////////////////////////////////////////////////////////////////////////
+
+ostream& TreeGrammar::print( ostream& out, const TreeProduction& P) const
+{
+  print_variable( out, P.var);
+  out << " : ";
+  print( out, P.term);
+  return out;
+}
+
+///////////////////////////////////////////////////////////////////////////
+//  Method to print a tree grammar.
+///////////////////////////////////////////////////////////////////////////
+
+ostream& operator << (ostream& out, const TreeGrammar& G)
+{
+  for (int i = 0; i < G.size(); i++)
+  {
+    out << '[' << i << ']' << '\t';
+    G.print(out,G[i]) << '\n';
+  }
+  return out;
+}

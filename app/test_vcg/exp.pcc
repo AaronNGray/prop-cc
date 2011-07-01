@@ -1,0 +1,69 @@
+#include <stdlib.h>
+#include <iostream.h>
+#include <strstream.h>
+#include <fstream.h>
+#include <AD/visualize/vcg.h>
+
+//
+//  Visualize an expression tree 
+//
+
+datatype Exp = INT int
+	     | ID Id
+	     | BINOP(Id,Exp,Exp)
+	     | UNARYOP(Id,Exp)
+where type Id = const char *
+;
+
+instantiate datatype Exp;
+
+void f(VCG& V, Exp e)
+{  if (V.visited(e)) return;
+   match (e)
+   {  INT i:   { V.begin_node(e).label(i).color(VCG::lightyellow).end_node(e); }
+   |  ID id:   { V.begin_node(e).label(id).shape(VCG::box).color(VCG::pink).end_node(e); }
+   |  BINOP(op,a,b): { V.begin_node(e).label(op).end_node(e).
+  		         edge(e,a).edge(e,b);
+                       f(V,a); f(V,b);
+                     }
+   |  UNARYOP(op,a): { V.begin_node(e).label(op).end_node(e).edge(e,a);
+                       f(V,a);
+	             }
+   }
+}
+
+int main()
+{
+   VCG V;
+   const char * G = "A Sample Graph";
+   Exp e1 = BINOP("*",ID("z"),BINOP("+",ID("x"),ID("y")));
+   Exp e2 = BINOP("*",ID("z"),BINOP("+",ID("x"),ID("y")));
+   Exp e3 = BINOP("/",e1,BINOP("-",e2,INT(123)));
+   Exp e  = UNARYOP("-",BINOP("+",e3,BINOP("+",ID("x"),ID("z"))));
+
+   V . begin_graph(G) . label(G) . display_edge_labels(true) 
+     . layoutalgorithm(VCG::tree)
+     . xspace(50) . yspace(40) 
+     . xbase(100) 
+     . begin_node_default() 
+	. shape(VCG::ellipse) 
+	. color(VCG::lightgreen) 
+     . end_default()
+   ;
+
+   //  Traverse expression
+   f(V,e);
+
+   V . end_graph(G);
+
+   //  translate it into GDL
+   ostrstream S;
+   V.print_GDL_on(S);
+
+   ofstream TMP("./exp.vcg");
+   TMP << S.str();
+   TMP.close();
+   system("xvcg ./exp.vcg");
+
+   return 0;
+}

@@ -1,0 +1,1124 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the FunctorMap data structure
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include <strstream>
+#include <AD/automata/treegram.ph>
+#include <AD/automata/treegen.h>
+#include <AD/rewrite/burs_gen.h>
+#include <AD/strings/quark.h>
+#include "funmap.ph"
+#include "ir.ph"
+#include "ast.ph"
+#include "matchcom.ph"
+#include "type.h"
+#include "hashtab.h"
+#include "datagen.h"
+#include "config.h"
+#include "rwgen.h"
+#include "options.h"
+#include "list.h"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Import some type definitions from the tree grammar and hash table
+//  classes.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+typedef TreeGrammar::TreeProduction TreeProduction;
+typedef TreeGrammar::Cost           TreeCost;
+typedef HashTable::Key              Key;
+typedef HashTable::Value            Value;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Instantiate the vector id type
+//
+///////////////////////////////////////////////////////////////////////////////
+
+instantiate datatype VectorId;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Hashing and equality on vector id's
+//
+///////////////////////////////////////////////////////////////////////////////
+
+unsigned int vector_id_hash( HashTable::Key k)
+{
+  VectorId id = (VectorId)k;
+  return (unsigned int)id->cons + ty_hash(id->ty) + id->arity;
+}
+
+Bool vector_id_equal( HashTable::Key a, HashTable::Key b)
+{
+  VectorId x = (VectorId) a;
+  VectorId y = (VectorId) b;
+  return x->cons == y->cons && x->arity == y->arity && ty_equal(x->ty,y->ty);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to decorate cost expression and attribute bindings for
+//  a pattern.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+int decor_rewrite( Pat pat, int rule, int kid, PatternVarEnv& E)
+{
+  match while (pat)
+  {
+    NOpat || LITERALpat _ || CONSpat _: { return kid; }
+  | MARKEDpat(_,p):            { pat = p; }
+  | TYPEDpat(p,_):             { pat = p; }
+  | GUARDpat(p,_):             { pat = p; }
+  | APPpat (_,p):              { pat = p; }
+  | CONTEXTpat(_,p):           { pat = p; }
+  | TUPLEpat ps:
+    { return decor_rewrite( ps, rule, kid, E); }
+  | LISTpat{ nil,cons,head=ps,tail=rest}:
+    { kid = decor_rewrite( ps, rule, kid, E); pat = rest; }
+  | VECTORpat{ len, array, elements, head_flex, tail_flex ... }:
+    {
+      kid = decor_rewrite(elements, rule, decor_rewrite(array, rule, kid, E), E);
+      if (head_flex || tail_flex)
+        error( "%Lflexible vector pattern currently not supported in rewriting: %p\n", pat);
+      pat = len;
+    }
+  | ASpat (id,p,_,_):
+    {
+      Id attrib_name = #"#" + id;
+      Id cost_name   = #"$" + id;
+      Ty ty = mkvar();
+      E.add( attrib_name, SYNexp( kid, rule, mkvar(), true), ty, ISpositive);
+      E.add( cost_name, COSTexp(kid),  ty, ISpositive);
+      kid = kid+1;
+      pat = p;
+    }
+  | _:  { return kid; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Decorate a pattern list.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+int decor_rewrite (Pats pats, int rule, int kid, PatternVarEnv& E)
+{
+  for_each ( Pat, p, pats)
+    kid = decor_rewrite( p, rule, kid, E);
+  return kid;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Decorate rewriting patterns.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+int decor_rewrite( Pat pat, int rule, PatternVarEnv& E)
+{
+  Ty ty = mkvar();
+  E.add( #"##", THISSYNexp(rule,mkvar(),true), ty, ISpositive);
+  E.add( #"$$", THISCOSTexp(), ty, ISpositive);
+  return decor_rewrite( pat, rule, 0, E);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor of the functor mapping table.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+FunctorMap::FunctorMap(Id name, MatchRules rules)
+  : literal_map( literal_hash, literal_equal, 129),
+    var_map( string_hash, string_equal),
+    type_map( ty_hash, ty_equal),
+    vector_map( vector_id_hash, vector_id_equal),
+    rule_map( ty_hash, ty_equal),
+    topdown_rule_map(ty_hash, ty_equal),
+    before_rule_map(ty_hash, ty_equal),
+    preorder_rule_map( ty_hash, ty_equal),
+    postorder_rule_map( ty_hash, ty_equal),
+    protocols( ty_hash, ty_equal),
+    nonterm_map( string_hash, string_equal),
+    nonterm_rules( string_hash, string_equal),
+    nonterm_rules_bits( string_hash, string_equal),
+    chain_rules( string_hash, string_equal),
+    bottomup_rules(#[])
+{
+  ///////////////////////////////////////////////////////////////////////////
+  //
+  //  Initialize the internals.
+  //
+  ///////////////////////////////////////////////////////////////////////////
+
+  class_name      = name;
+  N               = length(rules);
+  functors        = 0;
+  variables       = 0;
+  tree_gen        = 0;
+  topdown_gen     = 0;
+  use_compression = true;
+  has_guard       = false;
+  has_replacement = false;
+  has_cost        = false;
+  has_cost_exp    = false;
+  has_syn_attrib  = false;
+  is_applicative  = false;
+  gen_reducers    = false;
+  dynamic_search  = false;
+  max_arity       = 1;
+  functor_names   = 0;
+  variable_names  = 0;
+  is_ok           = true;
+
+  rule_maps[MatchRuleInfo::BOTTOMUP]  = &rule_map;
+  rule_maps[MatchRuleInfo::TOPDOWN]   = &topdown_rule_map;
+  rule_maps[MatchRuleInfo::BEFORE]    = &before_rule_map;
+  rule_maps[MatchRuleInfo::PREORDER]  = &preorder_rule_map;
+  rule_maps[MatchRuleInfo::POSTORDER] = &postorder_rule_map;
+
+  TyQual qual = RewritingCompiler::lookup_qual(class_name);
+  if (qual & QUALtreeparser)  gen_reducers = true;
+  if (qual & QUALapplicative) is_applicative = true;
+
+  int last_errors = errors;
+  enter_protocols();             // enter the protocols
+                                 // partition rule by type
+  bottomup_rules = partition_rules(rules);
+  check_for_missing_protocols();
+
+  if (errors != last_errors)
+  {
+    is_ok = false;
+    return;
+  }
+
+  build_tree_grammar(bottomup_rules);
+
+  // BUG fix, always use dynamic search algorithm when treeparser
+  // mode is on, since the class interface has to match.
+  //dynamic_search = gen_reducers && (has_cost || has_cost_exp);
+
+  dynamic_search = gen_reducers;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to enter the protocols into the protocol map
+//
+///////////////////////////////////////////////////////////////////////////////
+void FunctorMap::enter_protocols()
+{
+  Protocols Ps = RewritingCompiler::lookup_protocols( class_name);
+  {
+    for_each (Protocol, p, Ps)
+    {
+      match (p)
+      {
+        PROTOCOL { ty, syn ... }:
+        {
+          encode(ty);
+          protocols.insert( ty, p);
+          if (syn != NOty)
+            has_syn_attrib = true;
+        }
+      }
+    }
+  }
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Checks for missing protocol
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void FunctorMap::check_for_missing_protocols()
+{
+  foreach_entry (e, type_map)
+  {
+    Ty ty = Ty( type_map.key(e));
+    if ( !protocols.contains(ty))
+    {
+      error("%Lmissing type %T in the traversal list of rewrite class %s\n",
+             ty, class_name);
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Otherwise, build the tree grammar and the functor/variable name maps.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void FunctorMap::build_tree_grammar( MatchRules rules)
+{
+  N = length(rules);
+  TreeProduction * Ps =
+      (TreeProduction *) mem_pool.c_alloc( sizeof( TreeProduction) * N);
+
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  //  Translate patterns into terms
+  //
+  ////////////////////////////////////////////////////////////////////////////
+
+  {
+    int i = 0;
+    for_each (MatchRule, r, rules)
+    {
+      match (r)
+      {
+        MATCHrule(lhs,pat,guard,cost,_):
+        {
+          int rule_no = lhs ? var_map[lhs] : 0;
+          int cst;
+          match (cost)
+          {
+            NOcost:     { cst = 0; }
+          | INTcost c:  { cst = c; has_cost = true; }
+          | EXPcost _:  { cst = 0; has_cost_exp = true; }
+          }
+          Ps[i] = TreeProduction(rule_no,trans(pat),cst);
+          if (guard != NOexp || (r->option & MatchRuleInfo::FAILREWRITE))
+            has_guard = true;
+          if (r->option & MatchRuleInfo::REPLACEMENT)
+            has_replacement = true;
+          i++;
+        }
+      }
+    }
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  //  Compute the functor/variable names
+  //
+  ////////////////////////////////////////////////////////////////////////////
+  compute_names();
+
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  //  Compile the tree grammar
+  //
+  ////////////////////////////////////////////////////////////////////////////
+  G.compile (N, Ps, functor_names, variable_names, 0, functors - 1, 0);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to convert literal patterns inside a set of matching rules
+//  into guards
+//
+///////////////////////////////////////////////////////////////////////////////
+void FunctorMap::make_guard( MatchRules rules)
+{
+  match while (rules)
+  {
+    #[MATCHrule( _, pat, guard, _, _) ... rest]:
+    {
+      pat   = make_guard( pat, guard);
+      rules = rest;
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to convert literal patterns into guards.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Pat FunctorMap::make_guard( Pat pat, Exp& e)
+{
+  Pat new_pat;
+  // return pat; // BUG fix
+  match (pat)
+  {
+    ASpat(a,p,b,c):        { new_pat = ASpat( a, make_guard( p, e), b, c); }
+  | TYPEDpat(p,ty):        { new_pat = TYPEDpat( make_guard( p, e), ty); }
+  | MARKEDpat(loc,p):      { new_pat = MARKEDpat( loc, make_guard( p, e)); }
+  | TUPLEpat ps:           { new_pat = TUPLEpat( make_guard( ps, e)); }
+  | RECORDpat(lab_pats,f): { new_pat = RECORDpat( make_guard( lab_pats, e), f); }
+  | APPpat(a,b):           { new_pat = APPpat( make_guard( a, e), make_guard( b, e)); }
+  | LITERALpat (l as (INTlit _ || REALlit _ || CHARlit _ || BOOLlit _)):
+    {
+      Exp guard_exp = BINOPexp( "==", pat->selector, LITERALexp(l));
+      e = e == NOexp ? guard_exp : BINOPexp( "&&", e, guard_exp);
+      new_pat = WILDpat();
+    }
+  | LISTpat{ cons, nil, head = ps, tail = p}:
+    {
+      new_pat = LISTpat'
+                  {
+                    cons = cons,
+                    nil = nil,
+                    head = make_guard( ps, e), tail = make_guard( p, e)
+                  };
+    }
+  | VECTORpat { cons, elements, array, len, head_flex, tail_flex  }:
+    {
+      new_pat = VECTORpat'
+                  {
+                    cons      = cons,
+                    elements  = make_guard( elements, e),
+                    array     = make_guard( array, e),
+                    len       = make_guard( len, e),
+                    head_flex = head_flex,
+                    tail_flex = tail_flex
+                  };
+    }
+  | _: { new_pat = pat; }
+  }
+  if (new_pat != pat && boxed(new_pat))
+  {
+    new_pat->ty = pat->ty;
+    new_pat->selector = pat->selector;
+  }
+  return new_pat;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Unguard a pattern list
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Pats FunctorMap::make_guard( Pats ps, Exp& e)
+{
+  match (ps)
+  {
+    #[]:        { return #[]; }
+  | #[h ... t]: { return #[make_guard( h, e) ... make_guard( t, e)]; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Unguard a labeled pattern list
+//
+///////////////////////////////////////////////////////////////////////////////
+
+LabPats FunctorMap::make_guard( LabPats ps, Exp& e)
+{
+  match (ps)
+  {
+    #[]:        { return #[]; }
+  | #[h ... t]: {
+                  LabPat lab_pat;
+                  lab_pat.label = h.label;
+                  lab_pat.pat   = make_guard( h.pat, e);
+                  return #[lab_pat ... make_guard( t, e)];
+                }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Check whether we know of the type
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool FunctorMap::is_known_type( Ty ty)
+{
+  return type_map.contains(ty)      ||
+         ty_equal(ty, string_ty)    ||
+         ty_equal(ty, quark_ty)
+//       ty_equal(ty, integer_ty)   ||
+//       ty_equal(ty, bool_ty)      ||
+//       ty_equal(ty, real_ty)      ||
+//       ty_equal(ty, character_ty)
+  ;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Check whether we the type is rewritable.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool FunctorMap::is_rewritable_type( Ty ty) { return type_map.contains(ty); }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to assign variable encoding to a non-terminal
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void FunctorMap::encode( Id id)
+{
+  if ( !var_map.contains( id))
+  {
+    ++variables;
+    var_map.insert( id, variables);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to assign functor encoding to a type
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void FunctorMap::encode( Ty ty)
+{
+  match (deref_all(ty))
+  {
+    ty as TYCONty( DATATYPEtycon { unit, arg ... }, _):
+    {
+      if (! type_map.contains(ty))
+      {
+        type_map.insert( ty, functors);
+        functors += unit + arg;
+      }
+    }
+  | TYCONty( _, tys): {  for_each(Ty, ty, tys) encode(ty); }
+  | _:  // skip
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to assign functor encoding to a pattern.
+//  Assign a functor value to each distinct literal and pattern constructor.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void FunctorMap::encode( Pat pat)
+{
+  match while (pat)
+  {
+    NOpat || WILDpat _ || IDpat _: { return; }
+  | ASpat(_,p,_,_):  { pat = p; }
+  | TYPEDpat(p,_):   { pat = p; }
+  | MARKEDpat(_,p):  { pat = p; }
+  | TUPLEpat ps:
+    {
+      int i = 0;
+      for_each (Pat, p, ps)
+        { i++; encode(p); }
+      if (max_arity < i)
+        max_arity = i;
+      return;
+    }
+  | RECORDpat(lab_pats,_):
+    {
+      for_each (LabPat, p, lab_pats)
+        encode(p.pat);
+      int arity = arity_of(pat->ty);
+      if (max_arity < arity)
+        max_arity = arity;
+      return;
+    }
+  | LITERALpat (l as (QUARKlit _ || STRINGlit _ || REGEXPlit _)):
+    {
+      if (! literal_map.contains(l))
+      {
+        literal_map.insert( l, functors);
+        functors++;
+      }
+      return;
+    }
+  | LITERALpat (INTlit _ || REALlit _ || CHARlit _ || BOOLlit _):
+    { bug ("%Luntransformed literal pattern %p found in rewriting\n",pat); }
+  | CONSpat( ONEcons { alg_ty = alg_ty as
+                 TYCONty(DATATYPEtycon { unit, arg, terms ... },_)
+              ... }):
+    {
+      if (pat->ty != NOty && ! type_map.contains( pat->ty))
+      {  type_map.insert( pat->ty, functors);
+         functors += unit + arg;
+      }
+      return;
+    }
+  | APPpat(a,b):  { encode(pat->ty); pat = b; }
+  | LISTpat{ cons, nil, head = ps, tail = p}:
+    {
+      Pat new_pat = CONSpat(nil);
+      new_pat->ty = pat->ty;
+      encode( new_pat);
+      for_each (Pat, i, ps)
+        encode(i);
+      if (max_arity < 2)
+        max_arity = 2;
+      pat = p;
+    }
+  | VECTORpat { cons, elements ... }:
+    {
+      Pat new_pat = CONSpat(cons);
+      new_pat->ty = pat->ty;
+      encode(new_pat);
+      for_each (Pat, p, elements)
+        encode(p);
+      int l = length(elements);
+      if (max_arity < l)
+        max_arity = l;
+      if (pat->ty != NOty)
+      {
+        VectorId vec_id = vector_id( cons, pat->ty, l);
+        if ( ! vector_map.contains(vec_id))
+        {
+          vector_map.insert(vec_id, functors);
+          functors++;
+        }
+      }
+      return;
+    }
+  | _: { error ("%LSorry: pattern not supported in rewriting: %p\n", pat); return; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to translate a pattern into a term.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+TreeTerm FunctorMap::trans( Pat pat)
+{
+  match while (pat)
+  {
+    NOpat || WILDpat _: { return wild_term; }
+  | ASpat(_,p,_,_):     { pat = p; }
+  | TYPEDpat(p,_):      { pat = p; }
+  | MARKEDpat(_,p):     { pat = p; }
+  | LITERALpat( l as (QUARKlit _ || STRINGlit _ || REGEXPlit _)):
+    { return new_term(mem_pool,literal_map[l]); }
+  | LITERALpat l:
+    { return wild_term; }
+  | IDpat( id, _, _):
+    {
+      return var_map.contains(id) ? var_term(var_map[id]) : wild_term;
+    }
+  | TUPLEpat pats:
+    {
+      int arity = length (pats);
+      TreeTerm * subterms =
+         (TreeTerm *)mem_pool.c_alloc( sizeof( TreeTerm) * arity);
+      int i = 0;
+      for_each (Pat, p, pats)
+        subterms[i++] = trans(p);
+      return new_term( mem_pool, 0, arity, subterms);
+    }
+  | RECORDpat( lab_pats, _):
+    {
+      match (deref(pat->ty))
+      {
+      RECORDty (labels,_,tys):
+        {
+          Bool relevant[256];
+          int i;
+          int arity;
+
+          i = arity = 0;
+          for_each(Ty, t, tys)
+            if (relevant[i++] = is_known_type(t))
+              arity++;
+          TreeTerm * subterms =
+             (TreeTerm *)mem_pool.c_alloc( sizeof( TreeTerm) * arity);
+          for (i = 0; i < arity; i++)
+             subterms[i] = wild_term;
+          for_each (LabPat, p, lab_pats)
+          {
+            Ids labs; Tys ts;
+            for (i = 0, labs = labels, ts = tys;
+                 labs && ts; labs = labs->#2, ts = ts->#2)
+            {
+              if (p.label == labs->#1)
+                {  subterms[i] = trans(p.pat); break; }
+              if (is_known_type(ts->#1))
+                i++;
+            }
+          }
+          return new_term( mem_pool, 0, arity,subterms);
+        }
+      |  _: { bug( "%Lillegal record pattern %p\n", pat); }
+      }
+    }
+  | APPpat( CONSpat( ONEcons
+            { ty = arg_ty, tag,
+              alg_ty = TYCONty( DATATYPEtycon { unit ... },_) ...
+            }), p):
+    {
+      TreeTerm a = trans(p);
+      match (arity_of(arg_ty)) and (a)
+      {
+      1, _:
+         { return new_term( mem_pool, type_map[pat->ty] + unit + tag, 1, &a); }
+      |  _, tree_term(f,_,_):
+         {  f = type_map[pat->ty] + unit + tag; return a; }
+      |  n, _:
+         {  return new_term( mem_pool, type_map[pat->ty] + unit + tag, n);
+         }
+      }
+    }
+  | CONSpat(ONEcons { tag ... }):
+    { return new_term( mem_pool, type_map[pat->ty] + tag); }
+  | LISTpat{ nil, head = #[], tail = NOpat ... }:
+    { Pat p = CONSpat(nil); p->ty = pat->ty; pat = p; }
+  | LISTpat{ head = #[], tail ... }:   {  pat = tail; }
+  | LISTpat{ cons, nil, head = #[h ... t], tail }:
+    {
+      Pat new_tail = LISTpat'{ cons = cons, nil = nil, head = t, tail = tail};
+      Pat new_p    = APPpat( CONSpat( cons), TUPLEpat(#[ h, new_tail]));
+      new_p->ty    = new_tail->ty = pat->ty;
+      pat = new_p;
+    }
+  | VECTORpat { cons, elements ... }:
+    {
+      TreeTerm a     = trans( TUPLEpat(elements));
+      int      arity = length(elements);
+      match (a)
+      {
+        tree_term( f, _, _):
+        {
+          f = vector_map[ vector_id( cons, pat->ty, arity)];
+          return a;
+        }
+      | _:
+         { bug ("%Lillegal pattern: %p\n", pat); return wild_term; }
+      }
+    }
+  | _: { error ("%LSorry: pattern not supported: %p\n", pat); return wild_term; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Compute ceil(ln(2))
+//
+///////////////////////////////////////////////////////////////////////////////
+
+int ln2 (int n)
+{
+  int bits = 0;
+  while (n > 0)
+    { n >>= 1; bits++; }
+  return bits;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to compute the rhs non-terminal (if it is a chain rule)
+//  Otherwise, returns NIL.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Id FunctorMap::chain_rule_rhs( Pat pat)
+{
+  match (pat)
+  {
+    IDpat (id,_,_): { return var_map.contains(id) ? id : 0; }
+  | ASpat(_,p,_,_): { return chain_rule_rhs(p); }
+  | MARKEDpat(_,p): { return chain_rule_rhs(p); }
+  | TYPEDpat(p,_):  { return chain_rule_rhs(p); }
+  | _:              { return 0; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to partition the set of rules according to the types of the
+//  patterns.  Also encode the patterns in the process.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+MatchRules FunctorMap::partition_rules( MatchRules rules)
+{
+  bottomup_rules = #[];
+  // First, we assign a new type variable for each lhs non-terminal.
+  {
+    for_each (MatchRule, r, rules)
+    {
+      match (r)
+      {
+        MATCHrule(lhs,_,_,_,_):
+        {
+          if (r->mode == MatchRuleInfo::BOTTOMUP)
+          {
+            bottomup_rules = #[ r ... bottomup_rules ];
+            if (lhs)
+            {
+              HashTable::Entry * lhs_entry = nonterm_map.lookup(lhs);
+              if (! lhs_entry)
+                nonterm_map.insert(lhs,mkvar());
+              encode(lhs);  // compute encoding for the variable
+              HashTable::Entry * e = nonterm_rules.lookup(lhs);
+              if ( !e)
+                nonterm_rules.insert( lhs, #[r]);
+              else
+                { e->v = #[ r ... MatchRules(e->v)]; }
+            }
+            else if (dynamic_search)
+              error( "%!missing non-terminal in tree grammar rule: %r\n",
+                     r->loc(), r);
+          }
+          else if (lhs)
+          {
+            error( "%!illegal non-terminal in non bottom-up rule: %r\n",
+                   r->loc(), r);
+          }
+        }
+      }
+    }
+  }
+
+  bottomup_rules = rev(bottomup_rules);
+
+  // Compute the size needed to encode each non-terminal
+
+  {
+    foreach_entry (e, nonterm_rules)
+    {
+      int bits = ln2( length( MatchRules( e->v))+1);
+      nonterm_rules_bits.insert( e->k, HashTable::Value( bits));
+    }
+  }
+
+  // Type check all the rules next.
+  // We have to also compute the type map for each lhs non-terminal.
+  // Of course, a non-terminal but have only one single type.
+  // This is done by unifying all occurances of a non-terminal.
+
+  patvar_typemap = &nonterm_map; // set the pattern variable type map
+
+  for_each (MatchRule, r, bottomup_rules)
+  {
+    match (r)
+    {
+      MATCHrule(lhs,pat,_,_,_):
+      {
+        r->set_loc();
+        Ty ty = r->ty = type_of(pat);
+
+        // Check the type of the non-terminal (if any).
+        if (lhs)
+        {
+          Ty lhs_ty = Ty(nonterm_map.lookup(lhs)->v);
+          if (! unify(lhs_ty, ty))
+          {
+            error( "%!type mismatch between nonterminal %s(type %T) and rule %r(type %T)\n",
+                   r->loc(),lhs,lhs_ty,r,ty);
+          }
+        }
+
+        if ( !is_datatype(ty))
+           error( "%!rule %r is of a non datatype: %T\n",r->loc(),r,ty);
+
+        // Collect chain rules.
+
+        if (lhs)
+        {
+          Id rhs = chain_rule_rhs(pat);
+          if (rhs)
+          {
+            HashTable::Entry * cr = chain_rules.lookup(rhs);
+            if (! cr)
+              chain_rules.insert( rhs, #[r]);
+            else
+              { cr->v = #[ r ... MatchRules(cr->v)]; }
+            r->is_chain_rule = true;
+          }
+        }
+      }
+    }
+  }
+
+  patvar_typemap = 0; // reset the pattern variable type map
+
+  // Now partition rules by type and assign functor encoding.
+  // Since we have also typed the rules, this is quite simple: just
+  // another pass.  We have to make sure that after the type inference
+  // we don't have any more polymorphic types inside the patterns.
+  int rule_num = 0;
+  for_each (MatchRule, R, rules)
+  {
+    match (R)
+    {
+      MATCHrule( _, pat, guard, _, _) | R->mode != MatchRuleInfo::BOTTOMUP:
+      {
+        R->set_loc();
+        R->ty = type_of(pat);
+        HashTable::Entry * e = rule_maps[R->mode]->lookup(R->ty);
+        if (e)
+          e->v = #[ R ... (MatchRules) e->v ];
+        else
+          rule_maps[ R->mode]->insert( R->ty, #[ R ]);
+      }
+    | MATCHrule( _, pat, guard, _, _):
+      {
+        if (! is_ground(R->ty))
+          error( "%!rule %r has incomplete type %T\n", R->loc(), R, R->ty);
+
+        HashTable::Entry * e = rule_map.lookup(R->ty);
+        if (e)
+          e->v = #[ R ... (MatchRules) e->v ];
+        else
+          rule_map.insert( R->ty, #[ R ]);
+
+        // convert literals into guards
+        // BUG: 2-6-97  This doesn't work right since
+        // the guard testing is not prioritized properly !!!
+
+        pat = make_guard( pat, guard);
+
+        // assign functor encoding
+
+        encode( pat);
+
+        R->rule_number = rule_num++;
+      }
+    }
+  }
+
+  return bottomup_rules;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to compute the functor and variable table.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void FunctorMap::compute_names()
+{
+   functor_names  = (Id *) mem_pool.c_alloc( sizeof(Id) * functors);
+   variable_names = (Id *) mem_pool.c_alloc( sizeof(Id) * (variables + N + 4));
+
+   {  for (int i = N + variables - 1; i >= 0; i--) variable_names[i] = 0; }
+   {  for (int i = functors - 1; i >= 0; i--)  functor_names[i] = "???"; }
+   variable_names[0] = "_";
+
+   // Compute variable names
+
+   {
+     foreach_entry (i,var_map)
+       variable_names[var_map.value(i)] = (Id)var_map.key(i);
+   }
+
+   // Compute literal names
+   {
+     foreach_entry (i,literal_map)
+     {
+       Literal l = (Literal)literal_map.key(i);
+       Functor f = literal_map.value(i);
+       char buf[1024];
+       std::ostrstream b(buf,sizeof(buf));
+       std::ostream& s = b;
+       s << l << std::ends;
+       functor_names[f] = Quark(buf);
+     }
+   }
+
+   // Compute constructor names
+   {
+     foreach_entry (i,type_map)
+     {
+       Ty      t = (Ty)type_map.key(i);
+       Functor f = type_map.value(i);
+       match (deref(t))
+       {
+         TYCONty(DATATYPEtycon { unit, arg, terms ... },_):
+         {
+           int arity = unit + arg;
+           for (int j = 0; j < arity; j++)
+           {
+             match (terms[j])
+             {
+               ONEcons { name, ty, tag ... }:
+               {
+                 functor_names[f + (ty == NOty ? tag : tag + unit)] = name;
+               }
+             | _: // skip
+             }
+           }
+         }
+       |  _: { bug ("compute_names()"); }
+       }
+     }
+   }
+
+   // Compute vector constructor names
+   {
+     foreach_entry (i, vector_map)
+     {
+       VectorId id = (VectorId) vector_map.key(i);
+       Functor  f  = vector_map.value(i);
+       if (id->cons)
+         functor_names[f] = id->cons->name;
+     }
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print a report detailing the functor/variable encoding,
+//  the tree grammar and the generated table size.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void FunctorMap::print_report( std::ostream& log)
+{
+  if (var_map.size() > 0)
+  {
+    log << "Variable encoding:\n";
+    foreach_entry (e, var_map)
+    {
+      log << "\tnon-terminal \"" << (Id)var_map.key(e) << "\"\t=\t"
+          << var_map.value(e) << '\n';
+    }
+  }
+
+  if (literal_map.size() > 0)
+  {
+    log << "\nFunctor encoding for literals:\n";
+    foreach_entry (e, literal_map)
+    {
+      log << "literal " << (Literal)literal_map.key(e) << "\t=\t"
+          << literal_map.value(e) << '\n';
+    }
+  }
+
+  log << "\nFunctor encoding for constructors:\n";
+
+  {
+    foreach_entry (e, type_map)
+    {
+      Ty      t = (Ty)type_map.key(e);
+      Functor f = type_map.value(e);
+      log << "datatype " << t << ":\n";
+      match (deref(t))
+      {
+        TYCONty(DATATYPEtycon { unit, arg, terms ... },_):
+        {
+          int arity = unit + arg;
+          for (int i = 0; i < arity; i++)
+          {
+            match (terms[i])
+            {
+              ONEcons { name, ty, tag ... }:
+              {
+                log << '\t' << name << "\t=\t"
+                    << f + (ty == NOty ? tag : tag + unit) << '\n';
+              }
+            | _: // skip
+            }
+          }
+        }
+      | _: // skip
+      }
+    }
+  }
+
+  if (tree_gen)
+  {
+    log << "\nIndex compression is "
+        << (use_compression ? "enabled" : "disabled")
+        << "\nAlgorithm is " << tree_gen->algorithm();
+    tree_gen->print_report(log);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to return the cost expression for a pattern.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exp FunctorMap::cost_expr( Id lhs, Pat pat)
+{
+  match (pat)
+   {
+     NOexp:   { return LITERALexp( INTlit(0)); }
+   | _:       { return cost_expr( lhs, pat, LITERALexp( INTlit(1))); }
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to compute the cost expression for a pattern
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exp FunctorMap::cost_expr( Id lhs, Pat pat, Exp exp)
+{
+  match (pat)
+  {
+    NOpat || LITERALpat _ ||  CONSpat _: { return exp; }
+  | ASpat (_,p,_,_): { return cost_expr(lhs,p,exp); }
+  | MARKEDpat(_,p):  { return cost_expr(lhs,p,exp); }
+  | TYPEDpat(p,_):   { return cost_expr(lhs,p,exp); }
+  | GUARDpat(p,_):   { return cost_expr(lhs,p,exp); }
+  | APPpat (_,p):    { return cost_expr(lhs,p,exp); }
+  | CONTEXTpat(_,p): { return cost_expr(lhs,p,exp); }
+  | TUPLEpat ps:     { return cost_expr(lhs,ps,exp); }
+  | EXTUPLEpat ps:   { return cost_expr(lhs,ps,exp); }
+  | ARRAYpat (ps,_): { return cost_expr(lhs,ps,exp); }
+  | RECORDpat(lab_pats,_): { return cost_expr(lhs,lab_pats,exp); }
+  | LISTpat{head,tail ...}:
+        { return cost_expr(lhs,head,cost_expr(lhs,tail,exp)); }
+  | VECTORpat { len, array, elements ... }:
+        { return cost_expr(lhs,len,cost_expr(lhs,array,
+                         cost_expr(lhs,elements,exp))); }
+  | IDpat (id,_,_):  // skip
+  | WILDpat _:       // skip
+  | _:               { return exp; }
+  }
+
+  // BUG fix: if the argument type is not a datatype or
+  // not rewritable, then there is no cost to consider.
+
+  if ( !is_datatype(pat->ty) || !is_rewritable_type(pat->ty))
+     return exp;
+
+  Ty state_rec_ty = mkptrty( mkidty( Quark( class_name,"_StateRec"),#[]));
+  Exp cost_e =
+     INDEXexp(
+       ARROWexp(
+          CASTexp( state_rec_ty,
+              APPexp( ARROWexp( pat->selector, "get_state_rec"), TUPLEexp(#[]))),
+              "cost"), LITERALexp( INTlit( int( var_map[lhs]))));
+
+  return exp == NOexp ? cost_e : BINOPexp( "+", cost_e,exp);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to compute the cost expression for a pattern list
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exp FunctorMap::cost_expr( Id lhs, Pats pats, Exp exp)
+{
+  match (pats)
+  {
+    #[]:         { return exp; }
+  | #[h ... t]:  { return cost_expr( lhs, h, cost_expr( lhs, t, exp)); }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to compute the cost expression for a labeled pattern list
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exp FunctorMap::cost_expr( Id lhs, LabPats pats, Exp exp)
+{
+  match (pats)
+  {
+    #[]:         { return exp; }
+  | #[h ... t]:  { return cost_expr( lhs, h.pat, cost_expr( lhs, t, exp)); }
+  }
+}

@@ -1,0 +1,125 @@
+/////////////////////////////////////////////////////////////////////////////
+//  Testing polymorphic datatypes.
+//  (and garbage collection, reference counting etc.)
+/////////////////////////////////////////////////////////////////////////////
+
+//
+// Define some polymorphic datatypes
+// Polymorphic datatypes are not restricted to one type parameter.
+// We test the ability to use these types in the context
+//
+datatype TREE<X,Y> :: printable collectable  // garbage collected
+   = empty | leaf (X) | node (TREE<X,Y>, Y, TREE<X,Y>)    
+
+and LIST<T> :: printable collectable         // garbage collected
+   = #[] | #[ T ... LIST<T> ]
+
+and EXP :: printable traced                  // reference counted
+   = num  (int)          => _
+   | var  (const char *) => _
+   | add  (EXP, EXP)     => "(" _ " + " _ ")"
+   | sub  (EXP, EXP)     => "(" _ " - " _ ")"
+   | mul  (EXP, EXP)     => "(" _ " * " _ ")"
+   | div  (EXP, EXP)     => "(" _ " / " _ ")"
+   | list (LIST<EXP>)    => _   
+                         // note the polymorphic list type here
+   ;
+
+/////////////////////////////////////////////////////////////////////////////
+//  Instantiate the datatypes. 
+//  This will generate a bunch of methods, functions and classes
+//  to implement printing and garbage collection.
+/////////////////////////////////////////////////////////////////////////////
+instantiate extern datatype TREE<int, const char *>, LIST<int>, LIST< EXP >;
+instantiate datatype TREE<int, const char *>, LIST<int>, LIST< EXP >, EXP;
+
+/////////////////////////////////////////////////////////////////////////////
+//  Define functions to test pattern matching
+/////////////////////////////////////////////////////////////////////////////
+template <class T>
+   int length(LIST<T> l)
+   {  match (l) 
+      {  #[]:         { return 0; }
+      |  #[h ... t]:  { return 1 + length(t); }
+      }
+   }
+
+/////////////////////////////////////////////////////////////////////////////
+//  Sum an integer list
+/////////////////////////////////////////////////////////////////////////////
+int sum (LIST<int> l)
+{  match (l)
+   {  #[]:        { return 0; }
+   |  #[h ... t]: { return h + sum(t); }
+   } 
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//  Append two lists
+/////////////////////////////////////////////////////////////////////////////
+template <class T>
+   LIST<T> append (LIST<T> x, LIST<T> y)
+   {  match (x) {
+         case #[]:        return y;
+         case #[h ... t]: return #[h ... append(t,y)];
+      }
+   }
+
+/////////////////////////////////////////////////////////////////////////////
+//   Exercise the list patterns
+/////////////////////////////////////////////////////////////////////////////
+int dummy_len (LIST<int> l)
+{  match (l) 
+   {  #[]:              { return 0; }
+   |  #[_]:             { return 1; }
+   |  #[_,_]:           { return 2; }
+   |  #[_,_,_]:         { return 3; }
+   |  #[_,_,_,_]:       { return 4; }
+   |  #[_,_,_,_ ... _]: { return 5; }
+   }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//  Depth of a tree
+/////////////////////////////////////////////////////////////////////////////
+template <class X, class Y>
+   int depth (TREE<X,Y> t)
+   {  match (t) {
+         case empty:       return 0;
+         case leaf _:      return 1;
+         case node(x,_,y): int a = depth(x), b = depth(y);
+                           return 1 + (a > b ? a : b);
+      }
+   }
+
+
+int main()
+{  
+   // Due to a compiler problem in g++ 2.5.8, I'm unable to use a
+   // typedef to abbreviate TREE<int, const char *>.  
+   TREE<int, const char *> E = empty;
+   const char * This = "this";
+   const char * That = "that";
+   TREE<int, const char *> tree1 = node( E, This, leaf(2) );
+   TREE<int, const char *> tree2 = node( E, That, E );
+
+   EXP       e1    = add(var("x"),num(1));
+   EXP       e2    = sub(var("y"),num(2));
+
+   LIST<int> list1 = #[ 1, 2 ];
+   LIST<EXP> list2 = #[ e1, e2, var("z") ];
+   LIST<EXP> list3 = #[ num(-1), list(list2), list(list2) ];
+  
+   cout << "tree1 = " << tree1 << "\tdepth = " << depth(tree1) << '\n';
+   cout << "tree2 = " << tree2 << "\tdepth = " << depth(tree2) << '\n';
+  
+   cout << "list1 = " << list1 
+        << "\tlength = " << length(list1) 
+        << "\tsum = " << sum(list1) << '\n';
+   cout << "list2 = " << list2 << "\tlength = " << length(list2) << '\n';
+   cout << "list3 = " << list3 << "\tlength = " << length(list3) << '\n';
+   cout << "list1 + list1 = " << append(list1, list1) << '\n';
+   cout << "list2 + list3 = " << append(list2, list3) << '\n';
+
+   return 0;
+}

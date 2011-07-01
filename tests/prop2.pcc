@@ -1,0 +1,78 @@
+//  Test datatype inheritance
+
+#include <iostream.h>
+#include <AD/gc/gcobject.h>
+
+int created = 0;
+int destroyed = 0;
+int traced = 0;
+
+class C1 : public GCObject 
+{ 
+public:
+   C1() { ++created; }
+  ~C1() { ++destroyed; }
+   virtual void trace(GC *) { ++traced; }
+};
+
+template <class T>
+class C2 : public C1 
+{ 
+public:
+   C2() {}
+  ~C2() {}
+};
+
+datatype TYPE1 : collectable public C1 :: collectable rewrite printable =
+     CON1();
+
+datatype TYPE2 : collectable public C1 :: collectable rewrite printable =
+     CON2a()
+   | CON2b()
+   ;
+
+datatype TYPE3<T> : collectable public C1 :: collectable rewrite printable =
+     CON3a(T)
+     ;
+
+datatype TYPE4<T> : collectable public C1 :: collectable rewrite printable =
+     CON4a(T)
+   | CON4b(T)
+   ;
+
+datatype TYPE5<T> : collectable public C2<T> :: collectable rewrite printable =
+     CON5a(T, TYPE1)
+     ;
+
+datatype TYPE6<T> : collectable public C2<T> :: collectable rewrite printable =
+     CON6a(T, TYPE1)
+   | CON6b(T)
+   ;
+
+instantiate datatype TYPE1, TYPE2, TYPE3<int>, 
+                     TYPE4<int>, TYPE5<int>, TYPE6<int>,
+                     TYPE5<TYPE1>, TYPE6<TYPE1>,
+                     TYPE5<TYPE5<TYPE1> >, TYPE6<TYPE6<TYPE1> >
+;
+
+int main()
+{  GC::get_default_gc().set_finalization(true);
+   for (int i = 0; i < 10000; i++)
+   {  TYPE1         t1 = CON1();
+      TYPE2         t2 = CON2a();
+      TYPE3<int>    t3 = CON3a(1);
+      TYPE4<int>    t4 = CON4a(0);
+      TYPE5<int>    t5 = CON5a(1,t1);
+      TYPE6<int>    t6 = CON6a(1,t1);
+      TYPE5<TYPE1>  t7 = CON5a(t1,t1);
+      TYPE6<TYPE1>  t8 = CON6a(t1,t1);
+
+      if (i % 1000 == 0) 
+          cout << t1 << t2 << t3 << t4 << t5 << t6 << t7 << t8 << '\n';
+   }
+   cout << "Created   = " << created << endl
+        << "Destroyed = " << destroyed << endl
+        << "Traced    = " << traced << endl
+   ;
+   return 0;
+}

@@ -1,0 +1,33 @@
+datatype Exp = INT int        => _
+	     | ADD (Exp, Exp) => _ "+" _
+	     | SUB (Exp, Exp) => _ "-" _
+	     | MUL (Exp, Exp) => _ "*" _ 
+	     | DIV (Exp, Exp) => _ "/" _ 
+	     ;
+
+instantiate datatype Exp;
+
+attributegrammar class Foo 
+{
+};
+
+attributegrammar Foo 
+{
+
+left: 3 '+' '-';
+left: 2 '*' '/';
+
+exp { value : int }: 
+     '(' exp ')'	{ $$.value = $2.value; }
+   | exp '+' exp	{ $$.value = $1.value + $3.value; }
+   | exp '-' exp 	{ $$.value = $1.value - $3.value; }
+   | exp '*' exp	{ $$.value = $1.value * $3.value; }
+   | exp '/' exp	{ $$.value = $1.value / $3.value; }
+   ;
+};
+
+
+int main()
+{
+   //Exp e = `?x+?y`;
+}

@@ -1,0 +1,53 @@
+Input:
+let
+   F={x: x in S | ((forall y in U.((y > x) or(x = x))) and(x /= 0))}
+in
+   F
+end
+
+   let
+      F={x: x in S | ((forall y in U.((y > x) or(x = x))) and(x /= 0))}
+   in
+      F
+   end
+
+
+[Renaming phase]
+
+   let
+      F={x: x in S | ((forall y in U.((y > x) or(x = x))) and(x /= 0))}
+   in
+      F
+   end
+
+
+[DNF construction and simplification phase]
+
+{x: x in S | ((nonempty U) and(x /= 0))}
+
+[Constructing the query graph]
+
+[Query Graph]
+{x: x in S | ((nonempty U) and(x /= 0))}
+
+[Quantifier elimination phase]
+
+if(nonempty U) then{x: x in S | (x /= 0)} else {}
+
+[Disjunction removal phase]
+
+if(nonempty U) then{x: x in S | (x /= 0)} else {}
+
+[Conjunctive query decomposition phase]
+
+[Query Graph]
+if(nonempty U) then{x: x in S | (x /= 0)} else {}
+
+[Projection recognition phase]
+
+if(nonempty U) then{x: x in S | (x /= 0)} else {}
+
+[Simple find/count query decomposition phase]
+
+Output:
+if(nonempty U) then{x: x in S | (x /= 0)} else {}

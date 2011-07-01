@@ -1,0 +1,44 @@
+#ifndef code_generator_h
+#define code_generator_h
+
+#include <iostream>
+#include <stdarg.h>
+#include "basics.h"
+
+
+
+//////////////////////////////////////////////////////////////////////////////
+//  Code Generator base class.
+//////////////////////////////////////////////////////////////////////////////
+
+class CodeGen {
+  CodeGen(const CodeGen&);           // no copy constructor
+  void operator = (const CodeGen&);  // no assignment
+protected:
+  std::ostream* output;              // output stream
+  Bool     anchored;            // is the current output character newline
+  int      tabbing, tab_unit;   // tabbing counters
+
+public:
+  ///////////////////////////////////////////////////////////////////////////
+  //  Constructor and destructor
+  ///////////////////////////////////////////////////////////////////////////
+           CodeGen();
+  virtual ~CodeGen();
+
+  ///////////////////////////////////////////////////////////////////////////
+  //  Methods to emit code.
+  ///////////////////////////////////////////////////////////////////////////
+  void     set_stream (std::ostream&);
+  std::ostream& pr   (const char *, ...);
+  std::ostream& outv (const char *, va_list);
+
+private:
+  ///////////////////////////////////////////////////////////////////////////
+  //  Auxiliary methods.
+  ///////////////////////////////////////////////////////////////////////////
+  void     gen_code        (const char *);
+  virtual  va_list printer (char, va_list) = 0; // extra printer
+};
+
+#endif

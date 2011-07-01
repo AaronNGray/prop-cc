@@ -1,0 +1,89 @@
+##############################################################################
+#  Makefile for compiling the sample programs in this directory
+#  You *must* have prop and adlib already compiled.
+##############################################################################
+
+#
+#  The version of prop
+#
+PROPVER	= prop-2.1
+
+#
+#  C++ compiler setup  (assume gcc)
+#
+CC	= g++
+CINCLUDE= -I../../include
+COPTS	= -O6 $(CINCLUDE)
+LIB	= -L../../src -lad -liostream -lg++
+RM	= /bin/rm 
+
+#
+#  The executable.  I assume you have set up the directory hierarchy
+#  the same way I do. 
+#
+PROP	= ../$(PROPVER)/prop
+
+
+#
+#  Options to prop
+#  -l    generate no #line directives
+#  -f    generate fast tables
+#  -r    generate a long report listing
+#
+PROP_OPTS= -l -r 
+
+#
+#  The sample source 
+#
+PROP_SRC= hashcons.pcc hashcons2.pcc \
+	  inference.pcc rewriting.pcc logical_patterns.pcc \
+	  refcounting.pcc \
+	  test_gc2.pcc test_gc3.pcc test_gc4.pcc \
+	  test_gc5.pcc \
+	  test_gc9.pcc test_gc10.pcc test_gc11.pcc \
+	  test_gc12.pcc test_rc1.pcc 
+
+#
+#  Generated C++ source from prop
+#
+SRC	= hashcons.cc hashcons2.cc \
+	  inference.cc logical_patterns.cc rewriting.cc \
+	  refcounting.cc test_gc2.cc test_gc3.cc test_gc4.cc \
+	  test_gc5.cc test_rc1.cc \
+	  test_gc9.cc test_gc10.cc test_gc11.cc \
+	  test_gc12.cc test_rc1.cc 
+
+#
+#  Compiled demo programs
+#
+PROGS= test_gc1 test_gc2 test_gc3 test_gc4 test_gc5 test_gc6 test_gc7 \
+       test_gc8 test_gc9 test_gc10 test_gc11 test_gc12 test_gc13 test_gc14 \
+       test_gc15 test_gc16 \
+       test_rc1
+
+#
+#  Prop's output log
+#
+PROP_LOG= rewriting.output
+
+
+#
+#  Various rules
+#
+
+build:	$(SRC) $(PROGS)
+	@echo Done.
+clean:	
+	$(RM) -f $(SRC)
+spotless:	clean
+	$(RM) -f $(PROP_LOG) $(PROGS)
+
+test:	$(PROGS)
+	for d in $(PROGS); do $$d || exit 1; done
+
+#%.cc:	%.pcc $(PROP)
+#	$(PROP) $(PROP_OPTS) $(@:.cc=.pcc)
+#%.h:	%.ph $(PROP)
+#	$(PROP) $(PROP_OPTS) $(@:.h=.ph)
+%:	%.cc ../../src/libad.a
+	$(CC) $(COPTS) -o $@ $@.cc $(LIB)

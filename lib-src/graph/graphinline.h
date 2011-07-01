@@ -1,0 +1,49 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Add a node into a node set
+//
+///////////////////////////////////////////////////////////////////////////////
+
+inline void NodeSet::add_node( Node node)
+{
+  int i = node->label_num();
+  if (i+1 >= my_capacity)
+    grow(i);
+  my_nodes[i] = node;
+  if (i+1 >= my_size)
+    my_size = i+1;
+}
+
+inline Bool NodeSet::contains( int i) const
+{
+  return i >= 0 && i < my_size && my_nodes[i] != 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Add an edge into an edge set
+//
+///////////////////////////////////////////////////////////////////////////////
+
+inline void EdgeSet::add_edge( Edge edge)
+{
+  if (my_size >= my_capacity)
+    grow(my_size);
+  my_edges[my_size++] = edge;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Add a node into the domain of an adjacency list
+//
+///////////////////////////////////////////////////////////////////////////////
+
+inline void AdjList::add_node( Node node)
+{
+  int i = node->label_num();
+  if (i+1 >= my_capacity)
+    grow(i);
+  my_edge_sets[i] = new EdgeSet;
+  if (i+1 >= my_size)
+    my_size = i+1;
+}

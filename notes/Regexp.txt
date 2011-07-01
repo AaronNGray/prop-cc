@@ -1,0 +1,49 @@
+Regular expressions can be used for string matching.   Regular expressions
+are written using / as quotes.   For example,
+
+    match (token) {
+       /if/:                      { return token_if; }
+    |  /then/:                    { return token_then; }
+    |  /else/:                    { return token_else; }
+    |  /while/:                   { return token_while; }
+    |  /do/:                      { return token_do; }
+    |  /for/:                     { return token_for; }
+    |  /[a-zA-Z_][a-zA-Z_0-9]*/:  { return token_id; }
+    |  /[0-9]+/:                  { return token_integer; }
+    |  _:                         { return token_error; }
+    }
+
+The set of available meta characters is similar to what's available
+in many tools such as lex or egrep.
+
+    e*         Kleene star
+    e+         non-empty Kleene star
+    (e)        parenthesis
+    e1|e2      disjunction
+    [a-z]      character class (matches any one from 'a' to 'z')
+    [^a-z]     negated character class (matches any one not from 'a' to 'z')
+    \n         newline
+    \t         tab
+    \xff       hex code of character
+    \c         the character c (even if it is a meta character)
+
+Strings quoted with " may be mixed with regular expressions in the same
+match statement.  Notice that meta characters other than \ are not available
+in " quoted strings.   The match statement above may be implemented
+alternatively as:
+
+    match (token) {
+       "if":                      { return token_if; }
+    |  "then":                    { return token_then; }
+    |  "else":                    { return token_else; }
+    |  "while":                   { return token_while; }
+    |  "do":                      { return token_do; }
+    |  "for":                     { return token_for; }
+    |  /[a-zA-Z_][a-zA-Z_0-9]*/:  { return token_id; }
+    |  /[0-9]+/:                  { return token_integer; }
+    |  _:                         { return token_error; }
+    }
+
+Regular expression string matching is implemented using the usual 
+regexp -> nfa -> dfa -> compressed table algorithms.   This feature
+currently does not work with the matchall variant of match.

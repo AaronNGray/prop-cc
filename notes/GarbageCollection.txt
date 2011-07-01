@@ -1,0 +1,57 @@
+The garbage collection algorithm is based on Joel Bartlett's mostly
+copying scheme.  Here's our setup:
+
+   (1)  Collectable and non-collectable heaps can coexists in our
+        framework.  Both cross heap pointers and interior pointers are
+        allowed.
+   (2)  The collectable heap is partitioned into ``logical pages.''  
+        Logical pages are different than virtual member pages used
+        by the OS.  Collectable objects can span multiple pages.
+        However, when an object within a page is promoted, then 
+        the entire page is retained.
+   (3)  Collectable objects must be derived from the class GCObject
+        defined in the file <AD/gc/gcobject.h>.  The virtual method 
+        
+           void trace(GC *); 
+
+        must be redefined in each subclass.  The rules for deriving
+        a new trace method is as follows:
+
+        (a)  The trace method for a GCObject subclass Foo has the following
+             form:
+
+             void Foo::trace(GC * gc) 
+             {
+                ...
+             }
+
+         (b) If class Foo has a member pointer p to a collectable object, then
+             it must be traced by adding a trace call of the following form
+             to the body.
+
+                  gc->trace(p);
+
+         (c) If class Foo has a non-virtual baseclass Bar that is 
+             a GCObject subclass then add the call
+
+                   Foo::trace(gc);
+
+         (d) If class Foo has a collectable subobject x then add the call:
+
+                   x.trace(gc);
+
+   (4)  The algorithm operates in the following manner:
+
+        (a)  The registers, stack, static data area and the non-collectable
+             heap areas are scanned conservatively for live objects.  
+             The pages on which these objects are located are promoted.  
+             Promoted pages will survive the current collection phase.  
+             These live objects will not be moved since they may be pointed 
+             from a actual pointer from a non-collectable heap.
+        (b)  All promoted pages are now scanned linearly.  Non-promoted
+             objects reachable from a live object will be moved
+             by calling the method ``trace'' of the object.  The new objects 
+             are copied into a new area and compacted together. 
+        (c)  When all object are copied.  The unpromoted pages are returned
+             to the heap manager.  They are reused in subsequent allocation.
+

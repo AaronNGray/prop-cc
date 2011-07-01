@@ -1,0 +1,4250 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%  Here are some abbreviations used within this document
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newfont{\bsf}{cmssbx10}
+\newfont{\largebsf}{cmssbx12}
+%\newfont{\nontermfont}{cmssbx10}
+\newcommand{\nontermfont}{\it}
+\newcommand{\codefont}{\tt}
+\newcommand{\symfont}{\bf}
+
+\newcommand{\Prop}{{\bsf Prop}}               % typeset in sans serif
+\newcommand{\LargeProp}{{\largebsf Prop}}
+\newcommand{\plusplus}{{\tt++}}             % ++
+\newcommand{\Cpp}{{C{\tt++}}}               % C++ logo
+\newcommand{\Gpp}{{G{\tt++}}}               % G++ logo
+\newcommand{\email}{{\tt leunga@cs.nyu.edu}}  % my email address
+\newcommand{\web}{{\tt http://valis.cs.nyu.edu:8888/\~{}leunga}} % my web page
+\newcommand{\propweb}{\web{\tt/prop.html}}
+\newcommand{\Version}{2.3.4}                  % Prop version
+\newcommand{\comment}[1]{}
+
+\newcommand{\sectionfont}{}
+%\newcommand{\Section}[1]{\section{\sectionfont #1}}
+%\newcommand{\Subsection}[1]{\subsection{\sectionfont #1}}
+%\newcommand{\Subsubsection}[1]{\subsubsection{\sectionfont #1}}
+
+\newcommand{\Section}[1]{\pagebreak\section{\sectionfont #1}%
+   \markright{\usebox{\LINE}\large \thesection. \sc #1}
+   }
+\newcommand{\Subsection}[1]{\subsection{\sectionfont #1}}
+\newcommand{\Subsubsection}[1]{\subsubsection{\sectionfont #1}}
+
+\newcommand{\N}[1]{\mbox{{\nontermfont #1}}}
+\newcommand{\T}[1]{{\codefont #1}}
+\newcommand{\MORE}[2]{#1\T{#2} \mbox{$\ldots$} \T{#2} #1}
+\newcommand{\ALT}[2]{#1\ \T{#2} \mbox{$\ldots$} \T{#2} #1}
+\newcommand{\LIST}[1]{\MORE{#1}{,}}
+\newcommand{\SEQ}[1]{\MORE{#1}{;}}
+\newcommand{\OPT}[1]{{\it [ #1 ]}}
+\newcommand{\C}[1]{\mbox{\rm #1}}
+\newcommand{\IS}{{\symfont ::=}}
+\newcommand{\OR}{\ \mbox{$\symfont \mid$}\ }
+\newcommand{\Id}{\N{Id}\ }
+\newcommand{\Pat}{\N{Pat}\ }
+\newcommand{\Exp}{\N{Exp}\ }
+\newcommand{\TypeExp}{\N{Type\_Exp}\ }
+\newenvironment{syntax}{\begin{quotation}\noindent\begin{tabular}{lcll}} %
+   {\end{tabular}\end{quotation}}
+
+\newcommand{\CLASSDEF}[1]{\T{#1}\index{Classes!{\codefont #1}}}
+\newcommand{\INDEX}[1]{\index{#1}}
+\newcommand{\NDEF}[1]{\N{#1}\index{Syntax!Non--terminals!{\nontermfont #1}}}
+\newcommand{\OPTIONDEF}[1]{{\tt #1}\index{Command line options!{\tt #1}}}
+\newcommand{\TDEF}[1]{\T{#1}\index{Syntax!Keywords!{\codefont #1}}}
+\newcommand{\INCOMPLETE}{{\em This section is incomplete.}}
+\newenvironment{Error}{\begin{center}\begin{tabular}{p{3in}p{3in}}
+  \bf Error & \bf Explanation}{\\\hline\end{tabular}\end{center}}
+\newcommand{\errormsg}[1]{\\\hline {\tt #1}&}
+\newenvironment{Tips}{\noindent {\bf Tips:} \quad}{}
+
+\newcommand{\support}{
+   {\small\noindent This work is supported in part by
+    an award from Hewlett-Packard Corporation, from IBM corporation, and
+    an NYU Research Challenge Grant.
+   }}
+\newcommand{\warning}{
+   {\small\noindent The author will neither assume responsibility for any
+   damages caused by the use of this product, nor accept warranty or update
+   claims.  This product is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+   \small\noindent This product is in the public domain,
+   and may be freely distributed.
+
+   \small\noindent {\sf Prop} is a research prototype. 
+    The information contained in this document is subject
+    to change without notice.
+   }}
+
+   \makeindex
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%   Beginning of the document
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass{article}
+\usepackage{html}
+
+   \pagestyle{myheadings}
+
+   \title{{\Huge \bf Prop \\ 
+           Language Reference Manual} \\ 
+          {\large \bf (for version \Version)}
+         } 
+   \author{{\Large Allen Leung} \\ 
+           E-mail: \email \\
+           \htmladdnormallink{\web}{http://valis.cs.nyu.edu:8888/~leunga}
+	   \\
+           Courant Institute of Mathematical Sciences \\
+           251 Mercer Street \\
+           New York, NY 10012 \\
+          }
+
+   \setlength{\textwidth}{6.6in}
+   \setlength{\evensidemargin}{0in}
+   \setlength{\oddsidemargin}{0in}
+   \setlength{\textheight}{8.75in}
+   \setlength{\topmargin}{-0.5in}
+   \setlength{\parskip}{1mm}
+   \setlength{\parindent}{3ex}
+   \setlength{\itemsep}{0.5ex}
+
+   \newsavebox{\LINE}
+   \savebox{\LINE}[0.0in][l]{\rule[-1ex]{\textwidth}{.01in}}
+\begin{document}
+
+   \maketitle
+   \vspace{\fill}
+   %\support
+
+   \begin{abstract}
+    This reference manual provides an introduction to
+    \Prop, release \Version.  \Prop{} is a multiparadigm extension of \Cpp,  
+    and is designed for building high performance compiler 
+    and language transformation systems, using pattern matching and rewriting.  
+    This guide describes the syntax and semantics of
+    the \Prop{} language and describes how to develop programs
+    using the \Prop{} to \Cpp{} translator.
+
+   \end{abstract}
+   \warning
+   \titlepage
+   \tableofcontents
+   \bibliographystyle{alpha}
+
+\Section{Introduction} \label{sec:intro}
+ 
+   This is the language reference manual for \Prop, a compiler generator.
+\Prop{} can be used to generate lexers, parsers, analysis and 
+transformation tools using pattern matching and rewriting.  
+The \Prop{} language is a {\em multi-paradigm} 
+extension of \Cpp\cite{C++} and
+\Cpp{} programs generated from \Prop{} specifications can be compiled
+into efficient code.
+
+   Version \Version{} of \Prop{} includes the following major features:
+\begin{enumerate}
+   \item Algebraic datatypes and pattern matching, and automatic
+mapping of algebraic datatypes into \Cpp{} class hierarchies.
+   \item A LALR(1) parser generator in the tradition of {\it yacc} and
+{\it bison}.  Each grammar is encapsulated into a parser class and 
+it is possible to have multiple instances of a parser.
+   \item Regular expression string matching and lexer generation.
+   \item Transformation of algebraic datatypes using conditional
+   rewriting.
+   \item In addition, using the view mechanism, 
+it is possible to treat externally defined C or \Cpp{}
+data structures as if they were \Prop{} defined datatypes.  
+The full range of pattern matching and rewriting capability can
+be used on these externally defined data..
+\end{enumerate}
+
+   In addition, we intend to implement/fix-up the following features in the 
+near future:
+\begin{enumerate}
+   \item Persistence.
+   \item Pretty printing/reading.
+   \item Visualization of data structures using {\em vcg}\cite{vcg,vcg-manual}.
+   \item Automatic mapping of graph structure specifications into
+\Cpp{} classes.
+   \item Graph rewriting system generation.
+\end{enumerate}
+
+\Subsection{Availability}
+
+   The latest release of \Prop{} \Version{} is available from
+\begin{quotation}
+\htmladdnormallink{\propweb}{http://valis.cs.nyu.edu:8888/~leunga/prop.html}
+\end{quotation}
+New updates of the source code and documentation will be available
+from this site.
+
+\Subsection{Organization of this Reference Manual}
+   This reference manual is organized as follows.  Section~\ref{sec:general}
+overviews the general features of \Prop.
+Section~\ref{sec:parser}
+describes the lexer and parser specification formalisms.
+Section~\ref{sec:datatype} describes the algebraic datatypes and 
+pattern matching features.  Section~\ref{sec:tree-rewriting} describes
+the tree rewriting mechanism.  Finally, section~\ref{sec:usage} describes
+the process of running the \Prop{} translator.
+
+   We'll use the following extended BNF notation to specify the syntax
+of the language.  Terminals are typeset in {\tt typewriter} font,
+while non-terminals are typeset in {\nontermfont itallics} font.
+Given a syntactic class \N{S}, we use \LIST{\N{S}} to denote one
+or more occurrences of \N{S} separated by commas.  Similarly,
+\SEQ{\N{S}} denotes one or more occurrences of \N{S} separated by
+semi-colons.  Slanted brackets are used to denote an optional occurrence
+of a syntactic class.   We'll combined the two forms when we
+want to denote zero or more occurrences of some term.
+For example, \OPT{\LIST{\N{S}}} denotes
+zero or more occurrences of \N{S}.
+
+\Section{General Concepts} \label{sec:general}
+
+\Subsection{Syntactic Conventions}
+
+The syntax of \Prop{} is an extension of \Cpp.  Most new constructs
+of \Prop{} starts with new keywords, listed below.  
+\begin{center}
+\tt
+\begin{tabular}{lllllll}
+applicative & arb & as & bagof & begin & bitfield & card \\
+category & classof & collectable & constraint & dataflow & datatype & declare \\
+dequeof & dom & domain & edges: & elsif & end & equiv: \\
+exists & expect: & feature & finalizable & forall & fun & function \\
+functor & graphrewrite & graphtype & implies: & inference & inherited & inline \\
+instantiate & is & law & left: & less & lexeme & listof \\
+loop & mapof & match & matchall & matchscan & module & multimapof \\
+mutable & nodes: & of & persistent & prec: & printable & priqueueof \\
+procedure & queueof & ran & refine & relation & rewrite & right: \\
+setof & sharing & signature & space: & syntax & synthesized & then \\
+time: & topdown & traced & treeparser & tupleof & unifiable & unique \\
+view & where & with & xor: & bottomup: & topdown: & before: \\
+preorder: & postorder: & cutrewrite & failrewrite & index: \\
+\end{tabular}
+\end{center}
+
+   In addition, the following new multi-character symbols are added:
+\begin{verbatim}
+   <->  <=>  :=  :-  .(   .[
+   #[   #(   #{  [|  |]   (|  |)  {|  |} 
+\end{verbatim}
+
+\Subsection{Basic syntactic classes}
+
+
+We'll use \NDEF{Integer}, \NDEF{Char}, \NDEF{Real}, \NDEF{String} 
+and \NDEF{Id} to denote the syntactic classes of 
+integers, characters, real numbers, strings and identifiers, respectively.
+As in \Cpp, characters are quoted with the single quotes \verb|'|, while
+strings are quoted with double quotes \verb|"|.  An identifier is
+any sequence of alphanumeric of characters that begins with a letter.
+In addition, we'll use the syntactic class
+\NDEF{Stmt} to denote any valid combination of \Cpp{} and \Prop{}
+statements.
+
+\Subsection{Literals}
+
+  In addition to the usual \Cpp{} literals, \Prop{} introduces two new type
+of literals: {\em quark literals} and {\em regular expression literals}.
+Quark literals are of type \T{Quark} and are written as strings
+prefixed by the \verb|#| symbol.
+\begin{syntax}
+  \NDEF{Quark} & \IS & \T{\#}\N{String} \\
+\end{syntax}   
+
+Quarks act like atoms in Lisp, in which name equality implies
+pointer equality.  In contrast, in \Cpp{} two string literals that are
+identical in value do not necessarily reside in the same address.
+Given strings \verb|s1| and \verb|s2|, \verb|strcmp(s1,s2) == 0| does
+not imply \verb|s1 == s2|.  Quarks are defined in the library include file
+\verb|<AD/strings/quark.h>|.
+
+Regular expression literals are similar to string literals except
+that they are quoted by slashes \verb|/|.   We'll discuss
+the regular expression in section~\ref{sec:regular-expressions}.
+
+\Subsection{The \Prop{} Language}
+
+The basic \Prop{} language is the same as \Cpp{} with the following
+syntactic extensions:
+\begin{quotation}
+\begin{tabular}{lll}
+         & \bf Keywords              & \bf Functions \\
+  \bsf 1 & \T{datatype} \T{refine} \T{instantiate}
+                                     & Algebraic datatype definitions \\
+  \bsf 2 & \T{match} \T{matchall}    & Pattern matching \\
+  \bsf 3 & \T{rewrite}               & Rewriting \\
+  \bsf 4 & \T{lexeme}                & Lexical category definition \\
+  \bsf 5 & \T{matchscan}             & Lexical scanning \\
+  \bsf 6 & \T{syntax}                & Parser specification \\
+  \bsf 7 & \T{graphtype}             & Graph data structure specification \\
+  \bsf 8 & \T{graphrewrite}          & Graph rewriting \\
+\end{tabular}
+\end{quotation}
+
+Like \Cpp, a \Prop{} is typically divided into the {\em specification},
+which defines the data structure and its interface, and the
+{\em implementation} parts.   \Prop{} specifications should
+be placed in a file with a \verb|.ph| suffix, while an implementation
+should be placed in a file with a \verb|.pC|\footnote{The suffixes {\tt .pcc},
+{\tt .pCpp} etc. can also be used.}.  The translator will convert each
+\verb|.p|$xxx$ into a file with the suffix \verb|.|$xxx$.  The translated
+output can then be fed to the \Cpp{} compiler for compilation.
+\vspace{\fill}
+
+\Section{Lexer and Parser Generation} \label{sec:parser}
+
+   In this section we'll describe the lexer and parser generation
+mechanism of \Prop.  Note that the use of these features is not
+mandatory: the user can substitute any other lexer/parser generation tools 
+or use hand written lexers and parsers.  
+On the other hand, higher level of integration is possible when using
+\Prop's lexer and parser mechanisms.
+
+\Subsection{Lexer Specification}
+   Lexical analyzers are specified using the \verb|matchscan|
+statement.  This construct is responsible for generating the actual string
+matching DFA.  The actual buffering mechanisms are provided by the
+classes \verb|LexerBuffer|, \verb|IOLexerBuffer| and \verb|IOLexerStack|. 
+These classes are part of the support library distributed with \Prop.
+
+   We assume that the user is familiar with lexer generator tools like
+{\em lex}\cite{lex} or {\em flex}\cite{flex}.
+
+\Subsubsection{Regular expressions} \label{sec:regular-expressions}
+   Figure~\ref{fig:regexp} describes the set of current
+supported regular expressions in \Prop.  The syntax is similar
+to what is found in {\em lex}, or {\em egrep}.
+
+\begin{figure}[htbp]
+\begin{center}
+  \begin{tabular}{|l|l|} \hline
+    $c$                & matches character $c$ if it is not a meta character \\
+    $e_1e_2$           & matches $e_1$ then $e_2$ \\
+    \verb|.|           & matches any character except \verb|\n| \\
+    $\verb|\|c$        & matches escape sequence $c$ \\
+    \verb|^|$e$        & matches $e$ at the start of the line \\
+    $e_1\verb.|.e_2$   & matches $e_1$ or $e_2$ \\
+    $e\verb|*|$        & matches zero or more $e$ \\
+    $e\verb|+|$        & matches one or more $e$ \\
+    $e\verb|?|$        & matches zero or one $e$ \\
+    \verb|(|$e$\verb|)| & grouping \\
+    \verb|<<|$C_1, C_2 \ldots C_n$\verb|>>|$e$ & matches $e$ only
+         if we are in a context from one of $C_1, C_2, \ldots C_n$ \\
+    \verb|{|{\em lexeme}\verb|}| & matches lexeme \\
+  \hline
+  \end{tabular}
+\end{center}
+\caption{\label{fig:regexp} Regular expressions.}
+\end{figure}
+
+The symbols \verb%\ [ ] ( ) { } << >> * + . - ? |% are meta characters and are
+interpreted non-literally.  The escape character \verb|\| 
+can be prepended to the meta characters if they occur as literals in context.  
+
+Precedence-wise, meta characters \verb|*|, \verb|+| and \verb|?| bind tighter
+than juxtaposition.  Thus the regular expression
+\verb|ab*| means \verb|a(b*)|.  Parenthesis can be used to override
+the default precedence.
+
+Character classes are of the form as found in {\em lex}: 
+(i) $c_1$\verb|-|$c_2$ denotes the range of characters from
+$c_1$ to $c_2$; (ii) single (non-meta) characters denote themselves; 
+(iii) the meta character \verb|^| can be used to negate the set.
+For example, the regular expression \verb|[a-zA-Z][a-zA-Z0-9]*| 
+specifies an alphanumeric identifier that must starts with a letter.
+Similarly, the regular expression \verb|[^ \t\n]| matches any character
+except a space, a tab or a newline.
+
+{\em Lexemes} are simply abbreviated names given to a regular expression
+pattern.  They act like macros in {\em lex}.
+
+While a lexer is scanning, it may be in one of many {\em contexts}.
+Contexts can be used to group a set of related lexical rules; such rules
+are only applicable when the contexts are active.  This makes the
+lexer behave like a set of DFAs, with the ability to switch between
+DFAs under programmer control.  
+
+
+\Subsubsection{Lexeme}
+
+Lexemes are defined using the \T{lexeme} declaration in \Prop. 
+Its syntax is
+\begin{syntax}
+  \NDEF{Lexeme\_Decl} & \IS & \TDEF{lexeme} \ALT{\N{Lexeme\_Eq}}{|} \T{;} \\
+  \NDEF{Lexeme\_Eq}   & \IS & \Id \T{=} \N{Regexp} \\
+\end{syntax}
+
+For example, the following lexeme definition is used in the \Prop{}
+translator to define the lexical structure of common lexical items.
+
+\begin{verbatim}
+lexeme digits      = /[0-9]+/
+     | sign        = /[\+\-]/
+     | integer     = /{digits}/
+     | exponent    = /[eE]{sign}?{digits}/
+     | mantissa    = /({digits}\.{digits}?|\.{digits})/
+     | real        = /{mantissa}{exponent}?/
+     | string      = /"([^\\"\n]|\\.)*"/ 
+     | character   = /'([^\\'\n]|\\.[0-9a-f]*)'/
+     | regexp      = /\/([^\/\n*]|\\.)([^\/\n]|\\.)*\//
+     ;
+\end{verbatim}
+
+Note that regular expression literals are written between
+slashes: \verb|/|$re$\verb|/|.  
+
+\Subsubsection{Lexeme class}
+
+Often we wish to group a set of lexemes together into {\em lexeme classes} if 
+they logically behave in some uniform manner; for example, if they
+act uniformly in a lexical rule.  By grouping related lexemes together
+into a class we can refer to them succinctly by their class name.
+
+The syntax of a lexeme class declaration is
+
+\begin{syntax}
+  \NDEF{Lexeme\_Class\_Decl} & \IS & \TDEF{lexeme class} 
+       \ALT{\N{Lexeme\_Class\_Eq}}{and} \T{;} \\
+  \NDEF{Lexeme\_Class\_Eq} & \IS & \Id \T{=} \ALT{\N{Lexeme\_Spec}}{|} \\
+  \NDEF{Lexeme\_Spec} & \IS & \N{String} \\
+                   & \OR & \Id \N{Regexp} \\
+\end{syntax}
+
+The following example,
+the lexeme classes \verb|MainKeywords|, \verb|Symbols|, and \verb|Literals| 
+are defined.  
+\begin{verbatim}
+lexeme class MainKeywords =
+    "rewrite" | "inference" | "match" | "matchall" | "matchscan"
+  | "refine"  | "classof" | "type" | "datatype" | "instantiate"
+  | "lexeme"  | "bitfield" | "begin" | "syntax"
+  | "dataflow" | "module" | "signature" | "constraint" | "declare"
+  | "procedure" | "fun" | "function" | "domain" 
+  | "graphtype" | "graphrewrite"
+
+and  Symbols =
+    ".." | "..." | "<->" | "::" | "&&" | "||" | "++" | "--" | "->" 
+  | "<<" | ">>" | ">=" | "<=" | "+=" | "-=" | "*=" | "/=" | "%=" | "==" 
+  | "!=" | "<<=" | ">>=" | "&=" | "|=" | "^=" | "=>" | "<-" | "<=>"
+  | ":=" | ":-" | LONG_BAR /\-\-\-\-\-+/
+
+and Literals =
+    INT_TOK     /{integer}/
+  | REAL_TOK    /{real}/
+  | CHAR_TOK    /{character}/
+  | STRING_TOK  /{string}/
+  ;
+\end{verbatim}
+
+\Subsubsection{Tokens}
+
+Lexical tokens are defined using the \verb|datatype| declaration. 
+The syntax is as follows.
+\begin{syntax}
+  \NDEF{Tokens\_Decl} & \IS & \TDEF{datatype} \Id \T{::} \TDEF{lexeme} \T{=} \\
+      & & \quad \ALT{\N{Token\_Spec}}{|} \T{;} \\
+  \NDEF{Token\_Spec} & \IS & \TDEF{lexeme class} \Id & 
+       \C{Include a lexeme class} \\
+                  & \OR & \Id \OPT{\N{Regexp}}  &
+       \C{Single token spec} \\
+\end{syntax}
+
+A token datatype is defined by including one of more lexeme classes,
+and by defining stand-alone tokens.  If a lexeme class is included,
+all the tokens defined within the lexeme class are included.  A \Cpp{}
+\T{enum} type of the same name as the token datatype is generated.
+If a token is given an identifier name, then the same name is used
+as the \T{enum} literal.  On the other hand, if a string is used
+to denote a token, then it can be referred to by prefixing the
+string with a dot \verb|.|  For example, the token \verb|"=>"| can
+be referenced as \verb|."=>"| within a program.
+
+As an example, the following token datatype definition is used within
+the \Prop{} translator.  Here, the keywords are first partitioned into
+6 different lexeme classes.  In additional, the tokens \T{ID\_TOK},
+\T{REGEXP\_TOK}, etc. are defined.
+
+\begin{verbatim}
+datatype PropToken :: lexeme =
+    lexeme class MainKeywords
+  | lexeme class Keywords
+  | lexeme class SepKeywords
+  | lexeme class Symbols
+  | lexeme class Special
+  | lexeme class Literals
+  | ID_TOK       /{patvar}/
+  | REGEXP_TOK   /{regexp}/
+  | QUARK_TOK    /#{string}/
+  | BIGINT_TOK   /#{sign}{integer}/
+  | PUNCTUATIONS /[\<\>\,\.\;\&\|\^\!\~\+\-\*\/\%\?\=\:\\]/
+  ;
+\end{verbatim}
+
+\Subsubsection{The \T{matchscan} statement}\label{sec:matchscan}
+
+The \T{matchscan} statement is used to perform tokenization.  The user can
+specify a set of string pattern matching rules within a \T{matchscan}
+construct. Given a object of class \verb|LexerBuffer|, the \T{matchscan}
+statement looks for the rule that matches the longest prefix from
+the input stream and executes the action associated with the rule.
+Ties are broken by the lexical ordering of the rules.  
+
+The general syntax is as follows:
+\begin{syntax}
+\NDEF{Matchscan} 
+      & \IS & \N{Matchscan\_Mode} \OPT{\N{Context\_Spec}} \T{(} \N{Exp} \T{)} 
+             & variant 1 \\
+      & &  \T{\{} \ALT{\T{case} \N{Matchscan\_Rule}}{} \T{\}} \\
+      & \OR & \N{Matchscan\_Mode} \OPT{\N{Context\_Spec}} 
+            \T{(} \N{Exp} \T{)} & variant 2 \\
+      & &   \T{\{} \ALT{\N{Matchscan\_Rule}}{|} \T{\}} \\
+      & \OR & \N{Matchscan\_Mode} \OPT{\N{Context\_Spec}} \T{(} \N{Exp} \T{)} 
+            \T{of} & variant 3 \\
+      & & \quad \ALT{\N{Matchscan\_Rule}}{|} \\
+      & & \T{end} \T{matchscan} \T{;}\\ 
+\NDEF{Matchscan\_Mode} & \IS & 
+           \TDEF{matchscan} \OPT{\T{while}} & case sensitive\\
+   & \OR & \TDEF{matchscan*} \OPT{\T{while}}& case insensitive\\
+\NDEF{Context\_Spec} & \IS & \T{[} \LIST{\N{Id}} \T{]} \\
+\NDEF{Matchscan\_Rule} 
+      & \IS & \OPT{\T{<<} \ALT{\N{Context}}{,} \T{>>}} \\
+      &     & \quad \T{lexeme} \T{class} \N{Id} \T{:} \N{Matchscan\_Action} \\
+      & \OR & \OPT{\T{<<} \ALT{\N{Context}}{,} \T{>>}} \\
+      &    &  \quad \N{Regexp} \T{:} \N{Matchscan\_Action} \\
+\NDEF{Matchscan\_Action} & \IS & \T{\{} \N{Code} \T{\}} \\
+          & \OR & \N{Code} & for variant 1 only \\
+\end{syntax}
+
+The two different modes of operation are \T{matchscan} and \T{matchscan*},
+which respectively match strings case sensitively and insensitively.
+The modifier \T{where} may optionally specify that the matching process
+should repeat until no rules apply, or the end of stream condition
+is reached.  
+
+By default, if no rules apply and if the input stream is non-empty,
+then an error has occurred.  The \T{matchscan} statement will
+invoke the method \verb|error()| of the \T{LexerBuffer} object by default.
+
+For example, the following is part of the \Prop{} lexer specification.
+
+\begin{verbatim}
+   datatype LexicalContext = NONE | C | PROP | COMMENT | ...;
+
+int PropParser::get_token()
+{
+   matchscan[LexicalContext] while (lexbuf)
+   {  
+      ...
+   |  <<C>> /[ \t\\\014]/:            { emit(); }
+   |  <<C>> /(\/\/.*)?\n/:            { emit(); line++; }
+   |  <<C>> /^#.*/:                   { emit(); }
+   |  <<PROP>> lexeme class MainKeywords: { return ?lexeme; }
+   |  <<PROP>> lexeme class SepKeywords: { return ?lexeme; }
+   |  <<PROP>> QUARK_TOK:             { return QUARK_TOK; }
+   |  <<PROP>> BIGINT_TOK:            { return BIGINT_TOK; }
+   |  <<PROP>> REGEXP_TOK:            { return REGEXP_TOK; }
+   |  <<PROP>> PUNCTUATIONS:          { return lexbuf[0]; }
+   |  <<PROP>> /[ \t\014]/:           { /* skip */ }
+   |  <<PROP>> /(\/\/.*)?\n/:         { line++; }
+   |  /\/\*/:                         { emit(); set_context(COMMENT); }
+   |  <<COMMENT>> /\*\//:             { emit(); set_context(PROP); }
+   |  <<COMMENT>> /\n/:               { emit(); line++; }
+   |  <<COMMENT>> /./:                { emit(); }
+   |  /./: { error("%Lillegal character %c\n", lexbuf[0]); }
+   }
+}
+\end{verbatim}
+
+Here, the lexer is partitioned in multiple lexical contexts: context
+\verb|C| deals with \Cpp{} code while context \verb|PROP| deals with
+\Prop{} extensions.  The special context \verb|COMMENT| is used
+to parse \verb|/* */| delimited comments.  Contexts are changed
+using the \verb|set_context| method defined in class \verb|LexerBuffer|.
+
+The special variable \verb|?lexeme| can be used within a rule 
+that matches a lexeme class.  For example, within the rule
+\begin{verbatim}
+   |  <<PROP>> lexeme class MainKeywords:    { return ?lexeme; }
+\end{verbatim}
+the variable \verb|?lexeme| is bound to 
+the token \verb|."rewrite"| if the string ``rewrite'' is matched;
+it is bound to the token \verb|."inference"| if the string
+``inference'' is matched and so on.
+
+\Subsubsection{Class \T{LexerBuffer}}
+We'll next describe the class \T{LexerBuffer} and its subclasses.
+
+Class \CLASSDEF{LexerBuffer} 
+is the base class in the lexical buffer hierarchy.
+It is defined in the library include file \verb|<AD/automata/lexerbuf.h>|.
+This class is responsible for implementing a string buffer for use
+during lexical analysis.   
+
+As it stands, it can be used directly if the lexer input is directly
+from a string.  Memory management of the buffer is assumed to be handled
+by the user. 
+
+The class \T{LexerBuffer} has three constructors.  The default
+constructor initializes the string buffer to NULL.  The two
+other constructors initialize the string buffer to a string given
+by the user.  In the case when the length is not supplied, the buffer
+is assumed to be \verb|'\0'|-terminated.  The two \verb|set_buffer| methods
+can be used to set the current string buffer.  Notice that
+all lexical analysis operations are done in place.  The user should
+not alter the string buffer directly, but should use the interface
+provided by this class instead.
+
+\begin{verbatim}
+class LexerBuffer {
+public:
+   LexerBuffer();    
+   LexerBuffer(char *);    
+   LexerBuffer(char *, size_t);    
+   virtual ~LexerBuffer();
+   virtual void set_buffer (char *, size_t);
+           void set_buffer (char *);
+};
+\end{verbatim}
+
+The following methods are used access the string buffer.
+Method \T{capacity} returns the size of the buffer.  Method
+\T{length} returns the length of the current matched token.
+Methods \T{text} can be used to obtain a point to location
+of the current matched token.  The string returned is guaranteed
+to be \verb|'\0'|-terminated.  Methods \T{operator []} return
+the $i$th character of the token.  Finally, method \T{lookahead}
+returns the character code of the next character to be matched.
+
+\begin{verbatim}
+   int capacity () const;
+   int length   () const;
+   const char * text () const;
+         char * text ();
+   char  operator [] (int i) const;
+   char& operator [] (int i);
+   int lookahead () const;
+   void push_back (int n) 
+\end{verbatim}
+
+In addition to the string buffer, the class \T{LexerBuffer} keeps
+track of two additional types of information: the current context
+of the DFA, and whether the next token starts at the
+beginning of the line, or in our terminology, whether it is
+{\em anchored}.  These are manipulated with the following methods:
+
+\begin{verbatim}
+   int context    () const;
+   void set_context (int c = 0);
+   Bool is_anchored() const;
+   void set_anchored(Bool a = true);
+\end{verbatim}
+
+Finally, the following methods should be redefined by subclasses
+to alter the behavior of this class.  By default, the class \T{LexerBuffer}
+calls \T{fill\_buffer()} when it reaches the end of the string; subclasses
+can use this method to refill the buffer and return the number of
+characters read.  Currently, \T{fill\_buffer} is defined to do nothing 
+and return 0.  When it reaches the end of the file 
+(i.e. when \T{fill\_buffer()} fails to refill the buffer and the 
+scanning process finishes), method \T{end\_of\_file} is called.
+Currently, this is a no-op.  Finally, the error handling routine
+\T{error()} is called with the position of the beginning and the end
+of the buffer in which the error occurs.  By default, this routine
+prints out the buffer. 
+
+\begin{verbatim}
+protected:           
+   virtual size_t fill_buffer();
+   virtual void   end_of_file();
+   virtual void   error(const char * start, const char * stop);
+\end{verbatim}
+
+\Subsubsection{Class \T{IOLexerBuffer}}
+
+  Class \CLASSDEF{IOLexerBuffer} 
+is a derived class of \T{LexerBuffer}.  It 
+automatically manages an internal buffer and receives input from
+an \T{istream}.  It is defined in the file \verb|<AD/automata/iolexerbuf.h>|
+
+This class provides the following additional features:
+Constructor \verb|IOLexerBuffer(istream&)| ties the input to a
+stream.  If the default constructor is used, then it automatically
+ties the input to the stream \verb|cin|.  The method \verb|set_stream|
+can be used to set the stream to some other input. 
+
+\begin{verbatim}
+class IOLexerBuffer : public LexerBuffer {
+   size_t    buffer_size;  // size of the buffer
+   istream * input;        // input stream
+public:
+   IOLexerBuffer();    
+   IOLexerBuffer(istream&);    
+   virtual ~IOLexerBuffer();
+   virtual void set_stream (istream&);
+};
+\end{verbatim}
+
+By default, class \verb|IOLexerBuffer| reads new data from the input
+stream using a line buffering discipline.  This mechanism is suitable
+for interactive, but for other applications it may be more efficient
+to use block buffered input.  The protected method 
+\verb|read_buffer| controls this reading behavior; it
+is called whenever the data in the string buffer has been
+consumed and new input is needed from the stream.  It is
+passed the position of the buffer and its remaining capacity,
+and it returns the number of new characters that are read.  Subclasses
+can redefine this method. 
+
+\begin{verbatim}
+protected:
+   virtual size_t read_buffer(char *, size_t);
+\end{verbatim}
+
+\Subsubsection{Class \T{IOLexerStack}}
+
+Class \CLASSDEF{IOLexerStack}
+is a derived class of \T{LexerStack}.  It provides
+a mechanism of reading from a stack of \verb|istream|'s.  Streams
+can be pushed and popped from the stack.  The next token is 
+obtained from the stream from the top of the stack.  The class allows
+allows easy implementation of 
+constructs such as the \verb|#include| file mechanism of the C preprocessor.
+
+The interface of this class is listed below:
+\begin{verbatim}
+class IOLexerStack : public IOLexerBuffer {
+public:
+   IOLexerStack();    
+   IOLexerStack(istream&);    
+   virtual ~IOLexerStack();
+   
+   virtual void     push_stream (istream&);
+   virtual istream& pop_stream  ();
+};
+\end{verbatim}
+
+\Subsection{Parser Specification}
+
+Parsers are specified as a two phase process:
+\begin{enumerate}
+   \item First a {\em syntax class} is defined.  A syntax class
+declaration is like a normal \Cpp{} class declaration and has a similar
+syntax, except that \Prop{} will also generate the interface of the parser. 
+All parsers that \Prop{} generates are encapsulated within a class.  This
+makes it easy for the programmer to add additional data for parsing
+use, and to have multiple instances of a parser. 
+   \item Secondly, the grammar of the language is defined in a
+{\em syntax} declaration as a set of productions, 
+in a syntax similar to that of {\em yacc}.
+\end{enumerate}
+
+We'll describe these two phases.
+
+\Subsubsection{Syntax class}
+
+A syntax class definition specifies an object class that encapsulates
+a parser.  Its syntax is the same as the usual \Cpp{} class definition,
+except that the prefix \T{syntax} is used: 
+
+\begin{syntax}
+\NDEF{Syntax\_Class\_Decl} & \IS & \TDEF{syntax class} \Id 
+   \OPT{\T{:} \N{Inherit\_List}} \T{\{} \N{Class\_Body} \T{\}} \T{;} \\
+\end{syntax}
+
+This specification automatically generate a class with the following interface
+(assuming that the parser class in question is called \T{ParserClass})
+\begin{verbatim}
+public:  
+   ParserClass();  // constructor
+public:
+   virtual void parse();
+\end{verbatim}
+
+The constructor and the method \verb|parse()| will be automatically
+generated later. 
+
+A parser class expects the following method to be defined:
+\begin{verbatim}
+   int get_token();
+\end{verbatim}
+\noindent The function of \verb|get_token| is to return the
+next token from the lexer stream whenever it is called.
+It should return \verb|EOF| if the stream is empty.
+
+\Subsubsection{Syntax declaration}
+
+The grammar of a language is specified in the \T{syntax} declaration.
+Its syntax is listed as follows:
+
+\begin{syntax}
+\NDEF{Syntax\_Decl} & \IS & \TDEF{syntax} \Id \T{\{} \\
+    & & \quad \OPT{\MORE{\N{Precedence\_Decl}}{}} \\
+    & & \quad \OPT{\N{Expect\_Decl}} \\
+    & & \quad \OPT{\MORE{\N{Production\_Rule}}{}} \\
+    & & \T{\}} \\
+\end{syntax}
+
+The name of a \T{syntax} declaration should match that
+of a \T{syntax} \T{class}.  A \T{syntax} declaration is divided
+into three parts: (i) the operator precedence section, (ii) the
+\T{expect:} $n$ section, and (iii) the grammar section.
+
+\Subsubsection{Precedence}
+
+Operator precedences are specified using precedence declarations.
+The syntax is: 
+
+\begin{syntax}
+\NDEF{Precedence\_Decl} 
+    & \IS & \TDEF{left:} \N{Integer} \ALT{\N{Operator}}{} \T{;} 
+          & left associative operators \\
+    & \OR & \TDEF{right:} \N{Integer} \ALT{\N{Operator}}{} \T{;} 
+    & right associative operators \\
+\NDEF{Operator} & \IS & \N{Char}   & single character operator \\
+             & \OR & \N{String} & multi-character operator \\
+             & \OR & \N{Cons}   & constructor \\
+\end{syntax}
+
+The integer associated with a precedence declaration is the precedence
+level of an operator.  The higher the level of an operator, the {\em lower} 
+its precedence.
+
+For example, the following set of precedences are used in the \Prop{}
+language parser:
+\begin{verbatim}
+left: 23 "as";
+left: 22 "::";
+left: 21 "||";
+left: 20 "equiv:";
+left: 19 "xor:";
+left: 18 "implies:";
+left: 17 "&&" "and";
+right: 16 "|=" "&=" "^=" "<<=" ">>=";
+right: 15 '=' ":=" "+=" "-=" "*=" "/=" "%=";
+left: 14 '|';
+left: 13 ':';
+left: 12 ';';
+left: 11 '^';
+left: 10 '&';
+left: 9 "==" "!=";
+left: 8 '<' '>' ">=" "<=";
+left: 7 "<<" ">>";
+left: 6 '+' '-' "with" "less";
+left: 5 '*' '/' '%';
+left: 4 "++" "--";
+left: 3 '!' '~' "arb" "card" "dom" "ran";
+left: 2 '[' ']' '{' '}' '.' "->" ;
+\end{verbatim}
+
+\Subsubsection{{\tt expect:} $n$}
+
+The declaration \T{expect} $n$ specifies that there should be $n$
+shift/reduce errors in the grammar.  If the actual grammar deviates
+from this number, a warning will be generated.  The alternative
+form \T{expect:} \T{\_} suppresses all warnings.  The syntax is:
+
+\begin{syntax}
+\NDEF{Expect\_Decl}    & \IS & \TDEF{expect:} \N{Integer} \T{;}
+    & expects $n$ shift/reduce errors \\
+                     & \OR & \T{expect:} \T{\_} \T{;}
+    & expects many shift/reduce errors \\
+\end{syntax}
+
+This declaration is optional.  If omitted, warnings will be printed
+if parser conflicts are found during parser generation.
+
+\Subsubsection{Production rules}
+
+
+The syntax of the production rules is as follows: 
+
+\begin{syntax}
+\NDEF{Production\_Rule} & \IS & 
+  \Id \OPT{\TypeExp} \T{:} \\
+  & & \quad \OPT{\ALT{\N{One\_Alt}}{|}} \T{;} \\
+\NDEF{One\_Alt}  & \IS & \OPT{\ALT{\N{Symbol}}{}} & one alternative \\
+\NDEF{Symbol} 
+    & \IS & \Id        & non-terminal \\
+    & \OR & \N{Cons}   & terminal (a datatype constructor) \\
+    & \OR & \N{String} & terminal (a datatype constructor) \\
+    & \OR & \N{Char}   & terminal (from the ASCII character set) \\
+    & \OR & \T{?}      & the error terminal \\
+    & \OR & \T{\$}     & the end of file terminal \\
+    & \OR & \T{\{} \N{Code} \T{\}} & embedded actions \\
+\end{syntax}
+
+Each rule specifies a set of productions of the form 
+\[ \begin{array}{lcl}
+    lhs &  :  & A_{11} A_{12} \ldots A_{1n_1} \\
+        & \OR & A_{21} A_{22} \ldots A_{2n_2} \\
+        & \vdots & \\
+        & \OR & A_{m1} A_{m2} \ldots A_{mn_m} \\
+   \end{array}
+\]
+where $lhs$ is the non-terminal and $A_{ij}$'s are a mixture of 
+terminals, non-terminals and embedded actions.  If synthesized
+attributes are used, then the type of the s-attribute should be
+annotated next to the lhs non-terminal.
+
+Terminals can be specified in a few ways: (i) a character literal
+is a predefined terminal of the same name, (ii) a string literal
+is matched with a \T{datatype} or a \T{lexeme} \T{class} constructor
+of the same name, (iii) an identifier is a terminal if there is a 
+\T{datatype} constructor of the same name.  Any other identifiers
+are assumed to be non-terminals.
+
+For example, the following are two sets of production rules used in the 
+\Prop{} translator itself:
+\begin{verbatim}
+ty Ty:  simple_ty               { $$ = $1; }
+|       ty '=' exp              { $$ = DEFVALty($1,$3); }
+|       ty '*'                  { $$ = mkptrty($1); }
+|       ty '&'                  { $$ = mkrefty($1); }
+|       ty '[' ']'              { $$ = mkptrty($1); }
+|       ty '[' exp ']'          { $$ = mkarrayty($1,$3); }
+;
+exp Exp:
+        app_exp                 { $$ = $1; }
+|       exp '+' exp             { $$ = BINOPexp("+",$1,$3); }
+|       exp '-' exp             { $$ = BINOPexp("-",$1,$3); }
+|       exp '*' exp             { $$ = BINOPexp("*",$1,$3); }
+|       exp '/' exp             { $$ = BINOPexp("/",$1,$3); }
+|       exp '%' exp             { $$ = BINOPexp("%",$1,$3); }
+|       exp '^' exp             { $$ = BINOPexp("^",$1,$3); }
+|       exp "+=" exp            { $$ = BINOPexp("+=",$1,$3); }
+|       exp "-=" exp            { $$ = BINOPexp("-=",$1,$3); }
+|       exp "*=" exp            { $$ = BINOPexp("*=",$1,$3); }
+|       exp "/=" exp            { $$ = BINOPexp("/=",$1,$3); }
+|       exp "%=" exp            { $$ = BINOPexp("%=",$1,$3); }
+\end{verbatim}
+\noindent {\em etc $\ldots$}
+
+Here, \T{ty} is the non-terminal of this production.  The type of
+the synthesized attribute of this rule is \T{Ty}, and it is
+written next to the non-terminal.  Like {\em yacc}, the synthesized
+attribute of a rule can be referenced using the \verb.$. variables: 
+variable \TDEF{\$\$} denote the synthesized attribute of the current rule,
+while \TDEF{\$$n$} where $n$ is 1, 2, 3, \ldots denote the synthesized
+attribute of the $n$th rhs symbol of the current rule.
+
+\Subsubsection{Parser report}
+
+If the command line option \OPTIONDEF{-r} is used, then
+in addition to generating the code for the grammar, the translator
+will also generate a comprehensive report of the grammar and
+the resulting LALR(1) automaton.  The amount of details in this
+report can be varied using the the verbose option
+\OPTIONDEF{-v}:
+
+\begin{description}
+   \item[{\tt -v1}]  Print full information for all LR(0) states. 
+   \item[{\tt -v2}]  Also print out the lookahead set of a reduction rule.
+This may be useful for tracking down shift/reduce and reduce/reduce conflicts.
+   \item[{\tt -v3}]  Do both \verb|-v1| and \verb|-v2|.
+\end{description}
+
+\Subsubsection{Interfacing with the generated lexer}
+
+The easiest way of interfacing with a lexer is to embed
+an object of class \T{LexerBuffer}, \T{IOLexerBuffer}, or \T{IOLexerStack}
+within a syntax class\footnote{Alternatively, inheritance may be used.}.
+We can then define the tokenization method
+\verb|get_token| using the \T{matchscan} statement described
+in section~\ref{sec:matchscan}.
+
+\Subsection{Debugging Parsers}
+
+Currently, only the most rudimentary debugging facilities have been
+implemented for parser.
+The user can define the macro \verb|DEBUG_|$C$, where $C$ is the
+name of a syntax class before the \T{syntax} definition.  This will activate
+the parser debugging code.  During parsing, the reductions that are taken
+will be printed to \verb|cerr|.
+
+\Section{Algebraic Datatypes and Pattern Matching} \label{sec:datatype}
+
+    \Prop{} implements algebraic datatypes and pattern matching in the
+style of Standard ML\cite{SML}.  Tree, DAG and even graph structures can be
+specified as a set of datatype equations in algebraic datatype specifications.
+\Prop{} then proceeds to translate these into concrete \Cpp{} classes.  
+This makes it very easy to implement complex data structures.
+
+   Algebraic datatypes can be manipulated and transformed
+using \Prop{} pattern matching constructs, which decompose a datatype
+value into its constituents.  Complex patterns involving multiple
+objects can be specified.  These are translated into efficient 
+testing and selection code in \Cpp.
+
+In the following we shall give a brief overview of the pattern matching
+features of \Prop.  For most users of modern declarative languages many
+of these features are already familiar constructs.
+ 
+\Subsection{A quick tour of pattern matching}
+ 
+   Algebraic datatypes are specified using \verb|datatype| definitions,
+which define the inductive structure of one of more types using
+a tree-grammar like syntax.  
+%In addition, pretty printers,
+%lexical scanners, parsers, persistence I/O methods and
+%garbage collection inferences can also be specified with
+%additional options in the same construct.  
+When a datatype is declared,
+the following operations are implicitly defined by the datatype compiler:
+(1) the constructors for all the variants of a type;
+(2) the identity test operator \verb|==|, and the assignment
+    operator \verb|=| for this type; and
+(3) the member functions needed to decompose a datatype value during
+    pattern matching.
+ 
+   We'll select the internals of a compiler for a simplified imperative
+language as the running example in this section.
+Suppose that in this language an expression is composed of
+identifiers, integer constants and the four arithmetic operators.
+Then the structure of the abstract syntax tree can be specified as follows:
+ 
+\begin{verbatim}
+   datatype Exp = INT (int)
+                | ID  (const char *)
+                | ADD (Exp, Exp)
+                | SUB (Exp, Exp)
+                | MUL (Exp, Exp)
+                | DIV (Exp, Exp)
+                ;
+\end{verbatim}
+
+Abstract syntax of an expression such as {\em a * b - 17}
+can be constructed directly in a prefix syntax, directly mirroring
+that of the definition.  The \Prop{} datatype
+compiler will automatically generate a \Cpp{} class hierarchy to represent
+the variants of type \verb|Exp|.  Datatype constructor
+functions(not to be mistaken with \Cpp's class constructors) will
+also be automatically generated using the same names as the variants.
+ 
+\begin{verbatim}
+   Exp formula = ADD(MUL(ID("a"),ID("b")),INT(17));
+\end{verbatim}
+ 
+Datatype values can be decomposed using the \verb|match| statement, which
+can be seen as a generalization of \C's \verb|switch| construct.  Pattern
+matching is a combination of conditional branching and value
+binding.  For example, a typical evaluation function for the type \verb|Exp|
+can be written as in the following example.  Notice that each arm of
+a \verb|case| is in fact a pattern(with optional variables)
+mirroring the syntax of a datatype.  The pattern variables(written
+with the prefix \verb|?| in the sequel) of a matching
+arm is {\em bound} to the value of the matching value, which can be
+subsequently referenced and modified in the action of an arm.
+ 
+\begin{verbatim}
+int eval (Exp e, const map<const char *, int>& env)
+{  match (e)
+   {  case INT ?i:        return ?i;
+      case ID  ?id:       return env[?id];
+      case ADD (?e1,?e2): return eval(?e1,env) + eval(?e2,env);
+      case SUB (?e1,?e2): return eval(?e1,env) - eval(?e2,env);
+      case MUL (?e1,?e2): return eval(?e1,env) * eval(?e2,env);
+      case DIV (?e1,?e2): return eval(?e1,env) / eval(?e2,env);
+   }
+}
+\end{verbatim}
+ 
+\Subsubsection{Pattern matching versus object-oriented style}
+ 
+  Although a comparable evaluation function can be written
+in object oriented style using late binding, as in below, in general pattern
+matching is much more powerful than late binding in \Cpp, which only
+allows dispatching based on the type of one receiver.
+ 
+\begin{verbatim}
+  // Class definitions
+  class Exp {
+  public:
+     virtual int eval(const map<const char *, int>& env) const = 0;
+  };
+  class INT : Exp {
+     int i;
+  public:
+     int eval(const map<const char *, int>& env);
+  };
+  class ID : Exp {
+     const char * id
+  public:
+     int eval(const map<const char *, int>& env);
+  };
+  ...
+ 
+  // Member functions
+  int INT::eval(const map<const char *, int>& env) const { return i; }
+  int ID ::eval(const map<const char *, int>& env) const { return id; }
+  int ADD::eval(const map<const char *, int>& env) const
+     { return e1->eval(env) + e2->eval(env); }
+  int SUB::eval(const map<const char *, int>& env) const
+     { return e1->eval(env) - e2->eval(env); }
+  int MUL::eval(const map<const char *, int>& env) const
+     { return e1->eval(env) * e2->eval(env); }
+  int DIV::eval(const map<const char *, int>& env) const
+     { return e1->eval(env) / e2->eval(env); }
+\end{verbatim}
+
+For example, in the following function we use nested patterns,
+non-linear patterns (i.e. patterns with multiple occurrences of
+a pattern variable), and guards to perform algebraic simplification
+of an expression.  Although the patterns are relatively simple in
+this example, in general arbitrarily complex patterns may be used.
+ 
+\begin{verbatim}
+Exp simplify (Exp redex)
+{  // recursive traversal code omitted ...
+ 
+   // match while repeats the matching process
+   // until no more matches are found.
+   match while (redex)
+   {  ADD(INT 0,  ?x):     { redex = ?x; }
+   |  ADD(INT ?x, INT ?y): { redex = INT(?x+?y); }
+   |  ADD(?x,     INT 0)   { redex = ?x; }
+   |  SUB(?x,     INT 0):  { redex = ?x; }
+   |  SUB(?x,     ?x):     { redex = INT(0); }
+   |  SUB(INT ?x, INT ?y): { redex = INT(?x-?y); }
+   |  MUL(INT 0,  ?x):     { redex = INT(0); }
+   |  MUL(?x,     INT 0):  { redex = INT(0); }
+   |  DIV(?x,     ?x):     { redex = INT(1); }
+        // don't divide by zero.
+   |  DIV(INT ?x, INT ?y) | ?y != 0: { redex = INT(?x/?y); }
+   |  ...
+   }
+   return redex;
+}
+\end{verbatim}
+ 
+Pattern matching in \Prop{} is not restricted to one datatype at
+a time.  In the following example, we use matching on multiple values to
+define equality on expressions inductively.  For variety, we'll
+use the \verb|fun| variant of \verb|match|, which defines a function
+in rule form.  Notice that the last case
+of the match set uses {\em wild cards} \verb|_| to catch all the other
+non-equal combinations.  Since \Cpp{} does not provide multiple dispatching,
+implementing binary (or $n$-ary) matching operations on variant datatypes are
+in general cumbersome and verbose in object-oriented style. In contrast,
+using an applicative pattern matching style many manipulations and
+transformations on variant datatypes with tree-like or graph-like structure
+can be expressed succinctly.
+ 
+\begin{verbatim}
+fun equal INT ?i,     INT ?j: bool: { return ?i == ?j; }
+  | equal ID  ?a,     ID  ?b:       { return strcmp(a,b) == 0; }
+  | equal ADD(?a,?b), ADD(?c,?d):   { return equal(?a,?c) && equal(?b,?d); }
+  | equal SUB(?a,?b), SUB(?c,?d):   { return equal(?a,?c) && equal(?b,?d); }
+  | equal MUL(?a,?b), MUL(?c,?d):   { return equal(?a,?c) && equal(?b,?d); }
+  | equal DIV(?a,?b), DIV(?c,?d):   { return equal(?a,?c) && equal(?b,?d); }
+  | equal _,          _:            { return false; }
+  ;
+\end{verbatim}
+
+\Subsubsection{More examples} \label{sec:Wff}
+ 
+  As another example, we can specify the term structure of
+{\em well-formed formulas} in proposition calculus as follows.  Notice
+that the constructors \verb|F| and \verb|T| are nullary.
+ 
+\begin{verbatim}
+   datatype Wff = F
+                | T
+                | Var     (const char *)
+                | And     (Wff, Wff)
+                | Or      (Wff, Wff)
+                | Not     (Wff)
+                | Implies (Wff, Wff)
+                ;
+\end{verbatim}
+ 
+Datatypes that are parametrically polymorphic, such as lists and trees, can
+be defined by parameterizing them with respect to one of more types.
+For example, both lists and tree below are parametric on one type argument
+\verb|T|.
+ 
+\begin{verbatim}
+   datatype List<T> = nil
+                    | cons(T, List<T>);
+   datatype Tree<T> = empty
+                    | leaf(T)
+                    | node(Tree<T>, T, Tree<T>);
+ 
+   List<int> primes = cons(2,cons(3,cons(5,cons(7,nil))));
+   List<int> more_primes = cons(11,cons(13,primes));
+   Tree<char *> names = node(leaf("Church"),"Godel",empty);
+\end{verbatim}
+ 
+As a programming convenience, \Prop{} has a set of built-in list-like
+syntactic forms.  Unlike languages such as ML, however,
+these forms are not predefined to be any specific list types.  Instead, it is
+possible for the user to use these forms on any datatypes with
+a natural binary {\em cons} operator and a nullary {\em nil} constructor.
+For instance, the previous list datatype can be redefined as follows:
+ 
+\begin{verbatim}
+   datatype List<T> = #[] | #[ T ... List<T> ];
+   List<int> primes = #[ 2, 3, 5, 7 ];
+   List<int> more_primes = #[ 11, 13 ... primes ];
+   List<char *> names = #[ "Church", "Godel", "Turing", "Curry" ];
+ 
+   template <class T>
+      List<T> append (List<T> a, List<T> b)
+      {  match (a)
+         {  case #[]:          return b;
+            case #[hd ... tl]: return #[hd ... append(tl,b)];
+         }
+      }
+\end{verbatim}
+The empty list is written as \verb|#[]|, while {\em cons(a,b)}
+is written as \verb|#[ a ... b ]|.   An expression of the special form
+\verb|#[a, b, c]|, for instance, is simple syntactic sugar for
+repeated application of the {\em cons} operator, i.e.
+ 
+\begin{verbatim}
+    #[a, b, c] == #[a ... #[ b ... #[ c ... #[] ] ] ].
+    #[a, b, c ... d ] == #[a ... #[ b ... #[ c ... d ] ] ].
+\end{verbatim}
+ 
+List-like special forms are not limited to datatypes with only two variants.
+For example, we can define a datatype similar in structure to S-expressions
+in {\em Lisp} or {\em scheme}.  Here's how such as datatype may be
+defined\footnote{for simplicity, we'll use a string representation for atoms
+instead of a more efficient method.}:
+ 
+\begin{verbatim}
+   datatype Sexpr = INT    (int)
+                  | REAL   (double)
+                  | STRING (char *)
+                  | ATOM   (const char *)
+                  | #()
+                  | #( Sexpr ... Sexpr )
+   where type Atom = Sexpr  // synonym for Sexpr
+   ;
+\end{verbatim}
+ 
+   With this datatype specification in place, we can construct values
+of type \verb|Sexpr| in a syntax close to that of {\em Lisp}.  For example,
+we can define lambda expressions corresponding to the combinators $I$, $K$
+and $S$ as follows:
+ 
+\begin{verbatim}
+   Atom LAMBDA = ATOM("LAMBDA");
+   Atom f      = ATOM("f");
+   Atom x      = ATOM("x");
+   Atom y      = ATOM("y");
+   Atom NIL    = #();
+ 
+   Sexpr I = #(LAMBDA, #(x), x);
+   Sepxr K = #(LAMBDA, #(x), #(LAMBDA, #(y), x));
+   Sepxr S = #(LAMBDA, #(f),
+                #(LAMBDA, #(x),
+                   #(LAMBDA, #(y), #(#(f,x), #(g,x)))));
+\end{verbatim}
+ 
+Similar to list-like forms, vector-like forms are also available.
+This addresses one of the flaws of the \Cpp{} language, which lacks
+first class array constructors.  
+Vectors are simply homogeneous arrays whose sizes
+are fixed and are determined at creation time\footnote{For efficiency,
+bounds checking is {\em not} performed.}.   Random access within
+vectors can be done in constant time.  Unlike lists, however, the
+prepending operation is not supported.   Vectors literals are delimited
+with the composite brackets \verb!(| ... |)!, \verb![| ... |]!, or
+\verb!{| ... |}!.  In the following example the datatype \verb|Exp|
+uses vectors to represent the cooefficients of the polynomials:
+ 
+\begin{verbatim}
+   datatype Vector<T> = (| T |);
+   datatype Exp = Polynomial (Var, Vector<int>)
+                | Functor (Exp, Vector<Exp>)
+                | Atom (Var)
+                | ...
+   where type Var = const char *;
+   Exp formula = Polynomial("X", (| 1, 2, 3 |));
+\end{verbatim}
+ 
+Commonly used patterns can be given synonyms so that they can be readily
+reused without undue repetition.  This can be accomplished by defining pseudo
+datatype constructors to stand for common patterns using
+{\em datatype law} definitions.  For example, the following set of
+laws define some commonly used special forms for a {\em Lisp}-like language
+using the previously defined \verb|Sexpr| datatype.
+ 
+\begin{verbatim}
+   datatype law inline Lambda(x,e)  = #(ATOM "LAMBDA", #(x), e)
+              | inline Quote(x)     = #(ATOM "QUOTE", x)
+              | inline If(a,b,c)    = #(ATOM "IF", a, b, c)
+              | inline Nil          = #()
+              | inline ProgN(exprs) = #(ATOM "PROGN" ... exprs)
+              | SpecialForm  = #(ATOM ("LAMBDA" || "IF" ||
+                                       "PROGN" || "QUOTE") ... _)
+              | Call(f,args) = ! SpecialForm && #(f ... args)
+              ;
+\end{verbatim}
+ 
+Note that the pattern \verb|SpecialForm| is meant to match all
+special forms in our toy language: i.e. {\em lambdas}, {\em ifs}, {\em progn}'s
+and {\em quotes}.  The pattern disjunction connective \verb.||. is used
+to link these forms together.  Since we'd like the \verb|Call| pattern
+to match only if the S-expression is not a special form, we use
+the pattern negation and conjunction operators, \verb|!| and \verb|&&|
+are used to screen out special forms.  
+
+
+With these definitions in place,
+an interpreter for our language can be written thus:
+ 
+\begin{verbatim}
+   Sexpr eval (Sexpr e)
+   {  match (e)
+      {  Call(?f,?args):     { /* perform function call */ }
+      |  Lambda(?x,?e):      { /* construct closure */ }
+      |  If(?e,?then,?else): { /* branching */ }
+      |  Quote(?x):          { return ?x; }
+      |  ...:                { /* others */ }
+      }
+   }
+\end{verbatim}
+
+
+As an interesting note, the special form pattern can also be rewritten
+using regular expression string matching, as in the following:
+ 
+\begin{verbatim}
+ datatype law SpecialForm = #(ATOM /LAMBDA|IF|PROGN|QUOTE/ ... _)
+\end{verbatim}
+ 
+In addition, since the law constructors \verb|Lambda|, \verb|Quote|,
+\verb|If|, \verb|Nil| and \verb|ProgN| are defined with the \verb|inline|
+keyword, these constructors can be used to within expressions as abbreviates
+for their rhs definitions.  For example, writing
+\verb|Lambda(x,x)| is the same writing \verb|#(ATOM("Lambda"),#(x),x)|.
+
+\Subsubsection{Variants of match}
+ 
+Aside from the usual plain pattern matching constructs, a few variants of the
+\verb|match| construct are offered.  We'll briefly enumerate a few of these:
+\begin{itemize}
+  \item The \verb|matchall| construct is a variant of \verb|match| that
+   executes all matching rules(instead of just the first one) in sequence.
+  \item Each rule of a \verb|match| statement can have associated cost
+    expressions.  Instead of selecting the first matching rule to
+    execute as in the default, all matching rules are considered
+    and the rule with the least cost is executed.  Ties are broken by
+    choosing the rule that comes first lexically.  For example:
+ 
+   \begin{verbatim}
+   match (ir)
+   {  ADD(LOAD(?r0),?r1) \ e1: { ... }
+   |  ADD(?r0,LOAD(?r0)) \ e2: { ... }
+   |  ADD(?r0, ?r1)      \ e3: { ... }
+   |  ...
+   }
+   \end{verbatim}
+  \item A \verb|match| construct can be modified with the \verb|while|
+     modifier, as in the following example.  A match modified thus is
+     repeatedly matched until none of the patterns are applicable.
+     For example, the following routine uses a \verb|match while| statement
+     to traverse to the leftmost leaf.
+ 
+\begin{verbatim}
+   template <class T>
+   Tree<T> left_most_leaf(Tree<T> tree)
+   {  match while (tree)
+      {  case node(t,_,_):  tree = t;
+      }
+      return tree;
+   }
+\end{verbatim}
+  \item Finally, the \verb|matchscan| variant of match can be used to
+     perform string matching on a stream.  For example, a simple lexical
+     scanner can be written as follows.
+ 
+     \begin{verbatim}
+   int lexer (LexerBuffer& in)
+   {  matchscan while (in)
+      {  /if/:                     { return IF; }
+      |  /else/:                   { return ELSE; }
+      |  /while/:                  { return WHILE; }
+      |  /for/:                    { return FOR; }
+      |  /break/:                  { return BREAK; }
+      |  /[0-9]+/:                 { return INTEGER; }
+      |  /[a-zA-Z_][a-zA-Z_0-9]*/: { return IDENTIFIER; }
+      |  /[ \t]+/:                 { /* skip spaces */ }
+      |  ... // other rules
+      }
+   }
+     \end{verbatim}
+\end{itemize}
+
+\Subsection{Algebraic Datatypes} \label{sec:algebraic-datatypes}
+   Algebraic datatypes are defined using the \T{datatype}
+construct.  Its syntax is as follows.
+
+\begin{syntax}
+\NDEF{Datatype\_Decl} 
+   & \IS & \TDEF{datatype} \\
+   &     & \quad \OPT{\ALT{\N{Datatype\_Spec}}{and}} \\
+   &     & \quad \OPT{\TDEF{where type} \ALT{\N{Type\_Spec}}{and}} \\
+   &     & \quad \OPT{\TDEF{law} \ALT{\N{Law\_Spec}}{and}} \\
+   &     & \T{;} \\
+\end{syntax}
+
+Each \T{datatype} declaration specifies a set of 
+(potentially mutually recursive) types, a set of type abbreviations,
+and a set of pattern matching abbreviations called {\em laws}.
+
+\begin{syntax}
+\NDEF{Datatype\_Spec} 
+   & \IS & \Id \OPT{\T{<} \LIST{\N{Id}} \T{>}} \\
+   &     & \quad \OPT{\T{:} \N{Inherit\_List}} \\
+   &     & \quad \OPT{\T{::} \N{Datatype\_Qualifiers}} \\
+   &     & \quad \OPT{\T{=} \N{Cons\_Specs}} \\
+\NDEF{Cons\_Specs} 
+   & \IS & \ALT{\N{Cons\_Spec}}{|} \\
+   &     & \quad \OPT{\T{public:} \N{Datatype\_Body}} \\
+\NDEF{Cons\_Spec} 
+   & \IS & \N{Simple\_Cons\_Spec}  \\
+   &     &  \quad \OPT{\T{with} \T{\{} \N{Class\_Decl} \T{\}}} \\
+\NDEF{Simple\_Cons\_Spec} 
+   & \IS & \Id \OPT{\N{String}} & unit constructor \\
+   & \OR & \N{String}              & unit constructor \\
+   & \OR & \Id \OPT{\T{of}} \TypeExp  & constructor with arguments \\
+   & \OR & \T{\#[} \T{]}                 & unit list constructor \\
+   & \OR & \T{\#\{} \T{\}}               & unit list constructor \\
+   & \OR & \T{\#(} \T{)}                 & unit list constructor \\
+   & \OR & \T{\#[} \TypeExp \T{...} \TypeExp \T{]}   
+      & list constructor \\
+   & \OR & \T{\#\{} \TypeExp \T{...} \TypeExp \T{\}} 
+      & list constructor \\
+   & \OR & \T{\#(} \TypeExp \T{...} \TypeExp \T{)}   
+      & list constructor \\
+   & \OR & \T{[|} \TypeExp \T{|]} & vector constructor \\
+   & \OR & \T{(|} \TypeExp \T{|)} & vector constructor \\
+   & \OR & \T{\{|} \TypeExp \T{|\}} & vector constructor \\
+\end{syntax} 
+
+
+Datatypes can be annotated with {\em qualifiers}.  They tell the \Prop{}
+translator to generate additional code for each datatype to provide
+additional functionality. 
+
+\begin{syntax}
+\NDEF{Datatype\_Qualifiers} 
+   & \IS & \MORE{\N{Datatype\_Qualifier}}{} \\
+\NDEF{Datatype\_Qualifier} 
+   & \IS & \TDEF{collectable} & garbage collectable \\
+   & \OR & \TDEF{rewrite}     & optimized for tree rewriting \\
+   & \OR & \TDEF{persistent}  & generate persistence interface \\
+   & \OR & \TDEF{lexeme}      & used for parser/lexer tokens  \\
+   & \OR & \TDEF{inline}      & use inlined implementation \\
+   & \OR & \TDEF{extern}      & use non-inlined implementation \\
+\end{syntax}
+
+Type specifications assign abbreviations to commonly used type expressions. 
+They act like \T{typedef}'s in \Cpp, except that \Prop{} can make use
+of the type information provided by these specifications.
+
+\begin{syntax}
+\NDEF{Type\_Spec} 
+   & \IS & \Id \T{=} \TypeExp \\
+\end{syntax}
+
+Law specifications are used to define abbreviations to datatype 
+patterns\footnote{Patterns are discussed in 
+section~\ref{sec:pattern-matching}.}.
+They behave like macros in some sense, except that unlike macros, they are
+properly type checked by \Prop.  In addition, if the keyword \T{inline} is 
+used, then \Prop{} will treat the lhs as an expression and generate 
+a function of the same name that can be used to construct the datatype term.
+
+\begin{syntax}
+\NDEF{Law\_Spec} 
+   & \IS & \OPT{\T{inline}} \Id \OPT{\N{Law\_Arg}} \T{=} \Pat \\
+\NDEF{Law\_Arg} 
+   & \IS & \Id \\
+   & \OR & \T{(} \LIST{\N{Id}} \T{)} \\
+\end{syntax}
+
+\Prop{} recognizes the following set of type expressions.  
+\begin{syntax}
+\NDEF{Type\_Exp}
+   & \IS & \N{Type\_Id}                & type name \\
+   & \OR & \TypeExp \T{*}              & pointer type \\
+   & \OR & \TypeExp \T{\&}             & reference type \\
+   & \OR & \N{Type\_Qualifier} \N{Type\_Id}      & qualified type \\
+   & \OR & \N{Datatype\_Qualifier} \TypeExp       & annotation  \\
+   & \OR & \T{(} \TypeExp \T{)}          & grouping \\
+   & \OR & \T{(} \TypeExp \T{,} 
+      \LIST{\N{TypeExp}} \T{)} & tuple type \\
+   & \OR & \T{(} \TypeExp \T{,} 
+      \LIST{\N{TypeExp}} \T{)} & tuple class \\
+   & \OR & \T{\{} \LIST{\N{Lab\_Type\_Exp}} \T{\}} & record type \\
+   & \OR & \TypeExp \T{=} \N{Exp} & default value \\
+\NDEF{Lab\_Type\_Exp} & \IS &
+   \Id \T{:} \TypeExp \\
+\NDEF{Type\_Qualifier} 
+   & \IS & \T{class}       & a class type \\
+   & \OR & \T{const}       & constant type \\
+   & \OR & \T{rewrite}     & rewritable \\
+   & \OR & \T{collectable} & garbage collected \\
+   & \OR & \T{persistent}  & persistent object  \\
+\end{syntax}
+
+In general, four different types of datatype constructors can be defined:
+\begin{description}
+ \item[nullary constructors]  These are constructors without an argument.
+ \Prop{} maps these into small integers and no heap space will be consumed.
+ \item[tuple argument constructors] These are constructors with one
+ or more unamed arguments.  
+ \item[record argument constructors] These are constructors with one
+ or more named arguments written within braces.  For example, in the
+ following datatype definition a record argument constructor called
+ \verb|Add| is defined:
+ \begin{verbatim}
+  datatype Exp = Add { left : Exp, right : Exp }
+	       | ...
+ \end{verbatim}
+  To construct an \verb|Add| expression, we can use any one of the following
+  forms:
+  \begin{verbatim}
+     Exp e1 = Add(x,y);
+     Exp e2 = Add'{ left = x, right = y };
+     Exp e3 = Add'{ right = y, left = x };
+  \end{verbatim}
+  Note that we are allowed to rearrange the labels in any order if
+  the record expression form is used.
+ \item[empty constructors] These are constructors written with
+ an empty argument \verb|()|.  For example, in the following definition
+ an empty constructor called \verb|NONE| is defined:
+ \begin{verbatim}
+    datatype Exp : public AST
+	= NONE ()
+	| NONE2
+        | ...
+ \end{verbatim}
+ Here, the constructor \verb|NONE| will inherit from the class \verb|AST|,
+ while the nullay constructor \verb|NONE2| will not.
+\end{description}
+
+\Subsubsection{Instantiating a datatype}
+
+Each declared datatype should be {\em instantiated} in some implementation
+file using the \TDEF{instantiate datatype} statement.  The translator
+will generate additional code to implement the datatype.  The general
+syntax is:
+\begin{syntax}
+ \NDEF{Instantiate\_Decl} 
+    & \IS &
+       \TDEF{instantiate datatype} \LIST{\N{Type\_Spec}} \\
+    & \OR & 
+       \TDEF{instantiate} \T{extern} \T{datatype} \LIST{\N{Type\_Spec}} \\
+ \NDEF{Type\_Spec} & \IS & \Id \OPT{ \T{<} \LIST{\N{TypeExp}} \T{>}} \\
+\end{syntax}
+
+\begin{Tips}
+   When a datatype is defined with the \TDEF{inline} qualifier,
+\Prop{} will try to generate inline methods whenever possible.
+On the other hand, if the \TDEF{extern} qualifier is used, \Prop{}
+will try to generate an non-inline implementation, and only one
+copy are generated at where the \T{instantiate datatype} statement occurs.
+
+Since most \Prop{} datatypes are light-weight objects, \T{inline} is taken
+as the default.  The user can override this default using
+\OPTIONDEF{-save\_space} option of the translator 
+(see page~\pageref{option:save-space}).
+\end{Tips}
+
+\begin{Tips}
+   When the option \OPTIONDEF{-fno-implicit-templates} is used
+under \Gpp, the user should \verb|#define| the symbol
+\INDEX{{\tt PROP\_EXPLICIT\_TEMPLATE\_INSTANTIATION}} before
+an \T{instantiate datatype} statement.   
+This will enable the code for explicit template instantiation.
+\end{Tips}
+
+\Subsection{Pattern Matching} \label{sec:pattern-matching}
+   The basic pattern matching construct is the \T{match} statement.    
+A match statement can be seen as a generalization of \Cpp's \T{switch}
+statement, in which the expression that follows a \T{case} can be
+a general complex pattern.  
+
+   Its basic syntax is as follows:
+\begin{syntax}
+\NDEF{Match} & \IS & 
+   \N{Match\_Mode} \ALT{\T{(} \N{Exp} \T{)}}{and}  \\
+        & & \T{\{} \MORE{\T{case} \N{Match\_Rule}}{} \T{\}} & variant 1 \\
+          & \OR & 
+   \N{Match\_Mode} \ALT{\T{(} \N{Exp} \T{)}}{and} \\
+        & & \T{\{} \ALT{\N{Match\_Rule}}{|} \T{\}} & variant 2 \\
+          & \OR &
+   \N{Match\_Mode} \ALT{\T{(} \N{Exp} \T{)}}{and} \T{of} & variant 3 \\
+        & & \quad \ALT{\N{Match\_Rule}}{|} \\
+        & & \T{end} \T{match} \T{;} \\
+\NDEF{Match\_Mode} & \IS & \TDEF{match} \OPT{\T{while}} \\
+                & \OR & \TDEF{matchall} \OPT{\T{while}} \\
+\NDEF{Match\_Rule} & \IS & \Pat \OPT{\N{Guard}} \OPT{\N{Cost}}
+        \T{:} \N{Match\_Action} \\
+\NDEF{Guard}       & \IS & \T{if} \N{Exp} \\
+                & \OR & \T{where} \N{Exp} \\
+                & \OR & \T{|} \N{Exp} \\
+\NDEF{Cost} & \IS & \verb|\| \Exp & cost expression \\
+\NDEF{Match\_Action} & \IS & \T{\{} \N{Code} \T{\}} \\
+                  & \OR & \N{Code} & for variant 1 only \\
+\end{syntax}
+
+The 3 syntactic variants of the match statement are equivalent in meaning.
+A \T{match} statement takes a list of match objects and a
+set of pattern matching rules.  The first rule that matches the pattern
+completely will be executed.  Notice that guards can be placed on each rule,
+and a rule is only applicable if the guards evaluate to true. 
+
+\paragraph{Cost minimization}
+In addition, if cost expressions are specified, then the matching process
+will proceed as follows: 
+\begin{enumerate}
+   \item Locate all applicable rules.  If no such rule exists then exit.
+   \item Compute the cost expressions of all applicable rules.
+   \item Choose the action that has the lowest cost to execute.  If
+a tie occurs, resolve by the textual order of the rules. 
+\end{enumerate}
+
+\paragraph{Match all rules}
+The \T{matchall} statement is a variant of \T{match}.  In the matchall
+mode, the actions of {\em all} applicable rules are executed in the
+textual order.  Caution: since the matching variable binding 
+process occurs {\em before} the rules are executed, the rhs actions
+should not alter the matched value or the pattern variables may
+be bound to the wrong value.
+
+\paragraph{Repetition} 
+In addition, both \T{match} and \T{matchall} can be annotated with the
+\TDEF{while} modifier.  It this case the semantics of the matching
+construct is to repeat until no more rule is applicable.  For example,
+the following code fragment returns the last element of a list
+\begin{verbatim}
+datatype List = #[] | #[ int ... List ];
+
+int last (List l)
+{  match while (l)
+   { case #[]:         assert(0); // an error
+     case #[i]:        return i;
+     case #[h ... t]:  l = t;     
+   }
+}
+\end{verbatim}
+
+\paragraph{Pattern syntax}
+The basic form of a pattern is a literal, which
+that matches only a single integer, real number, string, etc.  Complex
+patterns can be constructed inductively
+using datatype constructors, tuples, lists, and 
+{\em logical pattern connectives}.
+
+The syntax of the patterns is as follows:
+\begin{syntax}
+\NDEF{Pat} & 
+   \IS & \N{Integer} & matches integer literal \\
+ & \OR & \N{Real}    & matches real literal \\
+ & \OR & \N{Char}    & matches character literal \\
+ & \OR & \N{Quark}   & matches quark literal \\
+ & \OR & \N{String}  & matches string literal \\
+ & \OR & \N{Regexp}  & matches any string that matches {\em regexp}\\
+ & \OR & \N{Pat\_Var}  & a pattern variable; matches anything \\
+ & \OR & \T{\_}      & wild card; matches anything \\
+ & \OR & \N{Cons}     & matches a datatype constructor  \\
+ & \OR & \N{Cons} \N{PatArg}& a constructor application pattern \\
+ & \OR & \Id \T{as} \Pat & binds a variable to the sub-pattern \\
+ & \OR & \Pat \T{:} \TypeExp & typed pattern \\
+ & \OR & \Pat \T{||} \Pat  & matches either pattern \\
+ & \OR & \Pat \T{\&\&} \Pat  & matches both patterns \\
+ & \OR & \T{!} \Pat             & matches anything but the pattern \\
+ & \OR & \T{(} \Pat \T{)}       & Grouping \\
+ & \OR & \T{\#[} \LIST{\N{Pat}} \T{]} & list pattern; exact length match \\
+ & \OR & \T{\#[} \LIST{\N{Pat}} \T{...} \T{]} & list pattern;   
+     non-exact length match \\
+ & \OR & \T{[|} \LIST{\N{Pat}} \T{|]} & vector pattern; exact length match \\
+ & \OR & \T{[|} \LIST{\N{Pat}} \T{...} \T{|]} 
+    & vector pattern; matches to the left \\
+ & \OR & \T{[|} \T{...} \LIST{\N{Pat}} \T{|]} 
+    & vector pattern; matches to the right \\
+\NDEF{PatArg} & \IS & \Pat \\
+           & \OR & \T{(} \LIST{\N{Pat}} \T{)} \\
+           & \OR & \T{\{} \LIST{\N{Lab\_Pat}} \OPT{\T{...}} \T{\}} \\ 
+\NDEF{Lab\_Pat} & \IS & \Id \T{=} \Pat \\
+\NDEF{Pat\_Var} & \IS & \Id       \\
+            & \OR & \T{?}\Id  \\
+\end{syntax}
+
+\Subsection{Refining a datatype}
+
+   A datatype definition can be refined in a few ways:
+
+\begin{enumerate}
+  \item{\bf inheritance} A datatype can be declared to be inherited from
+one or more classes $C_1, C_2, \ldots, C_n$. 
+The effect is that all variants of a datatype will be inherited from the 
+classes $C_1, C_2, \ldots C_2$.  
+
+  \item{\bf member functions}  Member functions and addition attributes
+can be attached to the datatype variants using the keyword \TDEF{with}.
+\end{enumerate}
+
+For example, the following datatype \T{Exp} is inherited from some user
+defined classes \verb|AST| and \verb|Object|.   Furthermore, a virtual
+member function called print is defined.  
+
+\begin{verbatim}
+datatype Exp : public AST, virtual public Object
+   = INT int        
+         with { ostream& print(ostream&); }
+   | PLUS  Exp, Exp 
+         with { ostream& print(ostream&); }
+   | MINUS Exp, Exp 
+         with { ostream& print(ostream&); }
+   | MULT  Exp, Exp 
+         with { ostream& print(ostream&); }
+   | DIV   Exp, Exp 
+         with { ostream& print(ostream&); }
+   | VAR { name : const char *, typ : Type }
+         with { ostream& print(ostream&); }
+   public:
+   {  virtual ostream& print (ostream&) = 0;
+      void * operator new (size_t);
+   }
+;
+\end{verbatim}
+
+The allocator and printing methods can be defined as follows:
+\begin{verbatim}
+void * classof Exp::operator new(size_t) { ... }
+ostream& classof INT::print(ostream& s)   { return s << INT; }
+ostream& classof PLUS::print(ostream& s)  
+   { return s << '(' << this->#1 << '+' << this->#2 <<')'; }
+ostream& classof MINUS::print(ostream& s) 
+   { return s << '(' << this->#1 << '-' << this->#2 <<')'; }
+ostream& classof MULT::print(ostream& s)  
+   { return s << '(' << this->#1 << '*' << this->#2 <<')'; }
+ostream& classof DIV::print(ostream& s)  
+   { return s << '(' << this->#1 << '/' << this->#2 <<')'; }
+ostream& classof VAR::print(ostream& s)   { return s << name; }
+\end{verbatim}
+
+The special type form \TDEF{classof} {\em con} is used to reference
+the type of a constructor.  Arguments of a constructor uses the following
+naming convention: (i) if the constructor $C$ takes only one argument,
+then the name of the argument is $C$; (ii) if $C$ takes two or more
+unnamed arguments, then these are named \verb|#1|, \verb|#2|, etc;
+(iii) finally, labeled arguments are given the same name as the label.
+
+For readability reasons, it is often useful to separate a datatype definition
+from the member functions and inheritance definitions.   The \TDEF{refine}
+declaration can be used in this situation.  For example, the above
+example can be restated more succinctly as follows:
+
+\begin{verbatim}
+//
+// Datatype definition section
+//
+datatype Exp = INT int        
+             | PLUS  Exp, Exp 
+             | MINUS Exp, Exp 
+             | MULT  Exp, Exp 
+             | DIV   Exp, Exp 
+             | VAR { name : const char *, typ : Type }
+;
+
+//
+// Refinement section
+//
+refine Exp : public AST, virtual public Object
+       { virtual ostream& print (ostream&) = 0;
+         void * operator new (size_t);
+       }
+and    INT, PLUS, MINUS, MULT, DIV, VAR
+       { ostream& print(ostream&); 
+       }
+;
+\end{verbatim}
+
+The general syntax of the \TDEF{refine} declaration is as follows:
+\begin{syntax}
+\NDEF{Refine\_Decl} 
+   & \IS & \T{refine} \ALT{\N{Refine\_Spec}}{\T{and}} \T{;} \\
+\NDEF{Refine\_Spec} 
+   & \IS & \LIST{\N{Id}} \\
+   &     & \quad \OPT{\T{:} \N{Inherit\_List}} \\
+   &     & \quad \OPT{\T{::} \N{Datatype\_Qualifiers}} \\
+   &     & \quad \OPT{\T{\{} \N{Datatype\_Body} \T{\}}} \\
+\end{syntax}
+Here, \N{Id} refers to either a constructor name or a datatype name.
+
+\Subsection{Memory management}
+
+   By default, a datatype constructor calls the \verb|operator new| to
+allocated memory.  There are a few ways to change this behavior: (i)
+redefine the \verb|operator new| within the datatype using refinement; or
+(ii) inherit from a class that redefines this method.
+
+   If a {\em placement} \verb|operator new| is defined in datatype,
+the placement constructor syntax can be used to invoke this
+operator:
+\begin{syntax}
+   \NDEF{Placement\_Cons} 
+   & \IS & \N{Cons} \T{'(} \LIST{\N{Exp}} \T{)} \T{(} 
+   \OPT{\LIST{\N{Exp}}} \T{)} \\
+   & \OR & \N{Cons} \T{'(} \LIST{\N{Exp}} \T{)} \T{\{} 
+   \OPT{\LIST{{\N{Id} = \N{Exp}}}}
+     \T{\}} \\
+\end{syntax}
+
+For example, in the following the extra parameter \verb|mem| will
+be passed to placement \verb|new| operator.
+\begin{verbatim}
+  Exp e1 = INT'(mem)(1);
+  Exp e2 = VAR'(mem){ name = "foo", typ = t };
+\end{verbatim}
+
+\Subsubsection{Garbage collection}
+
+  The support library contains an implementation\footnote{The implementation
+has only been tested on Linux, SunOS and Solaris.  Please contact the
+author for details
+if you'd like to port the collector to your particular platform.} of a 
+conservative garbage collector using two algorithms: one using
+a mostly copying scheme\cite{Mostly-copying,Gen-mostly-copying} 
+and one using mark-sweep.
+
+  A datatype can be defined to be garbage collectable with the
+qualifier \TDEF{collectable}.  In the following example, the datatype
+\T{Exp} is will be allocated from the a garbage collected heap instead
+of the default heap.  Since it references another 
+user defined garbage collectable object
+\verb|SymbolTable|, the pointer to that symbol table is also marked
+as \T{collectable}.
+\begin{verbatim}
+   // SymbolTable is collectable
+   class SymbolTable: public GCObject
+   {
+   public:
+      class Id : public GCObject { ... };
+      ...
+   };
+
+   datatype Exp :: collectable
+      = INT int
+      | VAR (collectable SymbolTable::Id, collectable SymbolTable *)
+      | ADD Exp, Exp
+      | SUB Exp, Exp
+      | MUL Exp, Exp
+      | DIV Exp, Exp
+      ;
+\end{verbatim}
+
+The corresponding \TDEF{instantiate datatype} statement for \T{Exp}
+will generate the appropriate tracing methods for garbage collection.
+
+Please see appendix~\ref{appendix:gc} for more details concerning
+garbage collection.
+
+\Subsubsection{Persistence}
+
+  Datatypes can be interfaced with the persistent object library
+supplied with the translator using the \TDEF{persistent} qualifier.
+A persistent object defines the protocol for serializing its representation
+into an architecture independent format on a persistence stream.  
+
+For example, the following datatype declaration defines a persistent 
+type \verb|Exp|.  Note that a pointer to the symbol table
+is annotated with the \T{persisent} qualifier to signify that the object
+associated with the pointer should be traversed during the serialization
+phase. 
+\begin{verbatim}
+   // SymbolTable is persistent
+   class SymbolTable: public PObject
+   {
+   public:
+      class Id : public PObject { ... };
+      ...
+   };
+
+   datatype Exp :: persistent
+      = INT int
+      | VAR (persistent SymbolTable::Id, persistent SymbolTable *)
+      | ADD Exp, Exp
+      | SUB Exp, Exp
+      | MUL Exp, Exp
+      | DIV Exp, Exp
+      ;
+\end{verbatim}
+
+A {persistent object id} {\em must} be provided with each distinct
+datatype.  Object ids are used to identify the classes
+of persistent objects.  Thus they must be unique within an application.
+Each persistent type tag is simply a string, and can be defined using
+the \TDEF{refine persistent} statement.  
+
+For example, the following statement declares the persistent object
+id for type \verb|Exp| above to be \verb|"Simple expressions"|.
+\begin{verbatim}
+   refine persistent Exp => "Simple expressions";
+\end{verbatim}
+
+The corresponding \TDEF{instantiate datatype} statement will generate
+the appropriate methods to communicate with a persistent stream.
+\begin{verbatim}
+  instantiate datatype Exp;
+\end{verbatim}
+
+To write an object $e$ to the datafile \verb|"foo"|, we can say:
+\begin{verbatim}
+   #include <AD/persist/postream.h>
+   ofstream out("foo");
+   Postream pout(out);
+   pout << e;
+   out.close();
+\end{verbatim}
+
+To read the object back from the file, we can say:
+\begin{verbatim} 
+   #include <AD/persist/pistream.h>
+   EXP e;
+   ifstream in("foo");
+   Pistream pin(in);
+   e = (Exp)read_object(pin);
+   in.close();
+\end{verbatim}
+
+For more details concerning persistent streams and persist objects, 
+please see directory \verb|<AD/persist>| for details.
+
+\Section{Inference} \label{sec:inference}
+
+   Semantic processing
+in compilers and other language processors, such as data flow analysis,
+can frequently be specified as in a rule-based,
+logical deductive style.  In \Prop, deductive inference using forward
+chaining\footnote{
+The current
+implementation of {\sf Prop} translates inference into very naive code.
+This feature will be phased out and replaced by
+the more general and much faster graph rewriting mechanism.  
+}
+is provided as a built-in mechanism, orthogonal
+to pattern matching and rewriting, for manipulating user-defined
+algebraic datatypes.
+ 
+Similar to syntax classes, {\bf inference classes} may be used
+for data encapsulation.  An inference class is a combination of a \Cpp{}
+class, a database of inference relations, and a collection of inference rules
+of the form {\em lhs \verb|->| rhs}.  The lhs of an inference rule is a set
+of patterns in conjunctive form.  During the inference process, a rule is
+fired when its lhs condition is satisfied.  A fired rule then executes
+the corresponding rhs action, which may assert or retract additional relations
+from the database.   Using multiple inheritance, it is possible to combine
+a rewriting class with an inference class such that the rewriting process
+generates new relations to drive the inference process, or vice versa.
+
+\Subsection{An Example} 
+Datatype relations are not a distinct kind of data structure but are in fact
+simply algebraic datatypes declared to have a \TDEF{relation} 
+attribute.  For example, in
+the following definition three relation types \verb|Person|, \verb|Parent|
+and \verb|Gen| are defined.
+ 
+\begin{verbatim}
+   datatype Person :: relation = person (const char *)
+       and  Parent :: relation = parent (const char *, const char *)
+       and  Gen    :: relation = same_generation (const char *, const char *);
+ 
+   instantiate datatype Person, Parent, Gen;
+\end{verbatim}
+ 
+Using these relations we can define an inference class that computes whether
+two persons are in the same generation.   Nine axioms are defined (i.e.
+those whose lhs are empty) in the following.  The two inference rules
+state that (1) a person is in the same generation as him/herself, 
+and (2) two persons are in the same generation if 
+their parents are in the same generation.
+ 
+\begin{verbatim}
+   inference class SameGeneration {};
+ 
+   inference SameGeneration
+   {  -> person("p1") and person("p2") and
+         person("p3") and person("p4") and
+         person("p5");
+ 
+      -> parent("p1", "p2") and
+         parent("p1", "p3") and
+         parent("p2", "p4") and
+         parent("p3", "P5");
+ 
+      person ?p -> same_generation (?p, ?p);
+ 
+      parent (?x, ?y) and parent (?z, ?w) and same_generation (?x, ?z)
+      -> same_generation(?y, ?w);
+   };
+\end{verbatim}
+ 
+In general, datatypes qualified as \verb|relation|s will inherit
+from the base class \verb|Fact|, while a rewrite class definition
+implicitly defines two member functions used to assert and retract facts
+in the internal database.  For example, in the above example, the following
+protocol will be automatically generated by the inference compiler.
+ 
+\begin{verbatim}
+   class SameGeneration : ...
+   {
+   public:
+       virtual Rete&    infer       ();       // start the inference process
+       virtual ReteNet& operator += (Fact *); // assert fact
+       virtual ReteNet& operator -= (Fact *); // retract fact
+   };
+\end{verbatim}
+ 
+
+ 
+Using these methods, an application can insert or remove relations
+from an inference class.  This will in turn trigger any attached inference
+rules of the class.
+ 
+\Subsubsection{Another example}
+ 
+Consider the following example, which is used to compute Pythagorean
+triangles.  Only one axiom and two rules are used.  The axiom and the
+first rule are used to assert the relations \verb|num(1)| to \verb|num(n)|
+into the database, where \verb|n| is limited by the term \verb|limit(n)|.
+The second inference rule is responsible for printing out only
+the appropriate combinations of numbers.
+ 
+\begin{verbatim}
+   datatype Number :: relation = num int | limit int;
+ 
+   inference class Triangle {};
+ 
+   inference Triangle
+   {  ->  num 1;
+ 
+          num m
+      and limit n | n > m
+      ->  num (m+1);
+ 
+          num a
+      and num b
+      and num c | a < b && b < c && a*a + b*b == c*c
+      ->  { cout << a << " * " << a << " + "
+                 << b << " * " << b << " = "
+                 << c << " * " << c << "\n";
+          };
+   };
+\end{verbatim}
+ 
+Now, to print all the triangle identities lying in range of $1$ to $100$,
+we only have to create an instance of the inference class, insert the
+limit, and start the inference process, as in below:
+ 
+\begin{verbatim}
+   Triangle triangle;
+   triangle += limit(100);
+   triangle.infer();
+\end{verbatim}
+
+\Subsection{Inference Class}
+\INCOMPLETE
+
+\Subsection{Inference Rules}
+\INCOMPLETE
+ 
+\Section{Tree Rewriting} \label{sec:tree-rewriting} 
+
+\Prop's tree rewriting mechanism let us transform a tree in
+algebraic datatype form into another tree according to a set of 
+{\em rewriting rules}.  Unlike plain pattern matching described
+in section~\ref{sec:pattern-matching}, which only apply to the
+root of a tree, rewriting rules are applicable to all parts of
+the tree.  This allows the user to concentrate on developing the
+set of transformations; the actual traversal of the tree object
+is handled implicitly by \Prop.  When used properly, this
+mechanism has an advantage over plain pattern matching since
+rewriting rules remain valid even when a new variant to a datatype
+is introduced.
+
+In \Prop, a rewriting system is developed in a similar manner as a parser.
+The first phase requires the user to defines a {\em rewrite class}
+to encapsulate the rewriting rules.  
+
+Frequently, the rewriting mechanism is used to collect information about
+a tree structure; furthermore, more transformation rules are {\em conditional}:
+i.e. we want them to be applicable only if certain conditions are satisfied. 
+We can accomplish both of these tasks by defining data members and methods 
+in the rewriting class.  These are accessible during the rewriting
+process.  Information collected during rewriting can be stored within
+the data members.
+
+In the rewriting formalism, equational
+rules of the form {\em lhs} \verb|->| {\em rhs} are specified by the user.
+During processing, each instance of the lhs in a complex tree is replaced
+by an instance of the rhs, until no such replacement is possible.
+Equational rules can often be used to specify semantics based simplification
+(e.g. constant folding and simplification based on simple algebraic
+identities) or transformation(e.g. code selection in a compiler
+backend\cite{codegen-with-trees}).
+ 
+Unlike plain pattern matching, however, the structural traversal process
+in rewriting is implicitly inferred from the type structure of an
+algebraic datatype, as specified in its definition. 
+ 
+There are two main forms of rewriting modes available:
+\begin{itemize}
+   \item The first is {\bf normalization} mode: a given tree is reduced
+using the matching rules until no more redexes are available.  There
+are two modes of operations available:
+       \begin{itemize}
+          \item in {\bf replacement} mode, the redex of a tree will be
+physically overwritten.
+          \item in {\bf applicative} mode, on the other hand, a new
+tree corresponding to the replacement value will be constructed.
+       \end{itemize}
+     Replacement mode is used as the default since it is usually
+the more efficient of the two.
+   \item The second form is {\bf reduction} and {\bf transformation}.
+In this mode a tree parse of the input term is computed.  If cost functions
+are attached to the rules, then they will also be used to determine a
+minimal cost reduction sequence.  During this process attached actions of
+a rule may be invoked to synthesize new data.
+\end{itemize}
+ 
+   Each independent set of rewriting rules in \Prop{} is encapsulated
+in its own {\bf rewrite class}.  A rewrite class is basically a normal \Cpp{}
+class with a set of rewriting rules attached.   During rewriting, the
+data members and the member functions are visible according to the normal
+\Cpp{} scoping rules.  This makes it is easy to encapsulate additional data
+computed as a side effect during the rewriting process.
+ 
+\Subsection{A rewriting example}
+ 
+   Consider an abbreviated simplifier for the well-formed formula datatype
+\verb|Wff| defined in the section~\ref{sec:Wff}.  The rewrite class for this
+can be defined as follows.  Since there is no encapsulated data in this
+example, only the default constructor for the class needs to be defined.
+A rewrite class definition requires the traversal list to be
+specified.  This is simply a list of datatypes 
+involved in the rewriting traversal process.  
+In this instance only \verb|Wff| is needed.
+ 
+\begin{verbatim}
+   rewrite class Simplify (Wff)
+   {
+   public:
+      Simplify() {}
+   };
+\end{verbatim}
+ 
+   The rewrite rules for the simplifier can then be specified succinctly as
+follows.  Like the \verb|match| statement, in general the rhs
+of a rewrite rule can be any statement.  A special statement
+\verb|rewrite(e)| can be used to rewrite the current redex into another form.
+If the rhs is of the form \verb|rewrite(e)|, then it can be abbreviated
+to \verb|e|, as in below:
+\begin{verbatim}
+   rewrite Simplify
+   {  And(F,  _):      F
+   |  And(_,  F):      F
+   |  And(T,  ?X):     ?X
+   |  And(?X, T):      ?X
+   |  Or (T,  _):      T
+   |  Or (_,  T):      T
+   |  Or (F,  ?X):     ?X
+   |  Or (?X, F):      ?X
+   |  Not(Not(?X)):    ?X
+   |  Not(And(?X,?Y)): Or(Not(?X), Not(?Y))
+   |  Not(Or(?X,?Y)):  And(Not(?X), Not(?Y))
+   |  Implies(?X,?Y):  Or(Not(?X), ?Y)
+   |  And (?X, ?X):     ?X
+   |  Or (?X, ?X):      ?X
+   // etc ...
+   };
+\end{verbatim}
+ 
+The rewrite class definition creates a new class of the same name.  This new
+class defines an implicit \verb|operator ()| with the protocol below.  This
+member function can be invoked to perform the rewriting in a functional
+syntax.
+ 
+\begin{verbatim}
+   class Simplify : ... {
+   {  ...
+   public:
+      void operator () (Wff);
+      // Wff operator () (Wff); // if rewrite class is applicative
+   };
+ 
+   Wff wff = ...;
+   Simplify simplify; // create a new instance of the rewrite class
+   simplify(wff);    // rewrite the term wff
+\end{verbatim}
+
+ 
+\Subsubsection{Conditional rewriting and actions}
+  
+   Rewriting rules may be guarded with predicates to limit their
+applicability.  In addition, the {\em rhs} of a rewrite rule is not limited
+to only a replacement expression: in general, any arbitrarily complex sequence
+of code may be used.  For example, in the following set of rewriting
+rules we use guards to prevent undesirable replacements to be made during
+expression constant folding:
+ 
+\begin{verbatim}
+   rewrite ConstantFolding
+   {  ADD (INT a, INT b):  INT(a+b)
+   |  SUB (INT a, INT b):  INT(a-b)
+   |  MUL (INT a, INT b):
+      {  int c = a * b;                      // silent overflow
+         if (a == 0 || b == 0 || c / b == a) // no overflow?
+         {  rewrite(INT(c)); }
+         else
+         {  cerr << "Overflow in multiply\n"; }
+      }
+   |  DIV (INT a, INT b) | b == 0:  { cerr << "Division by zero\n"; }
+   |  DIV (INT a, INT b):  INT(a/b)
+   |  // etc...
+   };
+\end{verbatim}
+
+\Subsection{Rewrite class} \label{sec:rewrite-class}
+
+The syntax of a rewrite class declaration is as follows:
+
+\begin{syntax}
+\NDEF{Rewrite\_Class\_Decl} & \IS & \TDEF{rewrite class} \Id 
+            \T{(} \LIST{\N{TypeExp}} \T{)} \\
+   & & \quad \OPT{\T{:} \N{Inherit\_List}} 
+        \OPT{\T{::} \MORE{\N{Rewrite\_Mode}}{}} \\
+   & & \quad \T{\{} \N{Class\_Body} \T{\}} \T{;} \\
+\NDEF{Rewrite\_Mode} & \IS & \TDEF{treeparser} \\
+                  & \OR & \TDEF{applicative} \\
+                  & \OR & \TDEF{topdown} \\
+\end{syntax}
+
+This is simply the usual \Cpp{} class declaration syntax
+extended to the following information:
+\begin{description}
+   \item[a traversal list] enclosed in parenthesis.  The traversal
+list of a rewrite class defines the set of types that rewriting
+should traverse.  If a datatype object contains an argument of a type
+not listed in the traversal list, its value will not be altered.
+   \item[rewrite mode] this defines the rewriting mode of the
+rewrite class.
+\end{description}
+
+\Subsection{Rewriting rules}
+
+Rewriting rules are specified in a rewrite declaration.
+The syntax of a rewriting specification is as follows:
+
+\begin{syntax}
+\NDEF{Rewrite\_Decl} 
+   & \IS & \TDEF{rewrite} \Id & variant 1 \\
+   &    & \T{\{} \OPT{\N{Index\_Decl}} 
+        \ALT{\T{case} \N{Rewrite\_Rules}}{} \T{\}} \\
+   & \OR & \T{rewrite} \Id & variant 2 \\
+   &    & \T{\{} \OPT{\N{Index\_Decl}} \ALT{\N{Rewrite\_Rules}}{|} \T{\}} \\
+\NDEF{Rewrite\_Rule}
+  & \IS & \OPT{\N{Rewrite\_Modifier}} \OPT{\N{Id} \T{->}} \\
+  & & \quad \Pat \OPT{\N{Guard}} \OPT{\N{Cost}} \T{:} \N{Rewrite\_Action} \\
+\NDEF{Rewrite\_Modifier}
+  & \IS & \T{bottomup:} & bottom up mode \\
+  & \OR & \T{topdown:} & top down mode \\
+  & \OR & \T{before:} & before actions \\
+  & \OR & \T{preorder:} & preorder actions \\
+  & \OR & \T{postorder:} & postorder actions \\
+\NDEF{Rewrite\_Action} & \IS & \T{\{} \N{Code} \T{\}} \\
+                  & \OR & \Exp \\
+\end{syntax}
+
+The name of a rewrite declaration should match the name of
+a rewrite class.  
+The two syntactic forms of \T{rewrite} have equivalent semantics.
+
+The special statement \T{rewrite}($e$) may be used
+inside the rhs action to rewrite the current redex into $e$.
+Note that \T{rewrite}($e$) is a branching statement; statements
+after \T{rewrite} are not reachable.
+
+\Subsection{Rewriting modifiers}
+In version 2.3.3 onward, rewrite rules can be modified by the 
+keywords: \T{bottomup:}, \T{topdown:}, \T{before:}, \T{preorder:}
+and \T{postorder:}.   These modifiers 
+alter the order in which a set of rewriting rules is applied. 
+
+These modifiers act like delimiters, similar
+to the way scoping keywords like \T{public:}, \T{protected:} and 
+\T{private:} are used to delimit declarations in C++.
+For instance, a set of rules prefixed by the modifier \T{topdown:}
+will utilize the topdown strategy for reduction.  If no modifier are
+specified, then bottom-up will be the default.
+
+Note that all five modes of rules can be used together in a rewriting system 
+under tree rewriting mode (see \ref{sec:rewriting-modes})
+and their executions are intermixed together.  
+
+The semantics of these modifiers are as follows:
+\begin{description}
+\item[\TDEF{bottomup:}] This specifies the modified rewriting rules should
+be applied in the default bottom-up mode.  In this mode, the 
+innermost/leftmost redex is chosen as the next redex.  So reduction
+occurs in a bottomup manner.  This means that if a term $t$ is a redex
+and if the term $t$ contains a subterm $t'$ which is also a redex, 
+$t'$ will be reduced before $t$. 
+\item[\TDEF{topdown:}]  This specifies the modified rewriting rules should be
+applied in a topdown mode.  In this mode, the rewriter
+will first try to locate the outermost/leftmost redex.  Reduction
+will occur in a (mostly) topdown manner.
+\item[\TDEF{before:}]  This specifies that the modified rewriting rules
+should be tried before the topdown phase.   
+In addition, unlike topdown mode, if state-caching if used (see
+\ref{sec:state-caching}), the rules are only tried once. 
+Otherwise, these act just like the preorder modifier, described below. 
+\item[\TDEF{preorder:}]  This specifies that
+the modified rewriting rules should be
+tried only at the preorder traversal of a term.   
+\item[\TDEF{postorder:}]  This specifies the rewriting rules should be
+tried only at the postorder traversal of a term. 
+\end{description}
+
+\Subsubsection{Rewriting modifier example} \label{sec:rewriting-modifier}
+
+We'll use the following example, extracted from a query optimizer for
+a subset of the relational calculus, to demonstrate the use
+of the rewriting modifiers.
+
+The query optimizer transforms the following abstract syntax, defined
+as a set of \Prop's datatypes.  
+\begin{verbatim}
+datatype List<T> = #[] | #[ T ... List<T> ];
+datatype Literal = INT int
+                 | STRING const char *
+                 | BOOL Bool
+
+and      Exp     = OP Id, Exps
+                 | APP Id, Exps
+                 | LIT Literal
+                 | ID Id
+                 | TUPLE Exps                  // [ E1, E2, ... En ]
+                 | FORALL Id, Exp, Exp         // forall x in E1 . E2
+                 | EXISTS Id, Exp, Exp         // exists x in E1 . E2
+                 | GUARD (Exp, Exp)            //
+                 | GENERATOR (Ids, Exps, Exp)  // [x_1,...,x_n] in X_1*...*X_n
+                 | LET  (Id, Exp, Exp)
+
+law inline Int  i    = LIT(INT i)
+|   inline Boolean b = LIT(BOOL b)
+|          True      = Boolean true
+|          False     = Boolean false
+|   inline And a,b   = OP("and",#[a,b])
+|   inline Or  a,b   = OP("or", #[a,b])
+|   inline Not a     = OP("not",#[a])
+|   inline Eq a,b    = OP("=",  #[a,b])
+|   inline Ne a,b    = OP("/=", #[a,b])
+|   inline Gt a,b    = OP(">",  #[a,b])
+|   inline Ge a,b    = OP(">=", #[a,b])
+|   inline Lt a,b    = OP("<",  #[a,b])
+|   inline Le a,b    = OP("<=", #[a,b])
+|   inline In a,b    = OP("in", #[a,b])
+|   inline Union a,b = OP("union", #[a,b])
+|   inline Count a   = OP("#", #[a])
+
+where type Id         = const char *
+and        Ids        = List<Id>
+and        Exps       = List<Exp>
+;
+\end{verbatim}
+
+Note that existential and 
+universal quantifiers are represented by the constructors \T{FORALL}
+and \T{EXISTS} respectively.  For example, $\exists x \in A.p$ is
+presented as the term $\T{EXISTS}(x,A,p)$.  Here $x$ is a {\em binding}
+occurrence for $x$; note that the variable $x$ may occur within 
+the predicate $p$.  In addition, a list comprehension
+expression such as 
+\[ \{ e : [x_1,\ldots,x_n] \in X_1 
+\times \ldots \times X_n\ |\ p \} \] 
+is represented as the compound term 
+\[
+  \T{GENERATOR}(\#[x_1,\ldots,x_n],\#[X_1,\ldots,X_n],\T{GUARD}(p,e))
+\]
+
+Suppose we'll like to rename all variables in a query $Q$ 
+so that no two binding occurrences are given the same name.  
+This can be easily accomplished using a combination
+of \T{preorder:} and \T{postorder:} rules in the following manner: 
+\begin{enumerate}
+\item[(i)] Use preorder rules to check for new variable bindings,
+for example in $\T{EXISTS}(x,A,p)$.
+For each new binding occurrence for $x$, create
+a new name for $x$.  
+These will be performed before the subterms $A$ and $p$ are traversed.
+\item[(ii)] Whenever a variable $x$ is found during the sub-traversal
+of $A$ and $p$, rename the variable by looking up its new name.
+\item[(iii)] Finally, use postorder rules to remove the current 
+variable substitution whenever we're exiting a binding occurrence.
+\end{enumerate}
+
+For example, the following set of rewriting rules accomplish this renaming
+task for our query language using exactly this method.  
+\begin{verbatim}
+rewrite RemoveDuplicateNames
+{
+   // We use before and after rules to remove duplicates from variable names.
+   // As each new binding occurrence is found, we enter a new binding
+   // into the current environment.  Identifiers found within
+   // the binding occurrence are then renamed.
+
+preorder: // insert new bindings
+   EXISTS(x,_,_):     { new_binding(x); }
+|  FORALL(x,_,_):     { new_binding(x); }
+|  GENERATOR(xs,_,_): { new_binding(xs); }
+|  LET(x,_,_):        { new_binding(x); }
+
+         // rename variables
+|  ID x:             { rename(x); }
+
+postorder: // removes the binding
+|  EXISTS(x,A,_):      { old_binding(x); }
+|  FORALL(x,A,_):      { old_binding(x); }
+|  GENERATOR(xs,As,_): { old_binding(xs); }
+|  LET(x,_,_):         { old_binding(x); }
+};
+\end{verbatim}
+
+Note that we have accomplished a depth first traversal using rewriting
+without writing any traversal code!  As a side benefit, 
+since the traversal is automatically determined by 
+the structure of the datatypes, we do not have to rewrite this
+renaming code even if the abstract syntax of the query language is
+extended, as long as no additional binding operators are added.
+
+\Subsection{The \T{rewrite} statement}
+ 
+   While the rewrite class construct provides a very general abstraction
+for rewriting, in general its full power is unneeded.  It is often
+convenient to be able to perform rewriting on a term without having
+to make a new name for a class just for the occasion, especially if member
+functions and member data are unneeded.  To accommodate these situations,
+the \verb|rewrite| statement is provided
+to perform a set rewriting transformations on a term without having
+to define a temporary rewrite class.   It is simply syntactic sugar
+for the more general rewrite class and rewrite
+rules specifications.
+For example, a simplify routine for type \verb|Exp| defined above can be
+specified as follows:
+ 
+\begin{verbatim}
+   Exp simplify (Exp e)
+   {  // transformations on e before
+      rewrite (e) type (Exp)
+      {  ADD (INT a, INT b):  INT(a+b)
+      |  SUB (INT a, INT b):  INT(a-b)
+      |  MUL (INT a, INT b):  INT(a*b)
+      |  ...
+      }
+      // transformations on e after
+      return e;
+   }
+\end{verbatim}
+ 
+The \verb|rewrite| normally performs the replacement in-place.
+An applicative version of the same can be written as follows\footnote{The
+variable {\tt e} is assigned the new copy.}:
+ 
+\begin{verbatim}
+   Exp simplify (Exp e)
+   {  rewrite (e) => e type (Exp)
+      {  ADD (INT a, INT b):  INT(a+b)
+      |  SUB (INT a, INT b):  INT(a+b)
+      |  MUL (INT a, INT b):  INT(a*b)
+      |  ...
+      }
+      return e;
+   }
+\end{verbatim}
+
+The syntax of the rewrite statement is as follows.  The
+traversal list of the set of rewrite rule is listed next to
+the keyword \T{type}.
+ 
+\begin{syntax}
+\NDEF{Rewrite\_Stmt} 
+   & \IS & \TDEF{rewrite} \T{(} \Exp \T{)} \OPT{\T{=>} \N{Exp}} \\
+   &     & \quad \T{type} \T{(} \LIST{\N{TypeExp}} \T{)} \\
+   &     & \T{\{} \OPT{\N{Index\_Decl}} \N{Rewrite\_Rules} \T{\}} \\
+   & \OR & \TDEF{rewrite} \T{(} \N{Exp} \T{)} \OPT{\T{=>} \N{Exp}} \\
+   &    & \quad \TDEF{type} \T{(} \LIST{\N{TypeExp}} \T{)} \T{of} \\
+   &    & \quad \OPT{\N{Index\_Decl}} \N{Rewrite\_Rules} \\
+   &    & \T{end} \T{rewrite} \T{;} \\ 
+\end{syntax}
+
+\Subsubsection{Rewriting modes} \label{sec:rewriting-modes}
+   There are two basic modes of operations in a rewrite class: (i) 
+{\em tree rewriting} and (ii) {\em tree parsing}.   
+Tree rewriting repeatedly looks for redexes in a tree and transforms it into
+another tree.   There are two sub-modes of operations: (a) {\em applicative}
+and (b) {\em in-place}.  Applicative mode is specified using the
+\T{applicative} mode specifier when declaring a rewrite class. 
+In this mode, a new tree is built from a 
+bottom-up manner, and the subject tree is left unaltered.  The default
+mode is ``in-place.''  In this mode, the subject tree is overwritten
+with the transformed expression.  
+
+   On the other hand, in tree parsing mode, the left hand side
+of a rewrite rules specification is treated as a tree grammar.
+The tree parser will look for a derivation of given tree object from
+the start non-terminal.
+A guarded rule will only be used if the guard evaluates to true.
+
+   If rules are annotated with cost expressions, then the
+tree parser will try to locate a derivation chain with a minimal total
+cost.  After a derivation tree is found, the tree can be repeated
+traversed.  The rhs actions will be invoked during this traversal process.  
+
+\Subsubsection{State caching optimization} \label{sec:state-caching}
+
+   The pattern matching process proceeds in a bottom up manner: 
+for each subtree of the form $l(t_1,t_2,\ldots,t_n)$, $n \ge 0$, 
+a state number is computed from the current tree label $l$ and the
+state numbers of its subtrees $t_1, t_2, \ldots, t_n$.  The set of matched
+rules can be directly computed from the current state number.
+This means that in the absence of redex replacements, pattern matching
+takes time proportional only $O(|t| + r)$, where $|t|$ is the size 
+of the input tree $t$ and $r$ is time it takes to execute the rhs actions.  
+That is, the runtime is insensitive to the number of rewrite rules or the 
+complexity of the patterns.
+
+   However, if the input is a DAG rather than a tree\footnote{Rewriting
+of a generic graph structure is not recommended with \T{rewrite}.},
+or if replacements are performed, then the above analysis may not hold.
+Replacements during rewriting often require state information of the
+replacement term to be recomputed to further the matching process.  
+Since computation of state can involve a complete traversal of a term, 
+replacement can become expensive if the replacement term is large.  
+For instance, consider the following replacement rule, which replaces 
+all expressions of the form {\em 2*x} into {\em x+x}:
+ 
+\begin{verbatim}
+   rewrite class StrengthReduction
+   {
+      MUL (INT 2, ?x):  ADD(?x, ?x)
+      ...
+   }
+\end{verbatim}
+ 
+\noindent
+Since the subterm \verb|?x| could be arbitrarily large, recomputing the
+state encoding for \verb|ADD(?x,?x)| naively takes time in proportion to the
+size of \verb|?x|.  However, since the subtree \verb|?x| occurs as part
+of the pattern, its state has already been computed, and it would be
+wasteful to recompute its state from scratch.  
+
+A similar observation can be made to the case when the input is a DAG,
+where many subcomponents are shared between nodes.  In order to speed
+up the rewriting process, the state of each shared copy of the nodes 
+should be computed only once.
+
+In order to speedup the state computation process in these situations,
+{\em \INDEX{state caching}} can be enabled by
+specifying a {\em rewriting index}.
+This can be accomplished in two ways: (i) use the qualifier
+\TDEF{rewrite} when defining a datatype.  This specifies the
+{\em primary index}.  Or alternatively, (ii) use index declarations
+to specify one or more {\em secondary indices}.
+
+We'll first describe the first method. 
+A \TDEF{rewrite} qualifier can be used 
+in the definition of a datatype.  For instance:
+ 
+\begin{verbatim}
+   datatype Exp :: rewrite
+      = INT (int)
+      | ID  (const char *)
+      | ADD (Exp, Exp)
+      | SUB (Exp, Exp)
+      | MUL (Exp, Exp)
+      | DIV (Exp, Exp)
+      ;
+\end{verbatim}
+
+The \T{rewrite} qualifier tells the translator to generate an extra
+state field in the implementation of \T{Exp}.  This state field is implicitly
+updated during the rewriting process.  When the rewriter encounters a
+node with a cached state it can quickly short-circuit all unnecessary
+state computation.
+
+{\bf A word of caution:} since each rewriting system computes
+its own encoding, rewriting systems should not be mixed if they shard the 
+same index, i.e. actions of a 
+rewriting system should not invoke another rewriting
+system on a term that is participating in the current rewriting system,
+if both systems use the same index.  This limitation can be overcome
+by using secondary indices, which we'll discuss next.
+
+\Subsubsection{Specifying secondary indices}
+
+From release 2.3.0 onward, it is possible to specify secondary indices
+within a rewriting system.  This makes it possible to invoke other
+rewriting systems within the execution of another, while retaining the
+state caching optimizations throughout.
+
+There are two forms of secondary index: {\em internal index} and 
+{\em external index}.  Internal indices are stored directly within
+a rewrite term and require the user to pre-allocate space for each term.
+In contrast, external indices are stored in a separate data structure
+such as a hash table. 
+
+The syntax of secondary index declarations is as follows:
+\begin{syntax}
+\NDEF{Index\_Decl} & \IS & \TDEF{index:} \LIST{\N{Index\_Spec}} \T{;} \\
+\NDEF{Index\_Spec} & \IS & 
+   \TypeExp \T{=} \T{none} & \C{Disable indexing} \\
+   & \OR & \TypeExp \T{=} \N{Id} & \C{Internal index} \\
+   & \OR & \TypeExp \T{=} \TDEF{extern} \N{Id} & \C{External index} \\
+\end{syntax}
+
+
+\Subsubsection{Using an internal index}
+
+In order to make use of an index, certain member functions have to defined
+by the user.  Given an internal index named {\em foo}, the rewriter
+invokes two functions named
+\begin{quotation}
+\noindent
+   {\tt int get\_{\em foo}\_state() const; } \\
+   {\tt void set\_{\em foo}\_state(int); }
+\end{quotation}
+\noindent within the generated code.  The user should provide the 
+implementations for these functions within the datatypes.  
+
+For example, reusing the well-formed formulas example (see 
+section~\ref{sec:Wff}),
+an internal index on the datatype \T{Wff} can be implemented as follows:
+\begin{verbatim}
+#include <AD/rewrite/burs.h>
+class WffIndex {
+   int state;
+public:
+   WffIndex() : state(BURS::undefined_state) {}
+   int get_wff_state() const { return state; }
+   void set_wff_state(int s) { state = s; }
+};
+
+datatype Wff : public WffIndex
+   = F
+   | T
+   | Var     (const char *)
+   | And     (Wff, Wff)
+   | Or      (Wff, Wff)
+   | Not     (Wff)
+   | Implies (Wff, Wff)
+   ;
+
+...
+
+rewrite Simplify {
+   index: Wff = wff;
+   ...
+};
+\end{verbatim}
+
+Here, the class \T{WffIndex} provides the internal index interface
+functions \verb|get_wff_state| and \verb|set_wff_state| expected by
+the rewriter.  Note that each term must be initialized with the
+state \verb|BURS::undefined_state|.  This constant is defined within
+the library include file \verb|<AD/rewrite/burs.h>|.
+
+To enable the index, in the rewriter 
+we specify that datatype \T{Wff} should make use of the index named \T{wff},
+using the \T{index:} declaration.  
+
+\Subsubsection{Using an external index}
+
+External indices are specified in a similar manner.  Given a datatype
+{\em Foo} and an external index named {\em bar}, the rewriter invokes
+calls to the following functions:
+\begin{quotation}
+\noindent
+   {\tt int get\_{\em bar}\_state({\em Foo}) const; } \\
+   {\tt void set\_{\em bar}\_state({\em Foo}, int); }
+\end{quotation}
+Typically, these are implemented as member functions in the rewrite class.
+
+The rewriter uses the function {\tt get\_{\em bar}\_state} to lookup
+previously cached information set by the function {\tt set\_{\em bar}\_state}.
+Typically, the implementation of the two functions can be implemented
+as hash tables, using the addresses of the terms as hash functions and
+pointer equality comparisons.   Note that caching can be {\em lossy}; i.e.
+it is perfectly alright for the cache to eliminate cached information to
+keep its size under control.  If no cache information is found,
+the function {\tt get\_{\em bar}\_state} should return 
+\verb|BURS::undefined_state|.
+
+\paragraph{Class \CLASSDEF{RewriteCache}}
+   To make it easy for the users to implement their own external indices,
+two sample external index implementation are provided.  The first
+is the class \verb|RewriteCache| defined in the library file 
+\verb|<AD/rewrite/cache.h>|.  
+
+   The class \verb|RewriteCache| implements a simple fixed capacity
+   cache with the following member functions.
+\begin{verbatim}
+   RewriteCache();
+   RewriteCache(int capacity);
+  ~RewriteCache();
+ 
+   void clear();                   // after rewriting
+   void initialize();              // before rewriting
+   void initialize(int capacity);  // before rewriting/also set capacity
+   
+   int capacity() const; 
+               
+   void set_state(const void * t, int s);
+   int get_state(const void * t) const;
+
+   void invalidate(const void * t); 
+\end{verbatim}
+
+The user should call the function \verb|initialize| before rewriting
+in order to setup the cache and/or clear out previously cached result.
+The functions \verb|set_state| and \verb|get_state| can be used to
+implement the necessary state caching functions expected by the rewriter.
+
+Returning to our \T{Wff} example, we have the following possible implementation
+of the external index:
+\begin{verbatim}
+   rewrite class Simplify (Wff)
+   {  RewriteCache cache;
+   public:
+      int get_wff_state(Wff t) const { return cache.get_state(t); }
+      void set_wff_state(Wff t, int s) { cache.set_state(t,s); }  
+   };
+
+   rewrite Simplify
+   {  index: Wff = extern wff;
+      ...
+   };
+\end{verbatim}
+
+\begin{Tips}  
+If manual memory management is used, 
+a term should not be deallocated from memory if a cache
+contains a handle to it.  The method \verb|invalidate| can be used to
+make sure the entry associated with a term is removed from the cache.
+\end{Tips}
+
+\paragraph{Class \CLASSDEF{GCRewriteCache}}
+
+{\em This class has not be completely tested.}
+
+Since a garbage collectable object is not reclaimed by the collector
+whenever there exists a reference to it, using the class
+\verb|RewriteCache| may create problems since objects are not reclaimed
+if it is referenced by the cache.  The template class \verb|GCRewriteCache|
+solves this problem by using {\em weak pointers} in its internal 
+implementation.  
+
+The template class \verb|GCRewriteCache<T>| expects \verb|T| to be
+a class derived from \verb|GCObject|.   
+This class implements the following functions:
+\begin{verbatim}
+   GCRewriteCache();
+   GCRewriteCache(int capacity);
+  ~GCRewriteCache();
+ 
+   void clear();                   // after rewriting
+   void initialize();              // before rewriting
+   void initialize(int capacity);  // before rewriting/also set capacity
+   
+   int capacity() const;
+               
+   void set_state(T * t, int s);
+   int get_state(T * t) const;
+
+   void invalidate(T * t); 
+\end{verbatim}
+
+The usage of these functions are identical to that of class 
+\verb|RewriteCache|.
+
+\Subsection{Short circuiting rewrite paths with \TDEF{cutrewrite}}
+
+   From version 2.3.0 onward, the \T{cutrewrite}($e$) 
+statement may be used wherever a \T{rewrite}($e)$ statement is expected.
+The \T{cutrewrite} statement can be used to selectively ignore certain
+subterms during the rewriting process.
+
+The semantics of \T{cutrewrite}($e$) is to replace the current redex
+with $e$ but do not bother with looking for other redexes in the replacement
+term.  This means that the replacement term will not be re-traversed
+immediately.  Furthermore, the replaced term will not match any other
+left hand side sub-patterns except pattern variables and wildcards.
+
+   This feature is very useful for preventing the rewriter from
+looking inside certain terms. 
+
+   To demonstrate, consider the simple following example:
+\begin{verbatim}
+   datatype Exp = NUM of int 
+                | ADD of Exp, Exp
+                | SUB of Exp, Exp
+                | MUL of Exp, Exp
+                | DIV of Exp, Exp
+                | FINAL of Exp
+                ;
+   Exp e = ADD(NUM(1),MUL(NUM(2),NUM(3)));
+\end{verbatim}
+
+Suppose we want to find all numbers within 
+the expression \T{e} and increment their values by 1.  
+The straight forward way of writing:
+\begin{verbatim}
+   rewrite (e) type (Exp) {
+      NUM x: NUM(x+1) 
+   }
+\end{verbatim}
+\noindent will not work, since the replacement term is a new redex,
+and the rewriting system will not terminate.
+
+We can reimplement the rewriting system as a two stage process.
+First, we mark all terms that we do not want to be changed; whenever we
+find a marked term, we execute a \T{cutrewrite} to prevent the term
+from being changed.  Then we unmark the terms.
+\begin{verbatim}
+   rewrite (e) type (Exp) {
+      NUM x:   FINAL(NUM(x+1));
+   preorder:
+      FINAL _: cutrewrite;
+   }
+   rewrite (e) type (Exp) {
+      FINAL x: x
+   }
+\end{verbatim}
+
+In the first rewrite statement, replacement terms that we 
+want to stay fixed are encapsulated
+within the auxiliary \T{FINAL} constructor.  
+Recall that preorder rules are tried before the subterms of a redex are 
+reduced.  Thus we can make sure all that
+all terms that are arguments to a \T{FINAL} term is left unaltered
+by adding a \T{preorder} rule that executes a \T{cutrewrite}\footnote{
+If an expression argument is not given to a \T{cutrewrite} statement, then
+the redex is left unchanged.}
+Finally, after the first rewrite statement finishes, we use 
+the second rewrite statement to remove all \T{FINAL} terms generated
+in the first.
+
+The semantics of \T{cutrewrite} needs further explanation.  Consider
+the following rewrite system:
+\begin{verbatim}
+   rewrite (e) type (Exp) {
+      NUM x:          cutrewrite(NUM(x+1))
+   |  MUL(X, NUM 1):  X
+   |  MUL(NUM 1,X):   X
+   }
+\end{verbatim}
+Given the term \verb|MUL(NUM(0),NUM(2))|, the subterms \verb|NUM(0)|
+and \verb|NUM(1)|
+will be rewritten by the first rule
+into \verb|NUM(1)| and \verb|NUM(3)| respectively.
+Furthermore, the replacement term \verb|NUM(1)| will {\em not} match
+the left subpattern in \verb|MUL(NUM 1,X)|.  Thus the result of the rewrite
+will be \verb|MUL(NUM(1),NUM(3))|.
+
+\begin{Tips}
+Since the semantics of a rewriting system with \T{cutrewrite} can
+be tricky to analyze, its use should be avoided as much as possible. 
+\end{Tips}
+
+\Subsection{Conditional failure with \TDEF{failrewrite}}
+
+   From version 2.3.0 onward, the \T{failrewrite}
+statement may be used wherever a \T{rewrite} statement is expected.
+The \T{failrewrite} statement is an alternate way of writing
+conditional rewriting rules, and it is often useful when the condition
+to be checked is too complex to be written as a guard.
+
+When a \T{failrewrite} statement is executed within the rhs action of a
+rewrite rule, the current pattern is rejected and the rewriter
+will proceed to try other matches.   
+
+For instance, suppose the current redex is 
+\verb|DIV(INT 0,INT 0)| and the following rules are specified within
+a rewriting system:
+\begin{verbatim}
+   DIV(INT X,INT Y): { if (Y == 0) failrewrite; else rewrite(NUM(X/Y); }
+|  DIV(INT 0,Y):     NUM(0)
+\end{verbatim} 
+
+The execution of these rules will proceed as follows:  both patterns
+match the redex, but the first rule will be tried first.  Since
+\verb|Y| is zero, the \T{failrewrite} statement is executed.  The rewriter
+will proceed to try the
+second rule and the redex will be replaced with \verb|NUM(0)|. 
+Note that if we omit the \T{failrewrite} statement
+in the first rule, as in:
+\begin{verbatim}
+   DIV(INT X,INT Y): { if (Y != 0) rewrite(NUM(X/Y); }
+|  DIV(INT 0,Y):     NUM(0)
+\end{verbatim}
+the rewriter will commit on the first rule
+and no action will be performed on the redex.
+
+Like \T{rewrite} and \T{cutrwerite}, \T{failrewrite}
+acts as a branching statement and all statements
+immediatedly following \T{failrewrite} are dead code.
+
+\Subsection{Confluence and termination}
+
+   Currently no automatic checking is available to make sure that
+a set of rewriting rules is confluent and will terminate.  This is currently
+the user's responsibility.  Some verification features will be developed
+in the future.
+
+\Subsection{Debugging Tree Rewriting}
+
+   By default, \Prop{} generates a macro \verb|DEBUG_|$C$ for each
+rewrite class named $C$.  The user can redefine this macro in order to
+trace the replacements that are performed during the execution of a 
+set of rewriting rules.  The default definition of \verb|DEBUG_|$C$
+is as follows:
+\[
+\verb|#define DEBUG_|C({\it R,redex,filename,linenumber,ruletext})\ {\it R}
+\]
+i.e. it simply returns the value of {\it R}.
+
+The arguments to the macro are as follows: 
+\begin{itemize} 
+\item {\it R} is the new replacement term.
+\item {\it redex} is the current redex, before the replacement has been
+performed.
+\item {\it filename} is the file name of the current rewriting rule.
+\item {\it linenumber}  is the location of the current rewriting rule.
+\item {\it ruletext} is a string that describes the current rule.
+\end{itemize}
+
+In order to activate tracing, the user can redefine the macro
+\verb|DEBUG_FOO| (for rewrite class \verb|FOO|) as follows:
+\begin{verbatim}
+#define DEBUG_FOO(a,b,c,d,e) print_rule(a,b,c,d,e)
+
+template <class T>
+  T print_rule(T replacement, T redex, 
+               const char * file_name, 
+               int line, const char * rule_text)
+  { cerr << file_name << ':' << line << ": " << rule_text 
+         << " redex = " << redex << " replacement = " << replacement
+         << endl;
+    return replacement; 
+  }
+\end{verbatim}
+Note that these definitions must appear
+before the \verb|rewrite FOO| declaration.
+
+\Subsection{Optimizing Tree Rewriting} \label{sec:optimize-rewriting}
+
+   An experimental rewriting optimizer based on partial evaluation
+techniques has been implemented in release 2.3.4 of \Prop.  The optimizer
+can be enabled with the option \OPTIONDEF{-Orewriting}.  
+
+Informally speaking, the rewriting optimizer will try to locate 
+``longer'' reduction sequence and add these to your rewriting rules.  
+The result is that during execution these bigger reduction steps are
+taken whenever possible.
+
+   For example, consider the \verb|Wff| datatype defined
+in section~\ref{sec:rewriting-modifier}.  Suppose we have the following
+two rewriting rules in our rule set:
+\begin{verbatim}
+   Not(Not X): X
+|  FORALL(X,A,P): Not(EXISTS(X,A,Not(P)))
+\end{verbatim}
+
+Given an input term of the form \verb|FORALL(X,A,Not(P))|, the term will
+first be reduced to \verb|Not(EXISTS(X,A,Not(Not(P))))| via the second rule,
+then to \verb|Not(EXISTS(X,A,P))| via the first rule.  The optimizer
+can discover that this two step reduction can be compressed into one
+step if the rewriting system is augmented with the following rule:
+
+\begin{verbatim}
+   FORALL(X,A,Not P): Not(EXISTS(X,A,P))
+\end{verbatim}
+
+Note that this augmented rule is a {\em specialization} of the two rules 
+given by the user.  In general, the rewriting optimizer will repeatedly
+look for useful specializations and add them to the user rule set\footnote{
+To ensure termination of the optimization process, 
+augmented rules will not be further specialized.}.  
+These specialized rules will perform multiple reductions in one single step.
+
+To make use of the optimizer, the rewriting system must have the following
+properties:
+\begin{enumerate}
+   \item  It must be strongly normalizing, i.e. it will terminate under all
+   inputs.  
+   \item  It must be confluent, or else confluence is not necessary. 
+   Notice that the optimizer can and will alternate the reduction order
+   of a rule set.  Thus if a rewriting system is non-confluent, an
+   optimized rewriting system may give a different result.
+\end{enumerate}
+
+In addition, the following things should hold to maximize the effectiveness
+of the optimizer.
+\begin{enumerate}
+   \item  Indices (i.e. state caching) should be enabled.   Otherwise
+   the optimizer will not be able to optimize a rule.
+   \item  Specializable rules must be simple, i.e. the right hand side
+   must be written as an expression consist of only \Prop{} datatypes.
+   If the right hand side is a complex statement or if it involves
+   external function calls, the optimizer will fail to analyze it properly.
+   \item  Only bottom-up rules may be present.
+   \item  Avoid conditional rules whenever possible.  
+\end{enumerate}
+
+Finally, it should be warned that an optimized rewriting system  
+may generate a lot more code than the un-optimized one.  The user should
+view the generated report and check that excessive specializations have not 
+been performed.
+
+\Section{User defined datatypes: Views} \label{sec:views}
+
+   For many applications it is necessary to interface \Prop{} to 
+data structures predefined in libraries, or generated by other tools.
+In order to make it possible to work with these external data structures,
+\Prop{}, from version 2.3.3. onward, provides a {\em view} mechanism to
+interface with these data structures.  Using views, an externally defined
+type can be used within \Prop's pattern matching and rewriting
+mechanisms transparently, just as if it were defined by \Prop. 
+The \Prop{} translator will call the
+appropriate interface functions specified by the user to manipulate
+these external datatypes.
+
+\Subsection{A first example} \label{sec:tagged-union}.
+To illustrate the use of views, we'll begin with a simple example.
+
+Suppose in our application we use the following tagged C union to
+represent our expression datatype.  An expression is represented
+simply as a pointer to this structure.  An null expression is
+represented simply as the NULL pointer.  
+
+\begin{verbatim}
+enum exp_tag { Int = 1, Ident, Add, Sub, Mul, Div };
+struct exp {
+   enum exp_tag tag;
+   union {
+      int          number;
+      const char * ident;
+      struct { struct exp * l, * r } children;
+   } u;
+};
+typedef struct exp * Exp;
+/* User defined constructor functions */
+Exp NONE = NULL;
+extern Exp INT(int);
+extern Exp IDENT(const char *);
+extern Exp ADD(Exp, Exp);
+extern Exp SUB(Exp, Exp);
+extern Exp MUL(Exp, Exp);
+extern Exp DIV(Exp, Exp);
+\end{verbatim}
+
+Suppose this data structure is already used extensively in other 
+modules, and we'd like to \Prop{} pattern matching mechanisms while keeping 
+the old code intact.  We can accomplish this by declaring a
+view to this data structure, using a \TDEF{datatype view}
+definition:
+\begin{verbatim}
+dataype Exp :: view =
+   match (this ? this->tag : 0)
+     view 0     => NONE
+   | view Int   => INT(int = this->u.number)
+   | view Ident => ID (const char * = this->u.ident)
+   | view Add   => ADD(Exp = this->u.children.l, Exp = this->u.children.r)
+   | view Sub   => SUB(Exp = this->u.children.l, Exp = this->u.children.r)
+   | view Mul   => MUL(Exp = this->u.children.l, Exp = this->u.children.r)
+   | view Div   => DIV(Exp = this->u.children.l, Exp = this->u.children.r)
+   ;
+\end{verbatim}
+
+In the above, a view named \verb|Exp| is defined.   Let's describe
+what the definition means: in general, 
+a view definition has three main parts, the {\em view selector},
+a set of {\em view transformation rules}, and a set {\em of view accessor
+expressions}.  These parts perform the following tasks:
+
+\begin{description}
+\item[View selector]  The {\em view selector} is specified in the
+the \TDEF{match} part of the definition.   In this example, 
+the expression associated with \T{match} is 
+\verb|this ? 0 : this->tag|.  This returns a variant discrimination integer
+from \verb|0| to \verb|Div|.  
+Note that the pseudo variable \TDEF{this} 
+refers to an object of type \verb|Exp|.
+
+\item[View transformation rules]
+Each of the clauses 
+\[ \TDEF{view} {\it exp} \verb|=>| {\it term} \]
+specifies
+a {\em view transformation rule}.   These rules are used to specify
+how to transform a computed variant tag into a pattern.    In general,
+expression {\it exp} must be a constant expression usable in a 
+\verb|case| statement.
+
+\item[View accessors]
+In each of the constructor arguments, an {\em view accessor} expression
+can be defined to access the logical components of the constructor.
+In the rule:
+\begin{verbatim}
+   | view Add   => ADD(Exp = this->u.children.l, Exp = this->u.children.r)
+\end{verbatim}
+
+The expressions \verb|this->u.children.l| and \verb|this->u.children.r|
+tell \Prop{} how to access the left and right child of the an addition
+expression node.
+
+Note that since the variant \verb|NONE| has no arguments, it is represented
+as a nullary constructor, and no accessors expressions are defined.
+\end{description}
+
+A pretty printing function for \verb|struct exp| can be implemented
+in \Prop{} using pattern matching as follows:
+\begin{verbatim}
+ostream& operator << (ostream& s, Exp e)
+{  match (e)
+   {  NONE:     { s << "none"; }
+   |  INT i:    { s << i; }
+   |  ID id:    { s << id; }
+   |  ADD(a,b): { s << '(' << a << " + " << b << '); }
+   |  SUB(a,b): { s << '(' << a << " - " << b << '); }
+   |  MUL(a,b): { s << '(' << a << " * " << b << '); }
+   |  DIV(a,b): { s << '(' << a << " / " << b << '); }
+   }
+   return s;
+}
+\end{verbatim}
+
+Note that this is exactly the same code we would've written if
+\verb|Exp| is defined as a datatype rather than a view.  This means
+that the user can reimplement the expression data structure
+as a \Prop's datatype at a latter time, without altering the \Prop{}
+source code.  In effect, the {\em logical} view of a datatype, and its
+{\em physical} implementation can separately.
+With this {\em representation transparency} capability,
+programs written in \Prop's pattern matching formalisms can evolve 
+in an incrementally and pain-free manner.
+
+The generated code for the above function will resemble the following
+output.  Note that all the view selectors and view accessors are
+inlined into the code, and in general, views incur no overhead to
+their use.
+\begin{verbatim}
+ostream& operator << (ostream& s, Exp e)
+{  switch (e ? e->tag : 0)
+   {  case 0:      { s << "none"; }
+      case Int:    { s << e->u.number; }
+      case Ident:  { s << e->u.ident; }
+      case Add:    { s << '(' << e->u.children.l 
+                       << " + " << e->children.r << '); }
+      case Sub:    { s << '(' << e->u.children.l 
+                       << " - " << e->children.r << '); }
+      case Mul:    { s << '(' << e->u.children.l 
+                       << " * " << e->children.r << '); }
+      case Div:    { s << '(' << e->u.children.l 
+                       << " / " << e->children.r << '); }
+   }
+   return s;
+}
+\end{verbatim}
+
+\Subsection{Another view example}
+
+Suppose we use the following alternative implementation, a
+\verb|Expression| class hierarchy to represent
+an expression in our AST.  
+Note that \verb|Exp| is an abstract base class inherited
+by the classes \verb|Number|, \verb|Operator|, \verb|Identifer|, etc.
+
+\begin{verbatim}
+class Expression
+{
+public:
+
+   // This class uses a ``wide'' interface
+   virtual int  number() const         = 0;  // returns a number
+   virtual const char * ident() const  = 0;  // returns an identifier
+
+   // returns the ith subchild
+   virtual const Expression * child(int) const = 0; 
+   // mutable version of above
+   virtual Expression *& child(int) = 0;     
+};
+
+typedef Expression * Exp;
+
+class NullExp  : public Expression { ... };
+class Number   : public Expression { ... };
+class Operator : public Expression { ... };
+class Identifier : public Expression { ... };
+\end{verbatim}
+
+In order to provide a suitable interface to \Prop's view mechanism,
+we introduce an additional member function to return a variant tag:
+
+\begin{verbatim}
+class Expression
+{
+public:
+   enum Variant { None, Int, Ident, Add, Sub, Mul, Div };
+   virtual Variant get_variant() const = 0;
+}
+\end{verbatim}
+
+In addition, we assume the following constructor functions have been
+implemented:
+
+\begin{verbatim}
+extern Exp INT(int);
+extern Exp IDENT(const char *);
+extern Exp ADD(Exp, Exp);
+extern Exp SUB(Exp, Exp);
+extern Exp MUL(Exp, Exp);
+extern Exp DIV(Exp, Exp);
+\end{verbatim}
+
+Now, with these definitions in place, we can define a datatype view of the
+above \verb|Expression| hierarchy using the following definition:
+
+\begin{verbatim}
+datatype Exp :: view
+   = match (this->get_variant())
+     view Expression::None  => NONE
+   | view Expression::Int   => INT (int = this->number()) 
+   | view Expression::Ident => ID  (const char * = this->ident())
+   | view Expression::Add   => ADD (Exp = this->child(0), 
+                                    Exp = this->child(1))
+   | view Expression::Sub   => SUB (Exp = this->child(0), 
+                                    Exp = this->child(1))
+   | view Expression::Mul   => MUL (Exp = this->child(0), 
+                                    Exp = this->child(1))
+   | view Expression::Div   => DIV (Exp = this->child(0), 
+                                    Exp = this->child(1))
+   ;
+\end{verbatim}
+
+An evaluation function can be written
+using \Prop's pattern matching construct:
+
+\begin{verbatim}
+int eval(Exp e, const Env& env)
+{  match (e) 
+   {  NONE:          { return 0; }
+   |  INT i:         { return i; }
+   |  ID id:         { return env(id); }
+   |  ADD (x,y):     { return eval(x,env) + eval(y,env); }
+   |  SUB (x,y):     { return eval(x,env) - eval(y,env); }
+   |  MUL (x,y):     { return eval(x,env) * eval(y,env); }
+   |  DIV (x,INT 0): { cerr << "Division by zero"; return 0; }
+   |  DIV (x,y):     { return eval(x,env) / eval(y,env); }
+   }
+}
+\end{verbatim}
+Note that this code works equally well with the tagged union representation
+defined in section~\ref{sec:tagged-union}. 
+
+We can also use rewriting to transform an expression tree as follows
+
+\begin{verbatim}
+void simplify(Exp& e)
+{
+   rewrite (e) type (Exp)
+   {  ADD(INT i, INT j): INT(i+j)
+   |  SUB(INT i, INT j): INT(i-j)
+   |  MUL(INT i, INT j): INT(i*j)
+   |  DIV(INT i, INT j): INT(i/j)
+   }
+}
+\end{verbatim}
+
+\Subsection{Syntax of view definitions}
+
+The general syntax of a view definition resembles that of a
+\T{datatype} definition:
+
+\begin{syntax}
+\NDEF{Datatype\_Spec} 
+   & \IS & \N{Datatype\_View\_Spec} \\
+\NDEF{Datatype\_View\_Spec} 
+   & \IS & \Id \T{::} \T{view} \T{=} \\ 
+   &     & \quad \T{match} \T{(} \N{Exp} \T{)} \\
+   &     & \quad \N{View\_Cons\_Specs} \\
+\NDEF{View\_Cons\_Specs} 
+   & \IS & \ALT{\TDEF{view} \N{Exp} \T{=>} \N{Cons\_Spec}}{|} \\
+\end{syntax}
+
+Default arguments in a \N{Cons\_Spec} are interpreted as view accessors.
+
+There are a few general rules to observe when defining a view:
+\begin{enumerate}
+ \item A \T{datatype view} definition only defines the interface
+ to an external data structure and no code is generated.  In particular,
+ the defined view name is not an actual \Cpp{} type.
+ Thus the user is responsible for defining all appropriate type definitions.
+ \item All other qualifiers other than \T{view} are ignored.   Thus 
+ automatic generation of pretty printers, garbage collection interface
+ routines, etc. are disabled for views.
+ \item In general, the view accessors must be usable as lvalues
+ if the user wants to modify a view datatype.  This includes the
+ situation when in-place rewriting is used.
+ \item Finally, the user are responsible for generating the
+ constructor functions.  In the two examples given above, the user
+ should implement the functions \T{INT}, \T{ID}, etc.  
+\end{enumerate}
+
+\Section{Graph Types and Graph Rewriting} \label{sec:graph}
+
+A typical compiler uses many types of graphs to represent internal program 
+information.  For instance, control flow graphs, 
+data dependence graphs, call graphs, def/use chains are
+some of the most common examples.  In order to automate the process
+of implementing and manipulating these graph structures, \Prop{} provides
+a generic formalism-- {\em graph types}--
+for specifying multisorted, attributed, hierarchical directed graphs in 
+very high level manner.  The data structure mapping process of translating
+high level graph specifications into concrete \Cpp{} classes is completely
+automated.  Thus the user can concentrate on specifying the semantic
+relationships between the elements of the domain, instead of the
+implementation details.
+
+The graph structure mapping process uses real-time set machine
+simulation\cite{real-time-SETL} and subtype analysis\cite{subtype-SETL} 
+to convert associative accesses involving sets, maps, and multimaps
+into hash free, worst-case constant time pointer manipulations.
+This optimization is performed transparently by the translator.
+
+Manipulation of graphs structures are done in three ways: 
+\begin{description} 
+\item[object-oriented] 
+ Using a standard interface generated from \Prop{} the user can 
+manipulate a graph in the usual procedural/object-oriented manner. 
+\item[set formalism]  Using an embedded SETL\cite{SETL}-like sublanguage, 
+the user can manipulate the graphs using high level set operations 
+such as set comprehension.  
+\item[graph rewriting]  At the highest level, analysis and transformation 
+can be carried out using the graph rewriting formalism.  
+\end{description}
+
+In this section we'll describe each of these topics in detail.
+
+\Subsection{Graph Types} \label{sec:graph-types}
+
+A \INDEX{graph type} declaration is used to specify a
+graph structure 
+with multiple sorts of labeled nodes and labeled directed edges.  
+Attributes can be attached to both nodes and edges.  
+The syntax of \T{graphtype} declarations is as follows:
+\begin{syntax}
+\NDEF{Graph\_Type} 
+      & \IS & \TDEF{graphtype} \Id \\
+      & & \quad \OPT{\T{:} \N{Inherit\_List}} \\
+      & & \quad \OPT{\T{::} \MORE{\N{Graph\_Mode}}{}} \\
+      & & \T{declare} \\
+      & & \quad \TDEF{node:} \ALT{\N{Node\_Def}}{|} \\
+      & & \quad \TDEF{edge:} \ALT{\N{Edge\_Def}}{|} \\
+      & & \T{begin} \\
+      & & \quad \N{Code} \\
+      & & \T{end} \T{graphtype} \T{;} \\
+\NDEF{Graph\_Mode} & \IS & \\
+\NDEF{Node\_Def} & \IS & \Id \OPT{\OPT{\T{of}} \N{TypeExp}} \\
+\NDEF{Edge\_Def} 
+    & \IS & \Id \OPT{\T{of}} \TypeExp \T{->} \TypeExp \\
+    & \OR & \Id \OPT{\T{of}} \TypeExp \T{<->} \TypeExp \\
+    & \OR & \Id \OPT{\T{of}} \TypeExp \T{<=>} \TypeExp \\
+    & \OR & \Id \OPT{\T{of}} \TypeExp \T{<=>*} \TypeExp \\
+\end{syntax}
+
+\Subsection{The Graph Interface} \label{sec:graph-interface}
+\INCOMPLETE
+
+\Subsection{Set Formalisms} \label{sec:set-formalisms}
+\INCOMPLETE
+
+\Subsection{Graph Rewriting} \label{sec:graph-rewriting}
+\INCOMPLETE
+
+\Section{Running the Translator} \label{sec:usage} 
+
+The \Prop{} translator is a program called \verb|prop|.  The translator
+uses the following command line syntax:
+\begin{syntax}
+  \NDEF{Running\_Prop} & ::= &
+   \T{prop} \OPT{{\em prop\_options}} \ALT{{\em file}}{} \\
+\end{syntax}
+
+Here, \N{File} is a file with suffix \verb|.p|$*$.  By default, the output
+file will have the same name with the \verb|p| extension removed.
+For example, a file named ``foo.pC'' will be translated into
+the file ``foo.C''  Similarly, a file named ``bar.ph'' will be translated 
+into ``bar.h''  
+
+\Subsection{Options}
+The available options to the translator are as follows:
+\begin{description}
+\item[\OPTIONDEF{-G -GNU}]      Use GNU style error messages.
+\item[\OPTIONDEF{-I{\em path}}] Use the search path {\em path}.
+\Prop{} will search {\em path} to look for \Prop{} files with 
+the suffix \verb|.ph| inside a \verb|#include| directive.  Multiple
+paths can be specified by using multiple \verb|-I| options.
+\item[\OPTIONDEF{-l -no\_line\_directives}]   By default, \Prop{} will try
+to generate \verb|#line| directives to correlate the source and
+the translated output.  This option suppresses this feature.
+\item[\OPTIONDEF{-M -make\_depends}]  Similarly to the \verb|-M| option
+in \verb|cc| and \verb|cpp|.  This option generates a suitable dependency
+list for Makefiles.
+\item[\OPTIONDEF{-memory\_usage}]  Print memory use during translation.
+\item[\OPTIONDEF{-n -no\_codegen}]  
+Don't output any code; perform semantic checking 
+only.
+\item[\OPTIONDEF{-N -non\_linear}]  
+Use non-linear patterns during pattern matching.
+A non-linear pattern is one in which a variable occurs more than
+once.   By default, \Prop{} consider this an error.
+\item[\OPTIONDEF{-o{\em outfile}}]  Send output to {\em outfile} instead of 
+the default.
+\item[\OPTIONDEF{-Ofast\_string\_match}]  
+Generate (potentially) faster string matching
+code by expanding string literal tests into character tests.  By default, 
+\Prop{} generates string tests using \verb|strcmp| and binary search.
+\item[\OPTIONDEF{-Oadaptive\_matching}]  Use the adaptive pattern matching 
+algorithm\footnote{The implementation may not be effective.}.
+\item[\OPTIONDEF{-Oinline\_casts}]  
+Generate inline type casts instead of function
+calls that do the same.  This may be faster for compilation.
+\item[\OPTIONDEF{-Orewriting}]  Enable the rewriting optimizer. 
+See also section~\ref{sec:optimize-rewriting} for details.
+\item[\OPTIONDEF{-Otagged\_pointer}]  
+Use a tagged pointer representation instead
+of representing variant tags explicitly in a structure field.  For
+example, if there are two variants called \verb|Foo| and
+\verb|Bar|  in a datatype.  Then a pointer to \verb|Foo| can be tagged
+with a low order bit 0 while a pointer to \verb|Bar| can be tagged with 
+a low order bit 1.  Accessing the tag thus becomes just a simple bit
+test.  This should save space and may be faster\footnote{However, this feature
+has not been fully tested.}
+\item[\OPTIONDEF{-r -report}]  
+Generate a report whenever necessary.  Parser, string
+matching, and rewriting constructs produce reports.
+\item[\OPTIONDEF{-s -strict}]  Use strict semantic checking mode.  
+All warnings are considered to be errors.
+\item[\OPTIONDEF{-S -save\_space}]\label{option:save-space} 
+Use space saving mode.  
+Try not to use inline functions if code space can be saved.  
+Datatype constructors will not be inlined
+in this mode.  Instead, datatype constructors will be generated at
+where the corresponding \TDEF{instantiate datatype} declaration occurs.
+\item[\OPTIONDEF{-t -stdout}]   Send translated program to the standard output.
+\item[\OPTIONDEF{-use\_global\_pool}]  Use global memory pool for allocation.
+\item[\OPTIONDEF{-v{\em num}}]  Use verbose mode in report generation.
+This will provide more detailed information.
+\end{description}
+
+\Subsection{Error Messages}
+
+The following is a canonical list of all error messages generated by
+the \Prop{} translator.  Each message is prefixed by the
+file name and line number in which the error occurs.    Most of these
+errors messages are self explanatory; more detailed explanations are provided
+below.
+
+\begin{Error}
+\errormsg{unknown option {\em option}}  The translator does not recognize 
+the command line {\em option}.   Type {\em prop} to see a list of options.
+\errormsg{Error in command: {\em command}}  The translator fails when trying
+to execution {\em command}.  When multiple files are specified in a command
+line, {\em prop} invokes itself on each of the file. 
+\errormsg{{\em pat} with type {\em type} is not unifiable}  Pattern has not
+been declared to be a unifiable type.   
+\errormsg{Sorry: pattern not supported in rewriting: {\em pat}}  Pattern
+{\em pat} is not supported.  Currently, logical pattern connectives
+are not supported in rewriting.  You'll have to rewrite them into
+non-logical form.
+\errormsg{Unknown complexity operator: {\em op}}  
+\errormsg{accessor is undefined for view pattern: {\em pat}} An accessor
+function has not been declared for a constructor.  When using datatype views
+\errormsg{arity mismatch (expecting $n$) in pattern: {\em pat}}  Pattern
+{\em pat} is expected to have arity $n$.   The arity is the number of
+expressions that you're matching concurrently.  If you are matching $n$
+objects then there must be $n$ patterns for each rule.
+\errormsg{arity mismatch in logical pattern: {\em pat}}  Logical patterns
+do not match the arity of a pattern.
+\errormsg{bad constructor type {\em type}}
+\errormsg{bad view constructor pattern: {\em pat}}
+\errormsg{can't find include file {\em file}}  Additional search paths
+can be specified with the \verb|-I| option
+\errormsg{component \#$i$ not found in constructor {\em con}}  
+Datatype constructor {\em con} does not have a component named \#$i$.
+This can happen when you write a record constructor expression and misspelt
+one of the labels.
+\errormsg{component $l$ not found in constructor {\em con}}  Datatype
+constructor {\em con} does not have a labeled component $l$.
+\errormsg{constructor {\em con} already has print formats}
+\errormsg{constructor {\em con} is not a class}
+\errormsg{constructor {\em con} is not a lexeme}  A constructor is used
+as a terminal in the parser but it has not been declared to be a lexeme.
+\errormsg{constructor {\em con} doesn't take labeled arguments}  You're trying
+to use record constructor syntax on a constructor take does not take
+record arguments.
+\errormsg{constructor {\em con} is undefined}  
+\errormsg{cyclic type definition in type {\em id} = {\em type}}
+Type abbreviations cannot be cyclic.  For recursive types, use \verb|datatype|
+definitions.
+\errormsg{datatype {\em T} is not a lexeme type}  {\em T} is used as a
+terminal within syntax class when it has not been declared as a lexeme type.
+All non-terminals must be a defined using the \verb|lexeme| qualifier.
+\errormsg{determinism {\em det} not recognized}
+\end{Error}
+
+\begin{Error}
+\errormsg{duplicated definition of pattern constructor '{\em con}'}
+  The constructor {\em con} has already been in another datatype.  {\em Prop}
+  does not allow overloading of constructor names.
+\errormsg{duplicated label '$l$' in expression: {\em exp}}
+  A record type has one of its labels duplicated.
+\errormsg{duplicated label '$l$' in type {\em type}}
+\errormsg{duplicated pattern variable '{\em id}'.  Use option -N}
+   By default,
+   pattern variables may not be duplicated within a pattern.  Non-linear
+   patterns are allowed only when the option \verb|-N| is invoked.
+\errormsg{edge $e$ is not defined in graphtype {\em id} }
+\errormsg{empty type list in rewrite (...) ... }
+\errormsg{expecting $c_1$ ... $c_2$ (from line $l$) but found $c_3$ ... $c_4$ 
+   instead}  Quotation symbols are not properly balanced. 
+\errormsg{expecting non-terminal {\em nt} to have type $t_1$ but found $t_2$}
+   Non-terminal {\em nt} has already been defined to have a
+   synthesized attribute type of $t_1$ but $t_2$ is found.   This can happen
+   if you have rules with the same lhs non-terminal previously defined.  
+\errormsg{expecting type $t_1$ but found $t_2$ in pattern variable '{\em v}'}
+{\em Prop} performs type inference on all the lhs patterns to determine
+the types of all variables.  Type errors can occur if the patterns are
+miswritten.
+\errormsg{expecting type $t_1$ but found $t_2$}
+\errormsg{flexible vector pattern currently not supported in 
+rewriting: {\em pat}}
+\errormsg{format \#$i$ used on constructor {\em con}}
+\errormsg{format \#$l$ used on non-record constructor {\em con}}
+\errormsg{function name mismatch: expecting $f$ ...}
+\errormsg{illegal character $c$}
+\errormsg{illegal context type: {\em type}}  A context type in
+a \verb|matchscan| statement must be previously defined to be datatype.
+The unit constructors of the datatype can be used as context values.
+\errormsg{illegal context(s) in pattern {\em pat}}
+\errormsg{illegal format '\_' on constructor {\em con}}
+\errormsg{illegal incomplete record pattern: {\em pat}}
+\errormsg{illegal print format '$c$' in constructor {\em con}}
+\errormsg{illegal record label '$l$' in expression: {\em exp}}
+\errormsg{illegal width in bitfield '{\em id} ($n$)'}
+\errormsg{inherited attribute '{\em type}' can only be used in treeparser 
+mode in rewrite class {\em id}}  
+\end{Error}
+
+\begin{Error}
+\errormsg{law {\em id}(...) = {\em pat} is not invertible}   Pattern {\em pat}
+cannot be treated as an expression.  It may involve logical patterns and
+wild cards.
+\errormsg{law '{\em id}': bound variable '$v$' is absent in body {\em exp}}
+A parameter variable $v$ must be present within the body of a law.
+
+\errormsg{law '{\em id}': type {\em type} cannot be used in parameter {\em id}}
+
+\errormsg{lexeme {\em id} is undefined}
+
+\errormsg{lexeme class {\em id} is undefined}
+
+\errormsg{lexeme pattern is undefined for constructor {\em con}}
+
+\errormsg{lexeme \{{\em id}\} already defined as {\em regexp}}
+
+\errormsg{lexeme \{{\em id}\} is undefined in {\em regexp}}
+
+\errormsg{missing '\}' in regular expression {\em regexp}}
+
+\errormsg{missing label '$l$' in expression: {\em con} {\em exp}}
+
+\errormsg{missing non-terminal in tree grammar rule: {\em nt}}
+\errormsg{missing type {\em type} in the traversal list of rewrite class {\em id}} 
+Within the rewriting rules, you have used a pattern that involve a constructor
+of type {\em  type} directly but no such types are defined in the 
+rewrite class definition.  You should add the type to the traversal list.
+
+\errormsg{missing type info in expression {\em exp} : {\em type}}
+   Sometimes {\em prop} fails to infer the type of an expression within
+a {\em match} statement.  It such
+cases it is necessary to help out the translator by adding additional
+type information in the patterns.  For example, rewrite some pattern $p$
+as $(p : \tau)$ where $\tau$ is the type of $p$.
+
+\errormsg{missing type info in function {\em f} {\em type}}  Similar to above
+\errormsg{missing type info in rule: {\em f} {\em pat} : {\em type}}
+   Similar to above.
+\errormsg{missing view selector for pattern: {\em pat}}
+\errormsg{multiple mixed polarity pattern variable '{\em v}'}
+\errormsg{multiple unit constructors in polymorphic type {\em id} {\em arg} 
+is not supported}
+\errormsg{negative cost {\em cost} is illegal}
+\errormsg{node {\em id} is not defined in graphtype {\em id}}
+\errormsg{non lexeme type {\em type} in pattern {\em pat}}
+\errormsg{non-relation type {\em type} in pattern: {\em pat}}
+\errormsg{pattern is undefined for lexeme {\em l}}
+\errormsg{pattern scope stack overflows}
+\errormsg{pattern scope stack underflows}
+\end{Error}
+
+\begin{Error}
+\errormsg{pattern variable '$v$' has no binding at this point}
+\errormsg{persist object id is undefined for {\em con}}
+\errormsg{persistence pid {\em name} already allocated for type {\em type}}
+\errormsg{persistence redefined for type {\em type}}
+\errormsg{precedence symbol must be terminal: {\em term}}
+\errormsg{predicate {\em p}: expecting type $t_1$ but found $t_2$}
+\errormsg{redefinition of bitfield '{\em field}'.}
+\errormsg{redefinition of constructor '{\em con}'}
+\errormsg{redefinition of datatype {\em id}}
+\errormsg{redefinition of lexeme class {\em id}}
+\errormsg{replacement not in rewrite class: rewrite {\em exp}}
+\errormsg{rewrite class {\em id} has already been defined}
+\errormsg{rewrite class {\em id} is undefined}
+\errormsg{rule $r$ has incomplete type {\em type}}
+\errormsg{rule $r$ is of a non datatype: {\em type}}
+\errormsg{syntax class {\em id} has already been defined}
+\errormsg{syntax class {\em id} is undefined}
+\errormsg{synthesized attribute '{\em type}' 
+can only be used in treeparser mode in rewrite class {\em id}}
+\errormsg{the class representation of constructor {\em id} has been elided}
+\errormsg{this rule is never selected: $r$}
+\errormsg{this rule is never used: $r$}
+\errormsg{too few arguments {\em arg} in instantiation of type scheme {\em type}}
+\errormsg{too many arguments {\em arg} in instantiation of type scheme {\em type}}
+\errormsg{type {\em type} is not a datatype}
+\errormsg{type {\em type} is undefined}
+\end{Error}
+
+\begin{Error}
+\errormsg{type {\em id} = {\em type} is not a datatype}
+\errormsg{type {\em id} has already been defined as {\em type}}
+\errormsg{type {\em id} has unknown class: {\em C}}
+\errormsg{type '{\em type}' is not rewritable in treeparser mode rewrite class 
+{\em id}}
+    All datatypes used within the treeparser mode of rewriting must be defined
+    with the \verb|rewrite| qualifier.
+\errormsg{type error in pattern {\em pat}: {\em type}}
+\errormsg{type mismatch between nonterminal {\em nt}(type $t_1$) 
+and rule $r$(type $t_2$)}
+\errormsg{type mismatch in pattern: {\em pat}}
+\errormsg{type mismatch in rule $r$}
+\errormsg{type mismatch in rule $r$ {\em pat}}
+\errormsg{type or constructor {\em con} is undefined}
+\errormsg{unable to apply pattern scheme {\em pat}}
+\errormsg{unbalanced $c_1$ ... $c_2$ at end of file}
+\errormsg{undefined non-terminal {\em nt}}
+\errormsg{unification fails occurs check with $t_1$ and $t_2$}
+\errormsg{unmatched ending quote $c$}
+\errormsg{unrecognized quoted expression `{\em exp}`}
+\errormsg{unrecognized quoted pattern `{\em pat}`}
+\end{Error}
+
+\pagebreak
+\appendix
+
+\Section{Garbage Collection in the {\sf Prop} Library} \label{appendix:gc}
+   In this appendix
+we describe the design and implementation of a garbage collector
+based on the Customisable Memory Management framework(CMM)\cite{CMM} in our
+\Prop{} \Cpp{} class library.  Like the previous approach, we have 
+implemented a mostly copying conservative collector based on the work
+of Bartlett\cite{Mostly-copying}.  
+Similar to CMM, our architecture provides a protocol to allow 
+multiple garbage collectors using different algorithms to coexist in the 
+same memory space.  A few improvements are made to
+improve the performance, the flexibility and the functionality of 
+our collector: to reduce retention due to false roots identification,
+blacklisting\cite{Boehm} is used to identify troublesome heap
+addresses; the architecture of the system has been generalized so that it is 
+now possible to have multiple instantiations of Bartlett-style heaps; 
+finally, object finalization and weak pointer support
+are added.  Our collector has been tested on gcc 2.5.8 under Linux,
+and SunOS 4.1.x\footnote{An alpha version also works under Solaris. Thanks
+to Paul Dietz for the patch.}
+
+\Subsection{Introduction}
+   The \Prop{} project involves the design and implementation of 
+an environment and an extension language based on \Cpp{} 
+for compiler construction and program transformation.  
+An outgrowth of this project is the \Prop{} 
+\Cpp{} class library, which contains an extensive set of support algorithms 
+and data structures.  Since a typical compiler manipulates many complex tree,
+dag and graph objects with extended lifetime, manual memory management using
+\Cpp's constructors and destructors, reference counting smart pointers, or
+some other techniques is frequently complex and error prone.  
+Furthermore, with the advent of new algorithms for garbage collection,
+manual memory management techniques do not necessarily provide better 
+performance or space utilization.  To make it possible to make use of garbage 
+collection as a viable alternative for memory management in
+\Cpp\cite{Safe-C++-GC}, we have implemented a garbage collection class 
+hierarchy as part of the \Prop{} library.  The class library can be used
+directly by the users who'd like to program in \Cpp; it can also be
+used as part of the runtime system of a highly level language implemented
+in \Cpp, as we have done for \Prop.
+
+   We have several good reasons to prefer garbage collection over manual 
+memory management.  The \Prop{} language contains many declarative constructs 
+and extensions such as algebraic datatypes, pattern matching, rewriting, and
+logical inference.  When a user programs in \Prop{} using these constructs, 
+an applicative style of programming is the most natural paradigm.  
+
+\Subsection{The Framework}
+
+   We base our design on the work on the Customisable Memory Management(CMM)
+system\cite{CMM}.  In this framework, multiple independent heaps(including
+the usually non-collectable heap) can coexist with each other.
+Bartlett's mostly copying garbage collector is used as the primary collector.
+CMM extends the work of Bartlett\cite{Mostly-copying} 
+by allowing cross heap pointers and unrestricted interior pointers.
+
+  However, all collectable objects are required to derive from a base class 
+and reimplement a tracing method, which identifies the internal pointers of 
+an object.  This burden is usually quite small and in fact can be
+automated from the type definition\footnote{In \Prop, a special keyword
+\T{collectable} is used to identify garbage collected classes and types.
+The \Prop{} translator uses this type annotation to derive the appropriate  
+tracing methods.}
+
+  One of the major advantages of the CMM framework is that multiple
+coorperating collectors can coexist at the same time, which makes it
+possible to customize the behavior of each collector with respect to
+the lifetime behavior of the objects.  In \cite{CMM}, examples are
+given in which the lifetime of certain class of objects exhibit
+first-in/first-out behavior.  In this case a special collector can be
+written to take full advantage of this property.
+
+\subsection{Our Framework}
+   Our framework retains all the benefits and flexibilities of CMM, 
+while extending it in several minor but useful ways:  
+\begin{itemize}
+   \item Like CMM, interior pointers(i.e. pointers to the middle of an object)
+and crossheap pointers (i.e. complex data structures linking nodes locating
+in multiple logical heaps.) are supported.  Pointers to collectable
+objects are non-intrusive: i.e. they are normal \Cpp{} pointers 
+and not encapsulated in templates.
+   \item Also like CMM, we allow multiple garbage collectors using different
+algorithms to coexist.  Unlike CMM, however, we allow multiple 
+Bartlett-style collectors to be instantiated.  Most of the services 
+involving low level page management and object marking have been relegated
+to a separate heap manager.   
+   \item We provide support for finalization and weakpointers.
+   \item We have implemented blacklisting\cite{Boehm} to reduce the chance
+of false roots identification.
+\end{itemize}
+
+\subsection{The Implementation}
+
+   Our implementation has been completely written from scratch since
+we do not desire to utilize copyrighted code and, more importantly,
+we have to make a few important architectural changes:
+ All low level memory management services, such as management of
+the page table and the object bitmap, is now relegated to the class 
+\CLASSDEF{GCHeapManager}.  Collectors now act as clients as of the heap manager
+and the Bartlett-style collector no longer has any special status. 
+
+\subsection{Architecture}
+
+   The architecture of the memory management system is partitioned into
+a few classes, each responsible for providing distinct services:
+
+\begin{itemize}
+   \item \CLASSDEF{GCHeapManager} --- The heap manager.  The heap manager
+    manages the heap table, performs page level
+    allocation and deallocation, and provides miscellaneous services
+    like blacklisting.  It also manages the object bitmaps.
+   \item \CLASSDEF{GC} --- The base class for all garbage collectors.
+    This base class describes the protocol used by all the collector
+    classes\footnote{This base class is also inherited from class
+    \CLASSDEF{Mem}, so that it adheres to the \Prop{} memory management
+    protocol.}
+   \item \CLASSDEF{CGC} --- The base class for conservative collectors.
+     This class is inherited from class \CLASSDEF{GC} and implements some
+     methods for locating the stack, heap, and static data areas.
+   \item \CLASSDEF{BGC} --- Bartlett-style mostly copying collector.
+      This class is inherited from class \CLASSDEF{CGC} and implements
+      the Bartlett mostly copying algorithm.
+   \item \CLASSDEF{MarkSweepGC} --- Mark/sweep style conservative collector.
+      This class is inherited from class \CLASSDEF{CGC} and implements
+      a mark/sweep collection algorithm.
+   \item \CLASSDEF{WeakPointerManager} --- The weakpointer manager.
+      This class manages the weak pointer table and provides a few
+      weak pointer scavenging services for the collectors.
+\end{itemize}
+  
+\Subsection{The Programmatic Interface}
+
+   The programmatic interface to the garbage collector involves two
+base classes, \CLASSDEF{GC} and \CLASSDEF{GCObject}.  The base class 
+\CLASSDEF{GC} provides an uniform interface to all types of collectors 
+and memory
+managers while class {\sf GCObject} provides the interface to all 
+collectable classes.  Table~\ref{GC-Classes} contains a listing
+of the classes in our hierarchy.
+
+\begin{table}
+   \begin{center}
+      \begin{tabular}{|l|l|} \hline
+        Class           & Purpose \\ \hline \hline
+        \sf GCObject    & Collectable object base class \\
+        \sf GC          & Garbage collector base class \\
+        \sf CGC         & Conservative garbage collector base class \\
+        \sf BGC         & Bartlett style mostly copying collector \\
+        \sf MarkSweepGC & A mark-sweep collector \\
+        \sf UserHeap    & A heap for pointerless object \\
+        \sf GCVerifier  & A heap walker that verifies the integrity of a 
+                          structure \\
+      \hline 
+      \end{tabular}
+   \end{center}
+   \caption{\label{GC-Classes} Garbage Collection Classes.}
+\end{table}
+
+Class \CLASSDEF{GCObject} is extremely simple: it redefines the operators
+\verb|new| and \verb|delete| to allocate memory from the default collector,
+and declares a virtual method ``\verb|trace|'' to be defined by subclasses
+(more on this later.)
+
+Memory for a \CLASSDEF{GCObject} is allocated and freed using the usually
+\verb|new| and \verb|delete| operators.  Of course, freeing memory explicitly
+using \verb|delete| is optional for many subclasses of \CLASSDEF{GC}. 
+
+\begin{verbatim}
+   class GCObject {
+   public:
+      inline void * operator new(size_t n, GC& gc = *GC::default_gc) 
+         { return gc.m_alloc(n); }
+      inline void * operator new(size_t n, size_t N, GC& gc = *GC::default_gc) 
+         { return gc.m_alloc(n > N ? n : N); }
+      inline void   operator delete(void *);
+      virtual void trace(GC *) = 0;
+   };
+\end{verbatim}
+
+\subsection{Memory Allocation}
+
+The base class \CLASSDEF{GC} is slightly more complex, as it has to provide
+a few different functionalities.  The first service that class \CLASSDEF{GC} 
+must 
+provide is of course memory allocation and deallocation.  As a time saving
+device we can specify what the default collector is using the methods
+\verb|get_default_gc| and \verb|set_default_gc|.  Method \verb|GCObject::new| 
+will use this collector by default, unless placement syntax is used.
+Method \verb|GCObject::delete|, on the other hand, can correctly infer the 
+proper collector to use by the address of the object.
+
+The low level methods to allocate and deallocate memory are \verb|m_alloc|
+and \verb|free| respectively.  The programmers usually do not have to
+use these methods directly. 
+
+The method to invoke a garbage collection of a specific level is 
+\verb|collect(int level)|.  This forces an explicit collection.
+Method \verb|grow_heap(size_t)| can also be used to explicitly increase
+the heap size of a collector.  Depending of the actual behavior
+of the subclasses, these methods may have different effects.
+
+\begin{verbatim}
+   class GC {
+   protected:
+      static GC * default_gc;
+   public:
+      static GC&  get_default_gc()       { return *default_gc; }
+      static void set_default_gc(GC& gc) { default_gc = &gc; }
+      virtual void * m_alloc   (size_t) = 0;
+      virtual void   free      (void *);
+      virtual void   collect   (int level = 0) = 0;
+      virtual void   grow_heap (size_t) = 0;
+      static  void garbage_collect() { default_gc->collect(); }
+      virtual void set_gc_ratio(int);
+      virtual void set_initial_heap_size (size_t);
+      virtual void set_min_heap_growth   (size_t);
+   };
+\end{verbatim}
+
+\subsection{The GC Protocol}
+The collector and collectable objects must cooperate with
+each other by abiding to a simple protocol:
+\begin{itemize}
+   \item All objects that are to be garbage collected must be derived
+from \CLASSDEF{GCObject}.  The application programmer must also supply a
+``{\bf tracing}'' method.  The purpose of this method is to identify
+all internal pointers to other \CLASSDEF{GCObject}'s.   This method is not
+used by the application programmer directly but only used internally
+by the garbage collectors.
+   \item The tracing method of each collectable must in turn call
+    the tracing method in the class \CLASSDEF{GC} with each pointer to
+    a collectable object that the object owns:
+\begin{verbatim}
+   class GC {
+   public:
+      virtual GCObject * trace (GCObject *) = 0;
+      inline  void trace (GCObject& obj);
+   };
+\end{verbatim}
+    
+     Briefly, the rules are as follows:
+   \begin{enumerate}
+      \item The tracing method of a collectable \T{Foo} has the following
+         general form:
+          \begin{verbatim}
+             void Foo::trace(GC * gc) 
+             {
+                ...
+             }
+          \end{verbatim} 
+      \item If class \T{Foo} has a member that is a pointer \verb|p|
+            to a collectable object of type \T{Bar}, then add:
+           \begin{verbatim}
+               p = (Bar)gc->trace(p);
+           \end{verbatim}
+            to the body of \verb|Foo::trace|. 
+     \item  If class \T{Foo} has a member object
+            \verb|x| that is a subclass of \T{GCObject}, also add:
+           \begin{verbatim}
+               gc->trace(x);
+           \end{verbatim}
+            to the body of \verb|Foo::trace|.
+     \item  If class \T{Foo} is derived from a class \verb|Bar| that
+            is a subclass of \T{GCObject}, add:
+           \begin{verbatim}
+               Bar::trace(gc);
+           \end{verbatim}
+            to the body of \verb|Foo::trace|.
+   \end{enumerate} 
+    Notice that these methods can be arranged in any order.
+\end{itemize}
+
+This protocol can be used by both copying and non-copying collectors.
+In addition, the class \CLASSDEF{GCVerifier} also uses this protocol to 
+walk the heap in order to verify the integrity of a garbage collected 
+data structure.
+
+\subsection{Messages and Statistics}
+    All garbage collectors use the following protocols for status
+reporting and statistics gathering.  
+  
+\begin{verbatim}
+   class GC {
+   public:
+      enum GCNotify {
+         gc_no_notify,             
+         gc_notify_minor_collection,
+         gc_notify_major_collection,
+         gc_notify_weak_pointer_collection,
+         gc_print_collection_time,
+         gc_print_debugging_info
+      }
+      virtual int      verbosity() const;
+      virtual void     set_verbosity(int);
+      virtual ostream& get_console() const;
+      virtual void     set_console(ostream&);
+   };
+\end{verbatim}
+
+\begin{verbatim}
+   class GC {
+   public:
+      struct Statistics {
+         const char *   algorithm;
+         const char *   version;
+         size_t         bytes_used;
+         size_t         bytes_managed;
+         size_t         bytes_free;
+         struct timeval gc_user_time;
+         struct timeval gc_system_time;
+         struct timeval total_gc_user_time;
+         struct timeval total_gc_system_time;
+      }
+      virtual Statistics statistics();
+   };
+\end{verbatim}
+
+    Each collector has a current verbosity level, which can be set
+and reset using the methods \verb|set_verbosity(int)| and
+\verb|verbosity() const|.  The verbosity level is actually a bit
+set containing flags of the type \verb|GC::GCNotify|.  A combination
+of these options can be used.
+\begin{itemize}
+  \item \verb|gc_no_notify| --- no messages at all.
+  \item \verb|gc_notify_minor_collection| --- all minor collections
+    will be notified by printing a message on the current console.
+  \item \verb|gc_notify_major_collection| --- similarly for all major
+    collections.
+  \item \verb|gc_notify_weak_pointer_collection| --- notify the user
+  when weak pointers are being collected.
+  \item \verb|gc_print_collection_time| --- this option will let the
+    collector to print the time spent during collection (and finalization).
+  \item \verb|gc_print_debugging_info| --- this option will print additional
+    information such as stack and heap addresses during garbage collection.
+\end{itemize}
+
+   The current console of a collector is defaulted to the \Cpp{} stream
+\verb|cerr|.  It can be set and inspected with the methods
+\verb|set_console(ostream&)| and \verb|ostream& get_console()| respectively.
+For example, the user can redirect all garbage collection messages
+to a log file \verb|"gc.log"| by executing the following during initialization:
+
+\begin{verbatim}
+   ofstream gc_log("gc.log");
+   GC::get_default_gc().set_console(gc_log); 
+\end{verbatim}
+
+\subsection{The Bartlett style mostly copying collector}
+
+   Currently a Bartlett-style mostly copying collector has been implemented.
+The current version is non-generational but we expect that a generational
+version will be available in the near future.
+
+   The Bartlett-style collector is implemented as the concrete class
+\CLASSDEF{BGC}.  Aside from all the services provided by class \CLASSDEF{GC},
+\CLASSDEF{BGC} also provides the following method:
+
+\begin{verbatim}
+   class BGC : public CGC {
+   public:
+      virtual void set_gc_ratio(int);
+      virtual void set_initial_heap_size (size_t);
+      virtual void set_min_heap_growth   (size_t);
+   }
+\end{verbatim}
+
+  The gc ratio refers to the ratio of used heap space versus
+total heap space.  Class \CLASSDEF{BGC} will invoke the garbage collection
+if this is exceeded.  The default gc ratio for \T{BGC} is 75\%.
+
+  The initial size of the heap and the minimal number of bytes to 
+request from the system during a heap expansion can be adjusted using 
+the methods \verb|set_initial_heap_size| and \verb|set_min_heap_growth|
+respectively.  These methods are declared in the \T{GC}
+protocol.   By default, the initial heap size for this collector
+is 128K and each heap expansion will increase the heap by 512K. 
+
+If an application uses a lot garbage collected storage it is a good
+idea to set the heap size to larger capacity during initialization.
+Otherwise, the collector will have to perform more garbage collection
+and heap expansions to reach a stable state. 
+
+\subsection{The Mark Sweep collector}
+
+   An alternative to the copying collector is the the mark sweep collector.
+Like the previous collector, this collector also uses conservative scanning 
+to locate roots.  Unlikely the Boehm collector, type accurate marking
+is used through the user supplied tracing method.
+
+   Since the default collector is of the \T{BGC} variety, the user must
+create an instance of \T{MarkSweepGC} if the mark sweep collector
+is to be used.  
+
+\begin{verbatim}
+   class MarkSweepGC : public CGC {
+   public:
+      virtual void set_gc_ratio(int);
+      virtual void set_initial_heap_size (size_t);
+      virtual void set_min_heap_growth   (size_t);
+   }
+\end{verbatim}
+
+   The gc ratio in class \T{MarkSweepGC} determines whether heap
+expansion is to be performed after a collection.  The default gc ratio
+is 50\%, thus if after garbage collection the ratio of used versus total
+heap space exceeds one half, the heap will be expanded. 
+
+   For most purposes the two collectors are interchangeable.  Since
+all types of garbage collectors under our framework use the same protocol, 
+applications can be written without fixing a specific garbage collection
+algorithm before hand.  
+
+\subsection{Finalization} 
+
+   One common \Cpp{} idiom uses constructor and destructor for
+resource allocation: resources (including memory but may include others,
+such as file handles, graphical widgets, etc) that are acquired
+in a class constructor are released(finalized) in the class'es destructor.
+
+   There are, however, two opposing views in how finalization should be handled
+in a garbage collector.  The first assumes that garbage collection
+simulates an infinite amount of memory and so automatic finalization is
+inapproriate.   The second takes a more pragmatic view, and assumes that
+automatic finalization should be provided since otherwise explicit resource
+tracking must be provided by the user for collectable datatypes, making garbage 
+collection much less useful than it can be.
+
+   We will refrain from participating in any religious and philosophical
+wars on which dogma is the ``One True Way''. 
+nstead, both types of collectors are provided.
+
+   By default, all garbage collection classes do 
+not perform finalization on garbage 
+collected objects.  If object finalization is desired then the user
+can do one of two things:
+\begin{itemize}
+   \item Enable the finalization of the default heap by putting
+\begin{verbatim}
+   GC::get_default_gc().set_finalization(true);
+\end{verbatim}
+   in the initialization code, or
+   \item Instantiate a different instance of the garbage collector
+    and allocate objects needing finalization from this collector.
+    This may be a better method since not all objects need finalization
+    and those that do not can still be allocated from the default collector.
+    This way we only have to pay for the performance penalty (if any)
+    proportional to the usage of finalization.
+\end{itemize}
+
+   For example, if a collectable class named \T{Foo} should be properly
+finalized we can declare it in the following manner:
+
+\begin{verbatim}
+   extern BGC bgc_f;  // somewhere an instance is defined
+
+   class Foo : public GCObject {
+      Resource r;
+   public:
+      Foo() { r.allocate(); /* allocate resource */ }
+     ~Foo() { r.release(); /* release all resource */ }
+
+      // Make object allocate from bgc_f instead
+      // of the default non-collectable gc.
+      void * operator new (size_t n) { return bgc_f.m_alloc(n); }
+   };
+\end{verbatim}
+
+   When an instance of class \verb|Foo| is identified as garbage, its
+destructor will be called.  [Aside: {\it currently issue such as 
+finalization synchronization is not handled directly by the collector.
+So if there is synchronization constraints during finalization it must
+be handled by the object destructor.  Future versions of \Prop{} will
+provide subclasses with more sophisticated finalization mechanisms.} ]
+
+   Notice that the default \verb|delete| operator of all garbage collectable
+classes will call the object destructor explicitly.  It is a good idea to use
+explicit \verb|delete| if finalization is a rare need since this service
+involves an explicit scan of the garbage memory, which may degrade performace
+with excessive swapping: without finalization the garbage pages will not 
+have to be referenced with a copying collector.
+
+   It should also be noted that since the collector is conservative, there
+is no guarantee that garbage will be identified as such:
+there is no guarantee that all garbage resources will be released.
+In general, however, the efficacy of the collector is quite good and
+so non-critical or plentiful resources can be safely finalized with
+this collector.
+
+\Subsubsection{Weak Pointers}
+
+   It is frequently very useful to be able to keep track of garbage
+collectable objects through the use of ``{\bf weak pointers}.''
+Collectors ignore the presence of weak pointers to garbage collected
+objects; objects with only referencing weak pointers will still be
+collected.  Weak pointers to objects that become garbage will
+be automatically reset to null.
+ 
+   Weak pointers are provided through a smart pointer template 
+\CLASSDEF{WeakPointer}, whose definition is shown below: 
+
+\begin{verbatim}
+template <class T> class WeakPointer {
+   public:
+      inline WeakPointer();
+      inline WeakPointer(const WeakPointer<T>& wp); 
+      inline WeakPointer(T * ptr); 
+      inline WeakPointer<T>& operator = (const WeakPointer<T>& wp);
+      inline WeakPointer<T>& operator = (T * ptr);
+      inline bool is_null() const;
+      inline operator const T * () const;
+      inline operator       T * ();
+      inline const T * operator -> () const;
+      inline       T * operator -> ();
+      inline const T&  operator *  () const;
+      inline       T&  operator *  ();
+   };
+\end{verbatim}
+
+A weakpointer to a garbage collectable 
+class \verb|A| can be defined as \verb|WeakPointer<A>|.
+If a \Prop{} datatype \verb|T| has been defined, a weakpointer to type
+\verb|T| can defined using the
+\TDEF{classof} keyword.  For example:
+
+\begin{verbatim}
+   datatype Wff :: collectable = True | False | And(...)  | ...;
+
+   WeakPointer<classof Wff> a = And(True,False);
+\end{verbatim}
+
+\Subsubsection{The Heap Walker}
+
+   There is a simple class called \CLASSDEF{GCVerify} that can be used
+to verify the integrity of a complex allocated data structure.
+This is frequently useful during the development of a new collector,
+or a complex class derive class of \T{GCObject}.
+
+   The interface of this class is shown below.
+
+\begin{verbatim}
+   class GCVerifier : protected GC {
+   public:
+      virtual bool is_valid_pointer          (GCObject *);
+      virtual bool is_valid_interior_pointer (GCObject *);
+      virtual bool is_valid_structure        (GCObject *);
+      virtual bool is_valid_pointer          (GCObject *, GC *);
+      virtual bool is_valid_interior_pointer (GCObject *, GC *);
+      virtual bool is_valid_structure        (GCObject *, GC *);
+      size_t number_of_nodes() const;
+   };
+\end{verbatim}
+
+   Class \CLASSDEF{GCVerify} is derived from class \CLASSDEF{GC} so that the
+same object tracing protocol can be used.  Briefly, three different methods 
+are provided for verification:
+\begin{itemize}
+   \item Call to \verb|is_valid_pointer(p,gc)| verifies that
+    \verb|p| is a valid pointer to an object within the collector \verb|gc|. 
+   \item Call to \verb|is_valid_pointer(p,gc)| verifies that
+    \verb|p| is a valid interior pointer to an object 
+     within the collector \verb|gc|. 
+   \item Call to \verb|is_valid_structure(p,gc)| verifies the entire
+     structure reachable by \verb|p| is valid.  This method uses
+     \verb|GCObject::trace| to locate the correct sub-structures.
+\end{itemize}
+
+   There are alternative versions of the same methods that assumes
+the default collector is used.   Furthermore
+\begin{itemize}
+   \item Method \verb|number_of_nodes()| returns the node count of the
+last structure traced using \verb|is_valid_structure|, and 
+   \item If \verb|set_verbosity(GC::gc_print_debugging_info)| is used
+then error messages will be printed during structure tracing.
+\end{itemize}
+
+\bibliography{refman}
+
+\input{refman.ind}
+\end{document}

@@ -1,0 +1,28 @@
+//
+//  This demonstrates how logical patterns can be used with mulitiple
+//  objects.  This fixes a bug in releases 1.x of Prop.
+//
+
+#include <iostream.h>
+datatype color = red | green | blue | yellow | black | white;
+
+void print_color(color c, color d)
+{
+   match (c) and (d) {
+      case (white, black) || (black, white):    cout << "black and white\n";
+      case red || green || blue, blue || black: cout << "good\n";
+      case _:                                   cout << "bad\n";
+   }
+}
+
+int main()
+{  
+   cout << "black & white = "; print_color(black, white); 
+   cout << "black & white = "; print_color(white, black); 
+   cout << "good = "; print_color(red, black); 
+   cout << "good = "; print_color(red, blue); 
+   cout << "good = "; print_color(blue, blue); 
+   cout << "bad = "; print_color(white, white); 
+   cout << "bad = "; print_color(green, yellow); 
+}
+

@@ -1,0 +1,56 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements some basic AST manipulation routines
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <stdlib.h>
+#include "basics.ph"
+#include "ast.ph"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Select the ith component from an expression list
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exp component_exp(Exps exps, int n)
+{
+  Exps es = exps;
+  int  i  = n;
+  match while (es)
+  { #[h ... _] | i == 1: { return h; }
+  | #[_ ... t]:          { es = t; i--; }
+  }
+  error( "%Lexpression %e does not have component %i\n", TUPLEexp(exps), n);
+  return NOexp;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Select the ith component from an expression list
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exp component_exp(Exps exps, Id n)
+{
+  return component_exp(exps,atol(n+1));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Select the ith component from a labeled expression list
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exp component_exp( LabExps labeled_exps, Id n)
+{
+  LabExps les = labeled_exps;
+  match while (les)
+  {  #[ {label, exp} ... _] | label == n: { return exp; }
+  |  #[ _ ... t]: { les = t; }
+  }
+  error( "%Lexpression %e does not have component %s\n",
+         RECORDexp(labeled_exps), n);
+  return NOexp;
+}

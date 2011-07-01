@@ -1,0 +1,292 @@
+/////////////////////////////////////////////////////////////////////////////
+//  This test implements a rewrite based simplifier for the abstract
+//  syntax of a toy imperative language.    
+//  This test is the same as rewriting3 except that we are using
+//  topdown rules.
+//
+//  The test is quite elobarate and requires polymorphic datatypes to work 
+//  correctly with garbage collection, pretty printing and rewriting. 
+/////////////////////////////////////////////////////////////////////////////
+#include <iostream.h>
+
+/////////////////////////////////////////////////////////////////////////////
+//  The following recursive type equations define the abstract syntax
+//  of our small language.
+//  ( Note: we define our own boolean type because not all C++ compilers
+//    have bool built-in yet. )
+/////////////////////////////////////////////////////////////////////////////
+datatype List<T> = #[]                             // a polymorphic list
+                 | #[ T ... List<T> ]         
+
+and      BOOL    = False | True                    // a boolean type
+
+and      Exp     = integer ( int )                 // integers
+                 | real    ( double )              // real numbers
+                 | string  ( char * )              // strings
+                 | boolean ( BOOL )                // booleans
+                 | binop   ( BinOp, Exp, Exp )     // binary op expression
+                 | unaryop ( UnaryOp, Exp )        // unary op expression 
+                 | var     ( Id )                  // variables
+		 | no_exp
+		 | om_exp
+
+and      BinOp   = add | sub | mul | divide | mod  // binary operators
+                 | logical_and | logical_or     
+                 | eq  | ge | le | lt | gt | ne
+
+and      UnaryOp = uminus | logical_not            // unary operators
+
+and      Stmt    = assign_stmt ( Id, Exp )                // assignments
+                 | while_stmt  ( Exp, Stmt )              // while statements
+                 | if_stmt     ( Exp, Stmt, Stmt )        // if statements
+                 | print_stmt  ( Exp )                    // print statements
+                 | block_stmt  ( List<Decl>, List<Stmt> ) // blocks
+		 | skip_stmt
+
+and      Type    = primitive_type ( Id )                  // type expressions
+                 | pointer_type   ( Type )
+                 | array_type     { element : Type, bound : Exp }
+                 | function_type  { args : Type, range : Type }
+                 | tuple_type     ( List<Type> ) 
+                 | record_type    ( List<LabeledType> ) 
+
+and      Decl    = decl { name : Id, typ : Type }        // declarations
+
+and  LabeledType = labeled_type (Id, Type)               // labeled types
+
+where type Id    = const char *
+;   
+
+/////////////////////////////////////////////////////////////////////////////
+//  Refine the implementation of the datatypes.
+//  The qualifiers may be also declared in the datatype definition.
+//  We qualify the datatypes here so that they won't clutter up
+//  the equations above.
+//
+//  All types are declared to be garbage collectable, printable by
+//  the printer method and rewritable.
+/////////////////////////////////////////////////////////////////////////////
+refine List<T>     :: collectable printable rewrite
+and    BOOL        :: collectable printable rewrite
+and    Exp         :: collectable printable rewrite
+and    BinOp       :: collectable printable rewrite
+and    UnaryOp     :: collectable printable rewrite
+and    Stmt        :: collectable printable rewrite
+and    Type        :: collectable printable rewrite
+and    Decl        :: collectable printable rewrite
+and    LabeledType :: collectable printable rewrite
+
+/////////////////////////////////////////////////////////////////////////////
+//  Specify the pretty printing formats. 
+/////////////////////////////////////////////////////////////////////////////
+and printable 
+    False          => "false"
+  | True           => "true"
+  | integer        => _
+  | real           => _
+  | string         => "\"" _ "\""
+  | var            => _
+  | boolean        => _
+  | binop          => "(" 2 1 3 ")"  // reorder the arguments
+  | unaryop        => "(" _ _")"
+  | add            => "+"
+  | sub            => "-"
+  | mul            => "*"
+  | divide         => "/"
+  | mod            => "mod"
+  | logical_and    => "and"
+  | logical_or     => "or"
+  | eq             => "="
+  | ne             => "<>"
+  | gt             => ">"
+  | lt             => "<"
+  | ge             => ">="
+  | le             => "<="
+  | uminus         => "-"
+  | logical_not    => "not"
+  | assign_stmt    => _ ":=" _ ";"
+  | while_stmt     => "while" _ "do" { _ } "end while;"
+  | if_stmt        => "if" _ " then" { _ } "else" { _ } "endif;"
+  | print_stmt     => "print" _ ";" 
+  | block_stmt     => "begin" { _ / _ } "end"
+  | primitive_type => _
+  | pointer_type   => _ "^"
+  | array_type     => "array" bound "of" element 
+  | function_type  => args "->" range
+  | decl           => "var" name ":" typ ";"
+  | labeled_type   => _ ":" _
+  | #[]            => ""
+  | #[...]         => _ / _
+  ;
+
+/////////////////////////////////////////////////////////////////////////////
+//  Generate the interfaces to instantiated polymorphic datatypes.
+//  These are not strictly necessary since the instantiation is in the
+//  same file below.  However, in general the 'instantiate extern' declaration
+//  must be placed in the .h files for each instance of a polymorphic
+//  datatype.
+/////////////////////////////////////////////////////////////////////////////
+instantiate extern datatype 
+   List<Type>, List<Stmt>, List<LabeledType>, List<Decl>;
+
+/////////////////////////////////////////////////////////////////////////////
+//  Now instantiate all the datatypes.
+//  As specified in the definition, garbage collector type info and
+//  pretty printers will be generated automatically.
+/////////////////////////////////////////////////////////////////////////////
+instantiate datatype Exp, BOOL, BinOp, UnaryOp, Stmt, Type, Decl, LabeledType,
+                     List<Type>, List<Stmt>, List<LabeledType>, List<Decl>;
+
+/////////////////////////////////////////////////////////////////////////////
+//  Defines the interface of a rewrite class Simplify.
+//  All types that are referenced (directly or indirectly) should be
+//  declared in the interface.
+/////////////////////////////////////////////////////////////////////////////
+rewrite class Simplify
+   ( Exp, BOOL, BinOp, UnaryOp, Stmt, Type, Decl, LabeledType,
+     List<Decl>, List<Stmt>, List<Type>, List<LabeledType>
+   )
+{
+   // Method to print an error message 
+   void error(const char message[]) { cerr << message << '\n'; }
+public:
+   Simplify() {}
+};
+
+/////////////////////////////////////////////////////////////////////////////
+//  Now defines the rewrite rules.  These rules will be compiled into 
+//  efficient pattern matching code by the translator.  A real life 
+//  system will probably have many more rules than presented here.
+//  (A machine code generator usually needs a few hundred rules)
+//  Currently there are about 60 rules in this class.
+/////////////////////////////////////////////////////////////////////////////
+rewrite Simplify
+{  
+topdown:
+   // Type coercion rules from integer -> real
+   binop(some_op, integer x, real y): rewrite(binop(some_op,real(x),real(y)));
+|  binop(some_op, real x, integer y): rewrite(binop(some_op,real(x),real(y)));
+
+   // Constant folding rules for integers and reals.
+|  binop(add,    integer x, integer y): rewrite(integer(x + y));
+|  binop(sub,    integer x, integer y): rewrite(integer(x - y));
+|  binop(mul,    integer x, integer y): rewrite(integer(x * y));
+|  binop(divide, integer x, integer 0): { error("division by zero"); }
+|  binop(divide, integer x, integer y): rewrite(integer(x / y));
+|  binop(mod,    integer x, integer 0): { error("modulo by zero"); }
+|  binop(mod,    integer x, integer y): rewrite(integer(x % y));
+|  binop(add,    real x,    real y):    rewrite(real(x + y));
+|  binop(sub,    real x,    real y):    rewrite(real(x - y));
+|  binop(mul,    real x,    real y):    rewrite(real(x * y));
+|  binop(divide, real x,    real 0.0):  { error("division by zero"); }
+|  binop(divide, real x,    real y):    rewrite(real(x / y));
+|  unaryop(uminus, integer x):          rewrite(integer(-x));
+|  unaryop(uminus, real    x):          rewrite(real(-x));
+
+// Constant folding rules for relational operators
+|  binop(eq,  integer x, integer y):    rewrite(boolean((BOOL)(x == y)));
+|  binop(ne,  integer x, integer y):    rewrite(boolean((BOOL)(x != y)));
+|  binop(gt,  integer x, integer y):    rewrite(boolean((BOOL)(x > y)));
+|  binop(lt,  integer x, integer y):    rewrite(boolean((BOOL)(x < y)));
+|  binop(ge,  integer x, integer y):    rewrite(boolean((BOOL)(x >= y)));
+|  binop(le,  integer x, integer y):    rewrite(boolean((BOOL)(x <= y)));
+|  binop(eq,  real x,    real y):       rewrite(boolean((BOOL)(x == y)));
+|  binop(ne,  real x,    real y):       rewrite(boolean((BOOL)(x != y)));
+|  binop(gt,  real x,    real y):       rewrite(boolean((BOOL)(x > y)));
+|  binop(lt,  real x,    real y):       rewrite(boolean((BOOL)(x < y)));
+|  binop(ge,  real x,    real y):       rewrite(boolean((BOOL)(x >= y)));
+|  binop(le,  real x,    real y):       rewrite(boolean((BOOL)(x <= y)));
+
+// Constant folding rules for boolean operators
+|  binop(logical_and, boolean x, boolean y):  rewrite(boolean((BOOL)(x && y)));
+|  binop(logical_or,  boolean x, boolean y):  rewrite(boolean((BOOL)(x || y)));
+|  unaryop(logical_not, boolean x):           rewrite(boolean((BOOL)(! x)));
+
+// Simple algebraic laws for integers
+|  binop(add, integer 0, x        ):  rewrite(x);
+|  binop(add, x,         integer 0):  rewrite(x);
+|  binop(sub, x,         integer 0):  rewrite(x);
+|  binop(mul, integer 0, x        ):  rewrite(integer(0));
+|  binop(mul, x,         integer 0):  rewrite(integer(0));
+|  binop(mul, integer 1, x        ):  rewrite(x);
+|  binop(mul, x,         integer 1):  rewrite(x);
+|  binop(divide, x,      integer 1):  rewrite(x);
+
+// Simple algebraic laws for reals
+|  binop(add, real 0.0, x        ):  rewrite(x);
+|  binop(add, x,         real 0.0):  rewrite(x);
+|  binop(sub, x,         real 0.0):  rewrite(x);
+|  binop(mul, real 0.0, x        ):  rewrite(real(0.0));
+|  binop(mul, x,         real 0.0):  rewrite(real(0.0));
+|  binop(mul, real 1.0, x        ):  rewrite(x);
+|  binop(mul, x,         real 1.0):  rewrite(x);
+|  binop(divide, x,      real 1.0):  rewrite(x);
+// more ...
+
+// Simple strength reduction (assume CSE will be applied)
+|  binop(mul, integer 2, x        ):  rewrite(binop(add,x,x));
+|  binop(mul, x, integer 2        ):  rewrite(binop(add,x,x));
+// more ...
+
+// Simple boolean identities
+|  binop(logical_and, boolean False, _): rewrite(boolean(False));
+|  binop(logical_and, boolean True, b):  rewrite(b);
+|  binop(logical_and, _, boolean False): rewrite(boolean(False));
+|  binop(logical_and, b, boolean True):  rewrite(b);
+|  binop(logical_or,  boolean True, _):  rewrite(boolean(True));
+|  binop(logical_or,  boolean False, b): rewrite(b);
+|  binop(logical_or,  _, boolean True):  rewrite(boolean(True));
+|  binop(logical_or,  b, boolean False): rewrite(b);
+// more ...
+
+// The following rules eliminate unreachable statements. 
+|  if_stmt(boolean True, a, _):          rewrite(a);
+|  if_stmt(boolean False, _, b):         rewrite(b);
+|  #[while_stmt(boolean False, _) ... continuation]: 
+                                         rewrite(continuation);
+// more ...
+};
+
+/////////////////////////////////////////////////////////////////////////////
+//  The main program.
+//  We'll test it with a simple program.
+/////////////////////////////////////////////////////////////////////////////
+int main()
+{  
+   // Instantiate a rewriting object.
+   Simplify simplify;
+
+   // The input is the following block:
+   //
+   //  var x : int;
+   //  var y : int;
+   //  var z : array [10 * 30] of int;
+   //  begin
+   //     x = 0 + y * 1;
+   //     while (1 <> 1) y := y + 1;
+   //     print (not false);
+   //  end
+   //
+   Stmt prog = 
+      block_stmt( #[ decl("x", primitive_type("integer")),
+                     decl("y", primitive_type("integer")),
+                     decl("z", array_type(primitive_type("integer"),
+                                  binop(mul,integer(10), integer(30))
+                                         )
+                         )
+                  ],
+                  #[
+                   assign_stmt("x", 
+                      binop(add,integer(0),
+                         binop(mul,var("y"),integer(1)))),
+                   while_stmt(binop(ne, integer(1), integer(1)), 
+                              assign_stmt("y", 
+                                 binop(add,var("y"),integer(1)))),
+                   print_stmt(unaryop(logical_not,boolean(False)))
+                  ]
+                );
+   cout << "Before:\n" << prog << "\n\n";
+   simplify(prog);
+   cout << "After:\n"  << prog << "\n";
+   return 0;
+}

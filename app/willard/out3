@@ -1,0 +1,40 @@
+Input:
+{[x,y]: x in A, y in B |  (exists z in C.((x = z) and(y = z)))}
+{[x,y]: x in A, y in B |  (exists z in C.((x = z) and(y = z)))}
+
+[Renaming phase]
+
+{[x,y]: x in A, y in B |  (exists z in C.((x = z) and(y = z)))}
+
+[DNF construction and simplification phase]
+
+{[x,y]: x in A, y in B |  (exists z in C.((x = z) and(y = z)))}
+
+[Constructing the query graph]
+
+[Query Graph]
+   edge y -> z
+{[x,y]: x in A, y in B |  (exists z in C.((x = z) and(y = z)))}
+
+[Quantifier elimination phase]
+
+{[x,y]:[x,y] in [A,B] |  (exists z in C.((x = z) and(y = z)))}
+
+[Disjunction removal phase]
+
+{[x,y]:[x,y] in [A,B] |  (exists z in C.((x = z) and(y = z)))}
+
+[Conjunctive query decomposition phase]
+
+[Query Graph]
+   edge y -> z
+{[x,y]:[x,y] in [A,B] |  (exists z in C.((x = z) and(y = z)))}
+
+[Projection recognition phase]
+
+{[x,y]:[x,y] in [A,B] |  (exists z in C.((x = z) and(y = z)))}
+
+[Simple find/count query decomposition phase]
+
+Output:
+{[x,y]:[x,y] in [A,B] |  (exists z in C.((x = z) and(y = z)))}

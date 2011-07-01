@@ -1,0 +1,269 @@
+###############################################################################
+#
+#  Makefile for compiling Prop 2.2.x 
+#
+###############################################################################
+PROP		= prop
+CC		= g++
+CC_INCLUDE	= -I../include
+CC_OPTS		= $(CC_INCLUDE) -O6 
+LD_OPTS		= -L../lib -lprop -lg++ $(gcc-iostream-lib) -lm
+PROP_OPTS_BASIC	= -s $(CC_INCLUDE) -S -r -v2
+PROP_OPTS	= $(PROP_OPTS_BASIC) -O15
+
+H_SRC=	ir.h ast.h basics.h parsegen.h bitfield.h keywords.h parser.h \
+	collection.h setl-ast.h dataflow.h setlgen.h matchcom.h timespace.h \
+	env.h funmap.h metasyntax.h constraint.h logicgen.h \
+	wam.h pat.h list.h grsgen.h graphtype.h graphedges.h
+C_SRC=	instgen.cc matchcom.cc matchgen.cc rwgen.cc infgen.cc type.cc \
+	printing.cc datagen.cc codegen.cc \
+	compiler.cc indexing.cc printgen.cc constr.cc parsegen.cc lexeme.cc \
+	bitfield.cc lexer.cc rwgen2.cc lawgen.cc parser-util.cc parser.cc \
+	setl-ast.cc dataflow.cc documentation.cc collection.cc setlgen.cc \
+	setltype.cc timespace.cc env.cc topdown.cc funmap.cc metasyntax.cc \
+	constraint.cc logicgen.cc wam.cc pat.cc rwgen3.cc grsgen.cc \
+	graphtype.cc graphrep.cc graphops.cc graphreport.cc \
+	visualize.cc classdef.cc prop-main.cc
+
+SRC=	$(H_SRC) $(C_SRC)
+
+OBJ =	constr.o rwgen.o printgen.o infgen.o indexing.o datagen.o instgen.o \
+	compiler.o prop-main.o process.o patenv.o codegen.o textbuf.o \
+	labelgen.o matchcom.o matchgen.o printing.o type.o hashtab.o \
+	parsegen.o lexeme.o bitfield.o rwgen2.o rwgen3.o lawgen.o lexer.o \
+	parser-util.o parser.o frontend.o setl-ast.o dataflow.o \
+	documentation.o collection.o env.o setltype.o setlgen.o options.o \
+	timespace.o topdown.o funmap.o metasyntax.o constraint.o logicgen.o \
+	wam.o pat.o graphtype.o graphrep.o graphops.o graphreport.o \
+	grsgen.o visualize.o classdef.o patchlev.o
+
+prop:	$(SRC) $(OBJ)
+	$(CC) $(OBJ) -o $(PROP) $(LD_OPTS)
+	strip $(PROP)
+
+build-prop:
+	$(CC) $(OBJ) -o $(PROP) $(LD_OPTS)
+	strip $(PROP)
+
+src:	$(SRC)
+
+debug:	$(SRC) $(OBJ)
+	$(CC) $(OBJ) -g -o $(PROP) $(LD_OPTS)
+
+profile:	$(SRC) $(OBJ)
+	$(CC) $(OBJ) -pg -g -o $(PROP) $(LD_OPTS)
+
+tar:	
+	tar -cvf - [a-z]*.h [a-z]*.cc [a-z]*.[ply]* *.tex \
+          banner testprop testprop2 Makefile README \
+          | gzip >prop-2.1.tar.gz
+clean:
+	rm -f *.o
+
+spotless: clean
+	rm -f $(SRC)	
+
+classes:
+	@awk 'BEGIN { printf "Number of classes = "; }' </dev/null
+	@grep "^class " *.h | grep -v ";" | wc -l
+
+test:	test1 
+
+test1:
+	./testprop
+test2:
+	./testprop2
+
+wc:
+	wc [a-z]*.pcc [a-z]*.ph
+genwc:
+	wc $(SRC)
+
+basics.h:	basics.ph 
+list.h:		basics.ph list.ph
+ir.h:		basics.ph ir.ph 
+ast.h:		basics.ph ast.ph ir.ph 
+parsegen.h:	basics.ph ast.ph ir.ph parsegen.ph
+bitfield.h:	basics.ph ir.ph bitfield.ph
+matchcom.h:	basics.ph ir.ph matchcom.ph
+keywords.h:	basics.ph keywords.ph
+parser.h:	basics.ph parser.ph
+setl-ast.h:	basics.ph setl-ast.ph
+dataflow.h:	basics.ph dataflow.ph
+setlgen.h:	basics.ph setlgen.ph 
+timespace.h:	basics.ph timespace.ph
+env.h:		basics.ph env.ph 
+funmap.h:	basics.ph funmap.ph
+metasyntax.h:	basics.ph metasyntax.ph
+constraint.h:	basics.ph ir.ph constraint.ph
+logicgen.h:	basics.ph ir.ph logicgen.ph
+wam.h:		basics.ph 
+pat.h:		basics.ph ir.ph matchcom.ph pat.ph
+grsgen.h:	basics.ph ir.ph ast.ph 
+graphtype.h:	basics.ph ir.ph ast.ph 
+graphedges.h:	basics.ph ir.ph ast.ph 
+
+type.cc:	type.pcc basics.ph ast.ph ir.ph collection.ph
+codegen.cc:	codegen.pcc basics.ph ast.ph ir.ph 
+matchcom.cc:	matchcom.pcc basics.ph ast.ph ir.ph matchcom.ph
+matchgen.cc:	matchgen.pcc basics.ph ast.ph ir.ph matchcom.ph
+rwgen.cc:	rwgen.pcc basics.ph ast.ph ir.ph matchcom.ph funmap.ph
+rwgen2.cc:	rwgen2.pcc basics.ph ast.ph ir.ph funmap.ph
+rwgen3.cc:	rwgen3.pcc basics.ph ast.ph ir.ph funmap.ph
+topdown.cc:	topdown.pcc basics.ph ast.ph ir.ph matchcom.ph funmap.ph
+funmap.cc:	funmap.pcc basics.ph ast.ph ir.ph matchcom.ph funmap.ph
+infgen.cc:	infgen.pcc basics.ph ast.ph ir.ph 
+datagen.cc:	datagen.pcc basics.ph ast.ph ir.ph
+printing.cc:	printing.pcc basics.ph ast.ph ir.ph matchcom.ph
+compiler.cc:	compiler.pcc basics.ph ast.ph ir.ph dataflow.ph 
+visualize.cc:	visualize.pcc basics.ph ast.ph ir.ph dataflow.ph 
+instgen.cc:	instgen.pcc basics.ph ast.ph ir.ph 
+indexing.cc:	indexing.pcc basics.ph ast.ph ir.ph matchcom.ph
+printgen.cc:	printgen.pcc basics.ph ast.ph ir.ph 
+parser.tab.cc:	parser.tab.pcc basics.ph ast.ph ir.ph parsegen.ph bitfield.ph
+constr.cc:	constr.pcc basics.ph ast.ph ir.ph matchcom.ph
+parsegen.cc:	parsegen.pcc parsegen.ph basics.ph ast.ph ir.ph
+lexeme.cc:	lexeme.pcc basics.ph ir.ph
+bitfield.cc:	bitfield.pcc bitfield.ph basics.ph ir.ph ast.ph
+lexer.cc:	lexer.pcc basics.ph parser.ph keywords.ph
+lawgen.cc:	lawgen.pcc basics.ph ir.ph ast.ph
+parser.cc:	parser.pcc parser.ph basics.ph ir.ph ast.ph parsegen.ph \
+		bitfield.ph keywords.ph setl-ast.ph timespace.ph \
+		constraint.ph dataflow.ph wam.ph grsgen.ph
+parser-util.cc:	parser-util.pcc parser.ph basics.ph ir.ph ast.ph parsegen.ph \
+		bitfield.ph keywords.ph setl-ast.ph config.h
+setl-ast.cc:	setl-ast.pcc setl-ast.ph basics.ph ir.ph ast.ph
+dataflow.cc:	dataflow.pcc dataflow.ph basics.ph ir.ph
+documentation.cc:	documentation.pcc parser.ph ir.ph ast.ph
+collection.cc:	collection.pcc collection.ph basics.ph 
+setlgen.cc:	setlgen.pcc setlgen.ph basics.ph setl-ast.ph ir.ph ast.ph 
+setltype.cc:	setltype.pcc setlgen.ph basics.ph setl-ast.ph ir.ph ast.ph 
+timespace.cc:	timespace.pcc timespace.ph basics.ph 
+env.cc:		env.pcc 
+metasyntax.cc:	metasyntax.pcc metasyntax.ph parsegen.ph basics.ph ast.ph ir.ph
+constraint.cc:	constraint.pcc constraint.ph basics.ph ir.ph ast.ph wam.ph \
+		list.ph
+logicgen.cc:	logicgen.pcc constraint.ph basics.ph ir.ph ast.ph wam.ph \
+		logicgen.ph list.ph
+wam.cc:		wam.pcc wam.ph ir.ph
+pat.cc:		pat.pcc basics.ph ir.ph matchcom.ph pat.ph
+grsgen.cc:	grsgen.pcc grsgen.ph basics.ph ir.ph ast.ph 
+graphtype.cc:	graphtype.pcc graphtype.ph graphedges.ph basics.ph ir.ph ast.ph 
+graphrep.cc:	graphrep.pcc graphtype.ph graphedges.ph basics.ph ir.ph ast.ph 
+graphreport.cc:	graphreport.pcc graphtype.ph graphedges.ph basics.ph ir.ph ast.ph 
+classdef.cc:	classdef.pcc classdef.h basics.ph ir.ph ast.ph 
+
+hashtab.o:	hashtab.h
+textbuf.o:	textbuf.cc textbuf.h
+matchcom.o:	matchcom.cc matchcom.h basics.h ir.h ast.h type.h patenv.h \
+		labelgen.h hashtab.h options.h dataflow.h 
+indexing.o:	indexing.cc matchcom.h basics.h ir.h ast.h type.h patenv.h \
+		labelgen.h hashtab.h
+matchgen.o:	matchgen.cc matchcom.h basics.h ir.h ast.h type.h patenv.h \
+		labelgen.h hashtab.h options.h
+codegen.o:	codegen.cc matchcom.h basics.h ir.h ast.h type.h patenv.h \
+		labelgen.h matchcom.h options.h dataflow.h
+rwgen.o:	rwgen.cc matchcom.h basics.h ir.h ast.h type.h patenv.h \
+		rwgen.h labelgen.h hashtab.h datagen.h options.h funmap.h \
+		classdef.h
+funmap.o:	funmap.cc matchcom.h basics.h ir.h ast.h type.h patenv.h \
+		rwgen.h labelgen.h hashtab.h datagen.h options.h funmap.h
+rwgen2.o:	rwgen2.cc matchcom.h basics.h ir.h ast.h type.h patenv.h \
+		rwgen.h labelgen.h hashtab.h datagen.h funmap.h
+rwgen3.o:	rwgen3.cc matchcom.h basics.h ir.h ast.h type.h patenv.h \
+		rwgen.h labelgen.h hashtab.h datagen.h funmap.h
+topdown.o:	topdown.cc matchcom.h basics.h ir.h ast.h type.h patenv.h \
+		rwgen.h labelgen.h hashtab.h datagen.h options.h funmap.h
+infgen.o:	infgen.cc matchcom.h basics.h ir.h ast.h type.h patenv.h \
+		infgen.h labelgen.h hashtab.h rwgen.h datagen.h classdef.h
+datagen.o:	datagen.cc matchcom.h basics.h ir.h ast.h type.h patenv.h \
+		datagen.h labelgen.h options.h
+printing.o:	printing.cc matchcom.h basics.h ir.h ast.h type.h patenv.h \
+		labelgen.h options.h
+type.o:		type.cc matchcom.h basics.h ir.h ast.h type.h patenv.h \
+		labelgen.h hashtab.h options.h collection.h
+compiler.o:	compiler.cc matchcom.h basics.h ir.h ast.h type.h patenv.h \
+		compiler.h labelgen.h rwgen.h infgen.h datagen.h parsegen.h \
+		bitfield.h setlgen.h options.h dataflow.h constraint.h \
+		textbuf.h metasyntax.h grsgen.h classdef.h 
+visualize.o:	visualize.cc matchcom.h basics.h ir.h ast.h type.h patenv.h \
+		compiler.h labelgen.h rwgen.h infgen.h datagen.h parsegen.h \
+		bitfield.h setlgen.h options.h dataflow.h constraint.h \
+		textbuf.h metasyntax.h grsgen.h
+parsegen.o:	parsegen.cc basics.h ir.h ast.h type.h patenv.h parsegen.h \
+		options.h  classdef.h
+prop-main.o:	prop-main.cc matchcom.h basics.h ir.h ast.h type.h patenv.h \
+		compiler.h labelgen.h config.h rwgen.h infgen.h \
+		datagen.h parsegen.h author.h bitfield.h setlgen.h options.h \
+		dataflow.h constraint.h textbuf.h metasyntax.h \
+		grsgen.h classdef.h 
+process.o:	process.cc matchcom.h basics.h ir.h ast.h type.h patenv.h \
+		compiler.h labelgen.h config.h rwgen.h infgen.h \
+		datagen.h parsegen.h author.h bitfield.h setlgen.h options.h \
+		dataflow.h constraint.h textbuf.h metasyntax.h \
+		grsgen.h classdef.h 
+patenv.o:	patenv.cc patenv.h ir.h ast.h options.h
+patenv.o:	patenv.cc patenv.h ir.h ast.h options.h
+labelgen.o:	labelgen.cc labelgen.h 
+instgen.o:	instgen.cc matchcom.h basics.h ir.h ast.h type.h patenv.h \
+		datagen.h labelgen.h hashtab.h options.h
+printgen.o:	printgen.cc basics.h ir.h ast.h type.h datagen.h 
+constr.o:	constr.cc basics.ph ast.ph ir.ph
+lexeme.o:	lexeme.cc basics.h ir.h type.h hashtab.h
+bitfield.o:	bitfield.cc bitfield.h basics.h ir.h ast.h type.h hashtab.h
+lawgen.o:	lawgen.cc basics.h ir.h ast.h datagen.h type.h
+lexer.o:	lexer.cc basics.h parser.h keywords.h type.h textbuf.h
+parser-util.o:	parser-util.cc basics.h parser.h keywords.h type.h setl-ast.h \
+		options.h textbuf.h
+parser.o:	parser.cc basics.h parser.h keywords.h type.h setl-ast.h \
+		options.h constraint.h compiler.h dataflow.h datagen.h \
+		matchcom.h parsegen.h wam.h textbuf.h metasyntax.h \
+		graphtype.h graphedges.h grsgen.h classdef.h rwgen.h
+frontend.o:	frontend.cc basics.h parser.h keywords.h type.h textbuf.h
+setl-ast.o:	setl-ast.cc basics.h ir.h ast.h setl-ast.h 
+dataflow.o:	dataflow.cc dataflow.h ir.h ast.h basics.h type.h
+documentation.o: documentation.cc parser.h ir.h ast.h textbuf.h
+collection.o:	collection.cc collection.h basics.h type.h ir.h 
+setlgen.o:	setlgen.cc setlgen.h basics.h setl-ast.h ir.h ast.h type.h \
+		matchcom.h codegen.h 
+setltype.o:	setltype.cc setlgen.h basics.h setl-ast.h ir.h ast.h type.h \
+		matchcom.h codegen.h env.h
+env.o:		env.cc env.h basics.h type.h ir.h
+options.o:	options.cc options.h config.h
+timespace.o:	timespace.cc timespace.h basics.h 
+metasyntax.o:	metasyntax.cc metasyntax.h \
+		basics.h ir.h ast.h type.h patenv.h parsegen.h \
+		options.h
+constraint.o:	constraint.cc constraint.h basics.h ir.h ast.h type.h \
+		matchcom.h setlgen.h wam.h list.h datagen.h
+logicgen.o:	logicgen.cc constraint.h basics.h ir.h ast.h type.h \
+		logicgen.h matchcom.h setlgen.h wam.h list.h datagen.h \
+		pat.h 
+wam.o:		wam.cc wam.h basics.h type.h ir.h 
+pat.o:		pat.cc basics.h ir.h matchcom.h pat.h type.h
+grsgen.o:	grsgen.cc grsgen.h basics.h ir.h ast.h matchcom.h codegen.h \
+		type.h pat.h 
+graphtype.o:	graphtype.cc graphtype.h basics.h ir.h ast.h matchcom.h \
+		codegen.h type.h pat.h classdef.h
+graphrep.o:	graphrep.cc graphedges.h \
+		graphtype.h basics.h ir.h ast.h matchcom.h \
+		codegen.h type.h pat.h classdef.h
+graphops.o:	graphops.cc graphedges.h \
+		graphtype.h basics.h ir.h ast.h matchcom.h \
+		codegen.h type.h pat.h classdef.h
+graphreport.o:	graphreport.cc graphedges.h \
+		graphtype.h basics.h \
+		codegen.h type.h classdef.h
+classdef.o:	classdef.cc classdef.h basics.h ir.h ast.h codegen.h 
+
+T%.cc:	T%.pcc $(PROP)
+	$(PROP) $(PROP_OPTS_BASIC) $(@:.cc=.pcc)
+%.h:	%.ph
+	$(PROP) $(PROP_OPTS) $(@:.h=.ph)
+%.cc:	%.pcc
+	$(PROP) $(PROP_OPTS) $(@:.cc=.pcc)
+%.o:	%.cc
+	$(CC) -c $(CC_OPTS) $(@:.o=.cc)
+
+T%:	T%.cc 
+	$(CC) $@.cc -o $@ -O6 $(CC_OPTS) $(LD_OPTS)

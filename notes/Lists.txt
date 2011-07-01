@@ -1,0 +1,64 @@
+Lists in Prop are simply syntactic sugar.  For example, the declaration
+
+    datatype List = #[] 
+                  | #[ int ... List ]
+                  ;
+
+defines a list of integers.   The special form #[ ... ] is used to 
+build lists of arbitrary lengths.   Here are some examples of valid
+list expressions:
+
+     List a = #[];             // the empty list
+     List b = #[ 1, 2, 3 ];    // list of three elements
+     List c = #[ 4, 5 ... b ]; // the list #[ 4, 5, 1, 2, 3]
+                               // i.e. 4 and 5 prepended to the list b.
+
+List patterns are written in a form that directly reflects the 
+constructor syntax:
+
+   match (l) {
+      case #[]:     cout << "Matches the empty list\n";
+      case #[x]:    cout << "List of one element " << x << '\n';
+      case #[x,y]:  cout << "List of two elements " 
+                         << x << " and " << y << '\n';
+      case #[x, y, z ... l]:   // Pattern variables x, y, z are bound the 
+                               // first 3 elements, while l is bound to 
+                               // the rest of the list
+                    cout << "List of three of more elements\n";
+
+   }
+             
+Of course, list pattern may be arbitrary nested and may also contain
+subpatterns.  Everything that applies to algebraic datatypes also apply
+to list patterns. 
+      
+Note (1): that there are *no* built-in lists (having the list type built
+in would make customization difficult.)   The users must declare their
+own list types.   But this is entirely trivial.
+
+Note (2): besides #[] and #[ ... ], there are 2 other pairs of list-like
+constructors:
+
+     #()   #( ... )
+     #{}   #{ ... }
+
+It is possible to define multiple list-like datatypes, each using a different
+special form.  
+
+Note (3): you are allowed to have other variants within a list-like type.
+For example, definitions like
+
+    datatype SEXPR = #() 
+                   | #( SEXPR ... SEXPR )
+                   | number  (int)
+                   | string  (char *)
+                   | boolean (bool)
+                   ;
+
+are allowed.   The only restriction in this case is that #() and #( ... ) must
+be defined within the same datatype and that the second argument type of 
+#( ... ) must be the same as SEXPR.
+
+Note (4):  aside from the special form syntax currently there are no
+special support for lists.  You'll have to roll your own list processing
+functions.  In the future I'll provide a standard list template library.

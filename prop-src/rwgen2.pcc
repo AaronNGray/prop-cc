@@ -1,0 +1,135 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the 'rewrite (x) { ... }' construct.
+//  We'll transform this construct into the equivalent 'rewrite class ...'
+//  and 'rewrite id { ... };' statements.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include "ir.ph"
+#include "ast.ph"
+#include "type.h"
+#include "rwgen.h"
+#include "options.h"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//   Method for compiling a 'rewrite (x) { ... }' statement.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void RewritingCompiler::gen_rewriting
+   ( Protocols        protocols,
+     Exp              exp,
+     Exp              dest,
+     RewriteIndexings Is,
+     MatchRules       rules,
+     TyQual           qualifiers
+   )
+{
+  MEM::use_global_pools();
+  Id rewriter_name = Quark(options.mangled_file_prefix,vars.new_label());
+  Ty exp_ty        = NOty;
+  Ty ret_ty        = NOty;
+  TyQual qual =
+      (qualifiers & ~QUALapplicative) |
+      (dest == NOexp ? QUALnone : QUALapplicative);
+
+  // Get the return and argument types
+  match (protocols) and (dest)
+  {
+    #[PROTOCOL{ ty ... } ... _], NOexp: { exp_ty = ty; ret_ty = void_ty; }
+  | #[PROTOCOL{ ty ... } ... _], dest:  { exp_ty = ret_ty = ty; }
+  | _: { error("%Lempty type list in rewrite (...) ..."); }
+  }
+
+  // If it is destructive, use call by reference
+  if ( !(qual & QUALapplicative))
+    exp_ty = mkrefty(exp_ty);
+
+  // Print the interface to the auxiliary function
+  pr( "%+%^extern %t %s_rewrite(%t);", ret_ty, "", rewriter_name, exp_ty, "");
+
+  // Generate the rewriting call
+  match (dest)
+  {
+    NOexp: { pr( "%^%s_rewrite(%e);", rewriter_name, exp); }
+  | dest:  { pr( "%^%e = %s_rewrite(%e);", dest, rewriter_name, exp); }
+  }
+
+  pr( "%-");
+
+  // Add to the list of outstanding rewriting classes
+  Decl body = OPAQUEdecl(
+      #"\npublic:\n  inline " + rewriter_name + #"() {}\n");
+  Decl new_def =
+     CLASSDEFdecl(new RewriteClass(rewriter_name,protocols,#[],qual,#[body]));
+  rewriters = #[new_def,REWRITEdecl(rewriter_name, Is, rules) ... rewriters];
+  MEM::use_local_pools();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method for compiling rewrite classes for the 'rewrite (...) { ... }'
+//  construct.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void RewritingCompiler::gen_rewriters()
+{
+  debug_msg("[Generating the rewriters in this file]\n");
+  for_each (Decl, d, rewriters)
+  {
+    pr ("%D", d);
+    match (d)
+    {
+      CLASSDEFdecl (a_class) |
+          a_class->class_type == ClassDefinition::REWRITE_CLASS &&
+          a_class->protocols:
+        {
+          Id id       = a_class->class_name;
+          Ty ty       = a_class->protocols->#1->ty;
+          TyQual qual = a_class->qualifiers;
+          // If it is destructive, use call by reference
+          Bool is_applicative = qual & QUALapplicative;
+          Bool do_traversal   = qual & QUALtreeparser;
+          Ty exp_ty = is_applicative ? ty : mkrefty(ty);
+          Ty ret_ty = is_applicative ? ty : void_ty;
+
+          // protocol
+          pr ("%^%t %s_rewrite(%t _x_) ", ret_ty, "", id, exp_ty, "");
+          // declare the rewriter
+          pr ("%^{  %s _r_;", id);
+          // call the labeler
+          if (do_traversal)
+          {
+            if (is_applicative)
+            {
+              pr( "%^  return _r_.reduce(_r_(_x_));");
+            }
+            else
+            {
+              pr( "%^  _r_(_x_); %s_r_.reduce(_x_);",
+                  ret_ty == void_ty ? "" : "return ");
+            }
+          }
+          else
+          {
+            if (is_applicative)
+            {
+              pr ("%^   return _r_(_x_);");
+            }
+            else
+            {
+              pr ("%^   _r_(_x_);");
+            }
+          }
+          pr ("%^}\n\n");
+        }
+    | _: // skip
+    }
+  }
+  debug_msg("[Finished generating the rewriters in this file]\n");
+}

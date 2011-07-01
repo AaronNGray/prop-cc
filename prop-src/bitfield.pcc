@@ -1,0 +1,162 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Bitfields and opcode encoding/decoding
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <AD/contain/bitset.h>
+#include "ir.ph"
+#include "ast.ph"
+#include "bitfield.ph"
+#include "hashtab.h"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Instantiate the datatype FieldDef
+//
+///////////////////////////////////////////////////////////////////////////////
+
+instantiate datatype FieldDef, FieldLaw, List<FieldDef>, List<FieldLaw>;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor and destructor
+//
+///////////////////////////////////////////////////////////////////////////////
+
+BitfieldCompiler:: BitfieldCompiler() {}
+BitfieldCompiler::~BitfieldCompiler() {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Environment for storing bitfields.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+static HashTable bitfield_env(string_hash, string_equal);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to insert bitfield definition into environment.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void insert_bitfield( Id name, FieldDef field_def)
+{
+  HashTable::Entry * e = bitfield_env.lookup(name);
+  if (e)
+  {
+    error ("%!redefinition of bitfield '%s'.\n"
+            "%!this is where it is last defined.\n",
+            ((FieldDef)e->v)->loc(), name, field_def->loc()
+    );
+  }
+  else
+  {
+    bitfield_env.insert(name,field_def);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Check the bitfield patterns for consistency
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void check_bitfield_consistency (Id name, int width, FieldDefs field_defs)
+{
+  if (width < 0 || width >= 4096)
+  {
+    error ("%Lillegal width in bitfield '%s (%i)'\n", name, width);
+    return;
+  }
+
+  BitSet * referred = new (mem_pool, width) BitSet;
+
+  for_each (FieldDef, f, field_defs)
+  {
+    match (f)
+    {  // check that the field ranges are correct
+      FIELDdef { field_name, from_bit, to_bit ... }
+      | from_bit < 0 || to_bit < 0 || from_bit > to_bit ||
+        from_bit >= width || to_bit >= width:
+      {
+        error ("%Lillegal bit range in bitfield '%s(%i)::%s (%i:%i)'\n",
+                  name, width, field_name, from_bit, to_bit);
+      }
+    |  FIELDdef { from_bit, to_bit ... }:
+      {
+        for (int i = from_bit; i <= to_bit; i++)
+            referred->add(i);
+      }
+    |  _: // skip field constructor definitions
+    }
+  }
+
+  // Check that all the bits are covered by the bitfield declaration
+  for (int i = 0; i < width; )
+  {
+    if (! referred->contains(i))
+    {
+      int j;
+      for (j = i+1; j < width && ! referred->contains(j); j++);
+      msg ("%L%wrange (%i:%i) missing in bitfield '%s (%i)'\n",
+           i, j-1, name, width);
+      i = j;
+    }
+    else
+    {
+      i++;
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to compile a bitfield declaration
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void BitfieldCompiler::define_bitfield
+   (Id name, int width, FieldDefs field_defs, FieldLaws field_laws)
+{
+  // make sure that the bitfields are range consistent.
+  check_bitfield_consistency(name, width, field_defs);
+
+  // insert into environment
+  for_each (FieldDef, f, field_defs)
+  {
+    match (f)
+    {  FIELDdef { field_name ... }:    { insert_bitfield(field_name, f); }
+    |  FIELDCONdef { field_name ... }: { insert_bitfield(field_name, f); }
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate code for a bitfield declaration
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void BitfieldCompiler::gen_bitfield
+   (Id name, int width, FieldDefs field_defs, FieldLaws laws)
+{
+  pr(
+      "%^%/"
+      "%^// Definitions for bitfield '%s (%i)'"
+      "%^%/",
+      name, width
+      );
+  for_each (FieldLaw, l, laws)
+  {
+    match (l)
+    {
+      FIELDlaw { id, args, guard, exp }:
+      {
+        (*output) << "#define " << id << "(" << args << ") |"
+                    << guard << " = " << exp << '\n';
+      }
+    }
+  }
+}

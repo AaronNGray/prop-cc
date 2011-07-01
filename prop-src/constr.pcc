@@ -1,0 +1,23 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file simply instantiates all the datatypes used in the Prop -> C++
+//  translator.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include "ir.ph"
+#include "ast.ph"
+#include "matchcom.ph"
+
+instantiate datatype
+  Ty, TyCon, Pat, Exp, Cons, Pos, Match, Decl, MatchExp, Inherit,
+  Literal, Cost, MatchRule, Protocol, DatatypeDef,
+  TyDef, TermDef, ViewDef, LawDef, FunDef, QualId, InferenceRule,
+  Conclusion, LogicalPat, Scope, Polarity,
+  List<Ty>, List<Pat>, List<Exp>, List<Pos>, List<Decl>, List<Inherit>,
+  List<MatchExp>, List<MatchRule>, List<Protocol>, List<DatatypeDef>,
+  List<TyDef>, List<TermDef>, List<ViewDef>, List<LawDef>, List<FunDef>,
+  List<QualId>, List<InferenceRule>, List<Conclusion>,
+  List<Scope>, Pid, Pair<Id,Tys>,
+  Generator, List<Generator>, List<RewriteIndexing *>
+;

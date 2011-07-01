@@ -1,0 +1,2035 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\absinterp">
+      <UniqueIdentifier>{f950dfa6-6182-486b-9934-50414e9574dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ag">
+      <UniqueIdentifier>{c22586c6-355a-4be4-9816-6ce568a1aafa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\automata">
+      <UniqueIdentifier>{577dc3d2-566d-42be-a33a-2dc26f6e78e5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\backend-tools">
+      <UniqueIdentifier>{2ec1201c-257a-42ca-bc9c-4f9f9d5f2506}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\contain">
+      <UniqueIdentifier>{02df9c0a-834b-468f-a7f2-044f4e9b6548}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\csp">
+      <UniqueIdentifier>{92c7033d-e298-471b-b5ac-22f3ce766acb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\dynparser">
+      <UniqueIdentifier>{0d4dcfbd-1d59-405d-be89-d9c1b28e452b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\gc">
+      <UniqueIdentifier>{9aa73108-a018-435c-92b7-c31a824f494c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\generic">
+      <UniqueIdentifier>{4eb6c846-2852-45c2-8b2f-d217a74c81ff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\graph">
+      <UniqueIdentifier>{675f4f7b-e701-488c-8240-4609d911fade}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\graphtype">
+      <UniqueIdentifier>{387308aa-0535-45bb-886b-7dccb116d88a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\hash">
+      <UniqueIdentifier>{68f38ad7-9870-45f6-af39-b821665beee1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\memory">
+      <UniqueIdentifier>{ebf6aa36-090e-459e-96ff-a0b5a0ecee9b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\numeric">
+      <UniqueIdentifier>{532242c6-3d4f-42ab-a3ad-0998ee8fb99f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\persist">
+      <UniqueIdentifier>{4a4288a2-d67c-442e-bd11-3788991b887d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\pretty">
+      <UniqueIdentifier>{20d8331a-3d86-4503-b9fa-046c1b00cad6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prettypr">
+      <UniqueIdentifier>{836d3b19-ece7-4373-a19c-c58326ca1641}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\prop">
+      <UniqueIdentifier>{5152acb4-9223-4b99-b1bd-70b6f0a241db}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\rete">
+      <UniqueIdentifier>{9e463fad-beaf-447f-8e4e-b76cc0e9e772}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\rewrite">
+      <UniqueIdentifier>{3409d3dd-f6c4-4ec7-bf70-8e507540a116}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\scheduling">
+      <UniqueIdentifier>{56513285-9808-4ccb-b9c3-68b5ddd1fbc9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\sort">
+      <UniqueIdentifier>{2fdcfba8-34fb-4d82-aa7a-9e7ff9d474d0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\strings">
+      <UniqueIdentifier>{4e2d3b4a-6eae-45c0-9a29-2885e5a24fe1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\symbolic">
+      <UniqueIdentifier>{7e34b9dd-55bf-491a-b380-70d7041a1c09}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\trees">
+      <UniqueIdentifier>{beef8b92-98dd-4c9f-a6e5-89f173bdf41b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\tries">
+      <UniqueIdentifier>{dcab29bc-c8f3-4ec5-9ce1-644779967435}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\visualize">
+      <UniqueIdentifier>{30d0904a-ecfa-41ae-9d08-502a24e30f59}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files\absinterp">
+      <UniqueIdentifier>{fc09f189-1890-4cfd-a3d3-6a32164cd4ee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\automata">
+      <UniqueIdentifier>{69e9ef97-331a-42cb-8202-b4c2d8a86834}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ag">
+      <UniqueIdentifier>{e5b2aacf-be3e-464c-90ba-318b63150fc9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\backend-tools">
+      <UniqueIdentifier>{a3f6f2f2-c0e7-4a9b-8908-cefa00efd896}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\algebra">
+      <UniqueIdentifier>{a944b63e-b344-4313-826d-465827595769}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\graphtype">
+      <UniqueIdentifier>{fdc10c97-0bdf-4359-8c9c-0acff2f61a2f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\config">
+      <UniqueIdentifier>{95876b2a-7d03-4d51-95bf-6ede22ef457f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\contain">
+      <UniqueIdentifier>{ed961f13-f149-4620-9180-35ba8356d5fa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\csp">
+      <UniqueIdentifier>{c6f86a3b-1f4a-4138-b2a7-0fbe33aed2c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\dataflow">
+      <UniqueIdentifier>{e4a868cb-5b62-4718-aded-334aca47b0e2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\dynparser">
+      <UniqueIdentifier>{c838f376-e2a5-4628-8818-5947b6d30050}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\gc">
+      <UniqueIdentifier>{351f2854-c561-484f-8988-93de26be8cee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\generic">
+      <UniqueIdentifier>{f3208d41-763a-4562-956a-99f07013263d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\graph">
+      <UniqueIdentifier>{84d0a8bb-8865-4ff4-9750-a15219d53cfc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\hash">
+      <UniqueIdentifier>{7a815abc-42c7-4fde-a95a-6403c31df82c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\html">
+      <UniqueIdentifier>{e1b56599-6470-416f-9e45-e29411498cf3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\machine">
+      <UniqueIdentifier>{6eca7bf4-d9fe-482a-9ac3-1104e6792cf6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\memory">
+      <UniqueIdentifier>{42709915-cb6b-4a4a-9f7b-13a17695018e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\numeric">
+      <UniqueIdentifier>{d430f688-5f53-4324-a3cf-a0c47b924406}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\objc">
+      <UniqueIdentifier>{646c276a-da5a-438b-9af3-858a448ace56}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\object">
+      <UniqueIdentifier>{c7b2ac50-2b32-4793-8532-ccec1f2cdeb1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\parser-tools">
+      <UniqueIdentifier>{f0501ff5-03ec-4e23-8cc3-19f86918304e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\persist">
+      <UniqueIdentifier>{4aa73601-f590-4fb1-a47a-f75503511d13}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\pretty">
+      <UniqueIdentifier>{64833ade-da4b-4eb2-af5f-dd8cdc4dfd52}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\prettypr">
+      <UniqueIdentifier>{928c5433-4c32-4ba5-89ce-db0d6363fb90}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\prop">
+      <UniqueIdentifier>{efc7c780-1008-4ac3-aa52-ee80f8b45de8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\rete">
+      <UniqueIdentifier>{fb4decba-070b-4004-93e1-c63a9ad86e1a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\rewrite">
+      <UniqueIdentifier>{a1af0bcb-16b7-4197-98d5-ae05afb0c797}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\scheduling">
+      <UniqueIdentifier>{66133a2c-0dab-40a3-b21e-ac2a80a1540d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\setl">
+      <UniqueIdentifier>{efda6415-b4ca-495c-83bf-ad49452db055}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\sort">
+      <UniqueIdentifier>{a8b77dde-e22d-4f5c-8111-f684fb06f3dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\strings">
+      <UniqueIdentifier>{a5c8af41-e53c-44e8-9a23-5b3d2b173ea4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\symbolic">
+      <UniqueIdentifier>{f9d7bcb9-a0ad-4789-a323-0d4c00e53632}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\trees">
+      <UniqueIdentifier>{3615744c-2e5d-40d1-b57c-ca41d4182533}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\tries">
+      <UniqueIdentifier>{f5fb8b96-c178-4afa-9567-ab907ea0f3d0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\visualize">
+      <UniqueIdentifier>{118a9d0a-3d5f-4ebb-bda9-ab4eb75a57af}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\lib-src\absinterp\absdomain.cc">
+      <Filter>Source Files\absinterp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\ag\parsenodes.cc">
+      <Filter>Source Files\ag</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\ag\parsetree.cc">
+      <Filter>Source Files\ag</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\ac.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\acgen.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\bottomup.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\compdfa.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\densedfa.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\dfa.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\fastac.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\first_k.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\firstset.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\firstset2.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\follow.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\follow_k.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\gentable.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\gla.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\graminfo.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\grammar.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\iolexerbuf.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\iolexerstack.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\item.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\lalr1gen.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\lalrkgen.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\lexer.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\lexerbuf.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\lexergen.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\lexergen2.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\ll1.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\ll1gen.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\ll1parse.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\llk.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\llkgen.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\lookahd.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\lr0.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\lr1.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\lr1gen.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\lrerror.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\lrgen.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\lrk.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\lrkgen.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\lrparser.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\nfa.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\nfa32.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\nfa_node.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\nullable.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\operprec.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\predict.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\qa.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\regexmat.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\scanner.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\sparsdfa.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\topdown.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\topdowng.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\treeauto.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\treegen.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\automata\treegram.cc">
+      <Filter>Source Files\automata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\backend-tools\codeemit.cc">
+      <Filter>Source Files\backend-tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\contain\basiccol.cc">
+      <Filter>Source Files\contain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\contain\bitset.cc">
+      <Filter>Source Files\contain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\contain\bytearry.cc">
+      <Filter>Source Files\contain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\contain\charset.cc">
+      <Filter>Source Files\contain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\contain\dlist.cc">
+      <Filter>Source Files\contain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\contain\fbitset.cc">
+      <Filter>Source Files\contain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\contain\intset.cc">
+      <Filter>Source Files\contain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\contain\intsets.cc">
+      <Filter>Source Files\contain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\contain\n_array.cc">
+      <Filter>Source Files\contain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\contain\qa.cc">
+      <Filter>Source Files\contain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\contain\slist.cc">
+      <Filter>Source Files\contain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\contain\test.cc">
+      <Filter>Source Files\contain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\contain\unionfnd.cc">
+      <Filter>Source Files\contain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\contain\variset.cc">
+      <Filter>Source Files\contain</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\csp\cspsolver.cc">
+      <Filter>Source Files\csp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\csp\fd_range.cc">
+      <Filter>Source Files\csp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\csp\logicalterm.cc">
+      <Filter>Source Files\csp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\csp\trail.cc">
+      <Filter>Source Files\csp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\gc\bgc.cc">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\gc\cgc.cc">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\gc\gc.cc">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\gc\gcbitmap.cc">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\gc\gcheaps.cc">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\gc\gcintern.cc">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\gc\gcobject.cc">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\gc\gctimer.cc">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\gc\gcverify.cc">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\gc\markswp.cc">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\gc\rootset.cc">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\gc\userheap.cc">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\gc\weakptr.cc">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\generic\except.cc">
+      <Filter>Source Files\generic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\generic\generic.cc">
+      <Filter>Source Files\generic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\generic\qa.cc">
+      <Filter>Source Files\generic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\generic\tables.cc">
+      <Filter>Source Files\generic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\graph\edge.cc">
+      <Filter>Source Files\graph</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\graph\graph.cc">
+      <Filter>Source Files\graph</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\graph\graphaux.cc">
+      <Filter>Source Files\graph</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\graph\node.cc">
+      <Filter>Source Files\graph</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\graph\qa.cc">
+      <Filter>Source Files\graph</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\graphtype\graphtype.cc">
+      <Filter>Source Files\graphtype</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\hash\bhash.cc">
+      <Filter>Source Files\hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\hash\chash.cc">
+      <Filter>Source Files\hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\hash\dchash.cc">
+      <Filter>Source Files\hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\hash\dhash.cc">
+      <Filter>Source Files\hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\hash\hashfn.cc">
+      <Filter>Source Files\hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\hash\lhash.cc">
+      <Filter>Source Files\hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\hash\ohash.cc">
+      <Filter>Source Files\hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\hash\qa.cc">
+      <Filter>Source Files\hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\memory\arena.cc">
+      <Filter>Source Files\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\memory\blacklistmem.cc">
+      <Filter>Source Files\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\memory\boundtag.cc">
+      <Filter>Source Files\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\memory\buddysys.cc">
+      <Filter>Source Files\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\memory\cleanmem.cc">
+      <Filter>Source Files\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\memory\freelist.cc">
+      <Filter>Source Files\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\memory\mem.cc">
+      <Filter>Source Files\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\memory\mempool.cc">
+      <Filter>Source Files\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\memory\ptr.cc">
+      <Filter>Source Files\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\memory\qa.cc">
+      <Filter>Source Files\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\memory\ref.cc">
+      <Filter>Source Files\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\memory\strpool.cc">
+      <Filter>Source Files\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\memory\sysmem.cc">
+      <Filter>Source Files\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\memory\variant.cc">
+      <Filter>Source Files\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\b.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\bcd.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\bigint.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\complex.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\fixpt.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\gauss.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\gaussint.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\matrix.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\pmatrix.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\polynom.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\qa.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\rabin.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\random.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\ratio.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\simplex.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\solovay.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\tensor.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\trapez.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\vector.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\vector3d.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\numeric\z.cc">
+      <Filter>Source Files\numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\persist\pfactory.cc">
+      <Filter>Source Files\persist</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\persist\piostream.cc">
+      <Filter>Source Files\persist</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\persist\pistream.cc">
+      <Filter>Source Files\persist</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\persist\pmisc.cc">
+      <Filter>Source Files\persist</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\persist\pobject.cc">
+      <Filter>Source Files\persist</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\persist\postream.cc">
+      <Filter>Source Files\persist</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\persist\pstream.cc">
+      <Filter>Source Files\persist</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\persist\ptype.cc">
+      <Filter>Source Files\persist</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\persist\qa.cc">
+      <Filter>Source Files\persist</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\pretty\priostream.cc">
+      <Filter>Source Files\pretty</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\pretty\pristream.cc">
+      <Filter>Source Files\pretty</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\pretty\prostream.cc">
+      <Filter>Source Files\pretty</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\prettypr\prettypr.cc">
+      <Filter>Source Files\prettypr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\prop\trace.cc">
+      <Filter>Source Files\prop</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\rete\alphamem.cc">
+      <Filter>Source Files\rete</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\rete\betamem.cc">
+      <Filter>Source Files\rete</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\rete\fact.cc">
+      <Filter>Source Files\rete</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\rete\gen_rete.cc">
+      <Filter>Source Files\rete</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\rete\rete.cc">
+      <Filter>Source Files\rete</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\rete\retenet.cc">
+      <Filter>Source Files\rete</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\rete\token.cc">
+      <Filter>Source Files\rete</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\rewrite\b_item.cc">
+      <Filter>Source Files\rewrite</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\rewrite\b_items.cc">
+      <Filter>Source Files\rewrite</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\rewrite\b_rules.cc">
+      <Filter>Source Files\rewrite</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\rewrite\burs.cc">
+      <Filter>Source Files\rewrite</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\rewrite\burs2.cc">
+      <Filter>Source Files\rewrite</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\rewrite\burs_gen.cc">
+      <Filter>Source Files\rewrite</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\rewrite\burs_gn2.cc">
+      <Filter>Source Files\rewrite</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\rewrite\cache.cc">
+      <Filter>Source Files\rewrite</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\rewrite\twig.cc">
+      <Filter>Source Files\rewrite</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\rewrite\twig_gen.cc">
+      <Filter>Source Files\rewrite</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\scheduling\cyclescheduler.cc">
+      <Filter>Source Files\scheduling</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\scheduling\listscheduler.cc">
+      <Filter>Source Files\scheduling</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\scheduling\operationscheduler.cc">
+      <Filter>Source Files\scheduling</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\sort\insortl.cc">
+      <Filter>Source Files\sort</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\sort\mergesrt.cc">
+      <Filter>Source Files\sort</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\sort\qa.cc">
+      <Filter>Source Files\sort</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\strings\approx.cc">
+      <Filter>Source Files\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\strings\atom.cc">
+      <Filter>Source Files\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\strings\bm.cc">
+      <Filter>Source Files\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\strings\bmgrep.cc">
+      <Filter>Source Files\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\strings\charesc.cc">
+      <Filter>Source Files\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\strings\fansu.cc">
+      <Filter>Source Files\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\strings\grep.cc">
+      <Filter>Source Files\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\strings\kmp.cc">
+      <Filter>Source Files\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\strings\kmpgrep.cc">
+      <Filter>Source Files\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\strings\kr.cc">
+      <Filter>Source Files\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\strings\krgrep.cc">
+      <Filter>Source Files\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\strings\qa.cc">
+      <Filter>Source Files\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\strings\quark.cc">
+      <Filter>Source Files\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\strings\regexp.cc">
+      <Filter>Source Files\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\strings\shiftadd.cc">
+      <Filter>Source Files\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\strings\str.cc">
+      <Filter>Source Files\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\strings\string.cc">
+      <Filter>Source Files\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\strings\strmatch.cc">
+      <Filter>Source Files\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\strings\sunday.cc">
+      <Filter>Source Files\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\strings\twoway.cc">
+      <Filter>Source Files\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\symbolic\atom.cc">
+      <Filter>Source Files\symbolic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\symbolic\bdd.cc">
+      <Filter>Source Files\symbolic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\symbolic\expr.cc">
+      <Filter>Source Files\symbolic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\symbolic\fouriermotzkin.cc">
+      <Filter>Source Files\symbolic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\symbolic\linsolver.cc">
+      <Filter>Source Files\symbolic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\symbolic\string.cc">
+      <Filter>Source Files\symbolic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\symbolic\term.cc">
+      <Filter>Source Files\symbolic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\trees\avl.cc">
+      <Filter>Source Files\trees</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\trees\bnmqueue.cc">
+      <Filter>Source Files\trees</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\trees\fibheap.cc">
+      <Filter>Source Files\trees</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\trees\leftist.cc">
+      <Filter>Source Files\trees</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\trees\pagoda.cc">
+      <Filter>Source Files\trees</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\trees\qa.cc">
+      <Filter>Source Files\trees</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\trees\rlxheap.cc">
+      <Filter>Source Files\trees</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\trees\splay.cc">
+      <Filter>Source Files\trees</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\trees\trees.cc">
+      <Filter>Source Files\trees</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\trees\vbpq.cc">
+      <Filter>Source Files\trees</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\tries\briandai.cc">
+      <Filter>Source Files\tries</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\tries\comptrie.cc">
+      <Filter>Source Files\tries</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\tries\hashtrie.cc">
+      <Filter>Source Files\tries</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\tries\patricia.cc">
+      <Filter>Source Files\tries</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\tries\qa.cc">
+      <Filter>Source Files\tries</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\tries\trie.cc">
+      <Filter>Source Files\tries</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\lib-src\visualize\vcg.cc">
+      <Filter>Source Files\visualize</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\Ad\absinterp\absdomain.h">
+      <Filter>Header Files\absinterp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\ac.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\acgen.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\bottomup.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\compdfa.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\densedfa.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\dfa.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\dfatable.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\ebnf.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\fastac.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\first_k.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\firstset.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\firstset2.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\follow.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\follow_k.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\gentable.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\gla.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\graminfo.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\grammar.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\iolexerbuf.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\iolexerstack.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\item.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\labtree.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\lalr1gen.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\lalrkgen.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\lexer.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\lexerbuf.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\lexergen.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\ll1.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\ll1gen.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\ll1parse.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\llk.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\llkgen.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\lookahd.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\lr0.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\lr1.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\lr1gen.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\lrgen.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\lrk.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\lrkgen.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\lrpardrv.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\lrparser.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\nfa.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\nfa32.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\nfa_node.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\nfa_node.old.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\nullable.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\operprec.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\predict.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\regexmat.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\scanner.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\sparsdfa.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\termpat.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\topdown.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\topdowng.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\treeauto.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\treegen.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\treegram.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\treegrm.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\treemach.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\treemat.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\treepat.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\automata\treetab.h">
+      <Filter>Header Files\automata</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\ag\parsenodes.h">
+      <Filter>Header Files\ag</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\ag\parsetree.h">
+      <Filter>Header Files\ag</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\backend-tools\codeemit.h">
+      <Filter>Header Files\backend-tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\algebra\grobner.h">
+      <Filter>Header Files\algebra</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\graphtype\graphtype.h">
+      <Filter>Header Files\graphtype</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\config\config.h">
+      <Filter>Header Files\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\array.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\array2.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\arraycol.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\avlbag.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\avlmap.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\avlset.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\bag.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\basiccol.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\bhbag.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\bhmap.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\bhset.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\binqueue.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\bitset.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\bytearry.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\charset.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\chbag.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\chmap.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\chset.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\col.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\dchbag.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\dchmap.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\dchset.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\dhbag.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\dheap.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\dhmap.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\dhset.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\dlink.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\dlist.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\dlnklist.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\env.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\fbitset.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\fixarray.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\fixqueue.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\fixstack.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\hashbag.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\hashmap.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\hashset.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\idxable.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\intmap.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\intset.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\intsets.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\isetcol.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\lhbag.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\lhmap.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\lhset.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\linklist.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\map.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\mmh.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\mmheap.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\n_array.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\nsqarray.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\ohbag.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\ohmap.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\ohset.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\ordercol.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\pair.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\pqcol.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\priq.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\priqueue.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\queue.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\queuecol.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\rbbag.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\rbmap.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\rbset.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\seq.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\seqcol.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\sequence.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\set.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\skiplist.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\slink.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\slist.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\slnklist.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\sortcol.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\splaybag.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\splaymap.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\splayset.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\stack.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\stackcol.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\treebag.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\treecon.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\treemap.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\treeset.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\unionfnd.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\vararray.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\variset.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\varptrarray.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\varqueue.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\contain\varstack.h">
+      <Filter>Header Files\contain</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\csp\cam.h">
+      <Filter>Header Files\csp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\csp\cspheap.h">
+      <Filter>Header Files\csp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\csp\cspsolver.h">
+      <Filter>Header Files\csp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\csp\cspstack.h">
+      <Filter>Header Files\csp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\csp\fd_range.h">
+      <Filter>Header Files\csp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\csp\fdsolver.h">
+      <Filter>Header Files\csp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\csp\logicalterm.h">
+      <Filter>Header Files\csp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\csp\trail.h">
+      <Filter>Header Files\csp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\dataflow\dataflow.h">
+      <Filter>Header Files\dataflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\dataflow\domain.h">
+      <Filter>Header Files\dataflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\dataflow\flowgraph.h">
+      <Filter>Header Files\dataflow</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\dynparser\dynparser.h">
+      <Filter>Header Files\dynparser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\dynparser\prule.h">
+      <Filter>Header Files\dynparser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\gc\bgc.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\gc\bgc_fast.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\gc\cgc.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\gc\cleanup.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\gc\gc.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\gc\gcarray.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\gc\gcbitmap.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\gc\gcconfig.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\gc\gccontrol.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\gc\gcheaps.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\gc\gcintern.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\gc\gcmacros.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\gc\gcobject.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\gc\gctimer.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\gc\gcverify.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\gc\markswp.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\gc\rootset.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\gc\userheap.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\gc\weakptr.h">
+      <Filter>Header Files\gc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\generic\config.h">
+      <Filter>Header Files\generic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\generic\except.h">
+      <Filter>Header Files\generic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\generic\generic.h">
+      <Filter>Header Files\generic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\generic\native.h">
+      <Filter>Header Files\generic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\generic\ordering.h">
+      <Filter>Header Files\generic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\generic\ref.h">
+      <Filter>Header Files\generic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\generic\rtti.h">
+      <Filter>Header Files\generic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\generic\tables.h">
+      <Filter>Header Files\generic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\graph\edge.h">
+      <Filter>Header Files\graph</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\graph\graph.h">
+      <Filter>Header Files\graph</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\graph\graph_base.h">
+      <Filter>Header Files\graph</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\lib-src\graph\graphinline.h">
+      <Filter>Header Files\graph</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\graph\node.h">
+      <Filter>Header Files\graph</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\hash\bhash.h">
+      <Filter>Header Files\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\hash\bhash2.h">
+      <Filter>Header Files\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\hash\chash.h">
+      <Filter>Header Files\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\hash\chash2.h">
+      <Filter>Header Files\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\hash\dchash.h">
+      <Filter>Header Files\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\hash\dchash2.h">
+      <Filter>Header Files\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\hash\dhash.h">
+      <Filter>Header Files\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\hash\dhash2.h">
+      <Filter>Header Files\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\hash\hashfn.h">
+      <Filter>Header Files\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\hash\lhash.h">
+      <Filter>Header Files\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\hash\lhash2.h">
+      <Filter>Header Files\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\hash\ohash.h">
+      <Filter>Header Files\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\hash\ohash2.h">
+      <Filter>Header Files\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\hash\perfect.h">
+      <Filter>Header Files\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\html\htmlostream.h">
+      <Filter>Header Files\html</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\machine\machinedesc.h">
+      <Filter>Header Files\machine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\machine\machineunits.h">
+      <Filter>Header Files\machine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\memory\arena.h">
+      <Filter>Header Files\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\memory\blacklistmem.h">
+      <Filter>Header Files\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\memory\boundtag.h">
+      <Filter>Header Files\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\memory\buddy.h">
+      <Filter>Header Files\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\memory\cleanmem.h">
+      <Filter>Header Files\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\memory\constref.h">
+      <Filter>Header Files\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\memory\copygc.h">
+      <Filter>Header Files\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\memory\freelist.h">
+      <Filter>Header Files\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\memory\list.h">
+      <Filter>Header Files\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\memory\mem.h">
+      <Filter>Header Files\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\memory\mempool.h">
+      <Filter>Header Files\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\memory\persist.h">
+      <Filter>Header Files\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\memory\ptr.h">
+      <Filter>Header Files\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\memory\ref.h">
+      <Filter>Header Files\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\memory\strpool.h">
+      <Filter>Header Files\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\memory\sysmem.h">
+      <Filter>Header Files\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\memory\uniqobj.h">
+      <Filter>Header Files\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\memory\variant.h">
+      <Filter>Header Files\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\numeric\bcd.h">
+      <Filter>Header Files\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\numeric\bigint.h">
+      <Filter>Header Files\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\numeric\complex.h">
+      <Filter>Header Files\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\numeric\fix.h">
+      <Filter>Header Files\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\numeric\fixpt.h">
+      <Filter>Header Files\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\numeric\fourier.h">
+      <Filter>Header Files\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\numeric\gauss.h">
+      <Filter>Header Files\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\numeric\gaussint.h">
+      <Filter>Header Files\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\numeric\matrix.h">
+      <Filter>Header Files\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\numeric\newton.h">
+      <Filter>Header Files\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\numeric\pmatrix.h">
+      <Filter>Header Files\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\numeric\polynom.h">
+      <Filter>Header Files\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\numeric\primes.h">
+      <Filter>Header Files\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\numeric\ratio.h">
+      <Filter>Header Files\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\numeric\simplex.h">
+      <Filter>Header Files\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\numeric\tensor.h">
+      <Filter>Header Files\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\numeric\trapez.h">
+      <Filter>Header Files\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\numeric\vector.h">
+      <Filter>Header Files\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\numeric\vector3d.h">
+      <Filter>Header Files\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\numeric\z.h">
+      <Filter>Header Files\numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\objc\class.h">
+      <Filter>Header Files\objc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\objc\methodtb.h">
+      <Filter>Header Files\objc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\objc\objc.h">
+      <Filter>Header Files\objc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\objc\selcache.h">
+      <Filter>Header Files\objc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\objc\selector.h">
+      <Filter>Header Files\objc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\object\obintern.h">
+      <Filter>Header Files\object</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\object\object.h">
+      <Filter>Header Files\object</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\parser-tools\source_location.h">
+      <Filter>Header Files\parser-tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\persist\dbobject.h">
+      <Filter>Header Files\persist</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\persist\parray.h">
+      <Filter>Header Files\persist</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\persist\pconfig.h">
+      <Filter>Header Files\persist</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\persist\pconvert.h">
+      <Filter>Header Files\persist</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\persist\pfactory.h">
+      <Filter>Header Files\persist</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\persist\pi_impl.h">
+      <Filter>Header Files\persist</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\persist\po_impl.h">
+      <Filter>Header Files\persist</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\persist\pobject.h">
+      <Filter>Header Files\persist</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\persist\pstore.h">
+      <Filter>Header Files\persist</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\persist\pstream.h">
+      <Filter>Header Files\persist</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\persist\ptype.h">
+      <Filter>Header Files\persist</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\persist\ptypeentry.h">
+      <Filter>Header Files\persist</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\pretty\piostream.h">
+      <Filter>Header Files\pretty</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\pretty\pistream.h">
+      <Filter>Header Files\pretty</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\pretty\postream.h">
+      <Filter>Header Files\pretty</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\pretty\pstream.h">
+      <Filter>Header Files\pretty</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\prettypr\prettybase.h">
+      <Filter>Header Files\prettypr</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\prettypr\prettypr.h">
+      <Filter>Header Files\prettypr</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\prop\trace.h">
+      <Filter>Header Files\prop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\prop\tuple10.h">
+      <Filter>Header Files\prop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\prop\tuple11.h">
+      <Filter>Header Files\prop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\prop\tuple12.h">
+      <Filter>Header Files\prop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\prop\tuple2.h">
+      <Filter>Header Files\prop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\prop\tuple3.h">
+      <Filter>Header Files\prop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\prop\tuple4.h">
+      <Filter>Header Files\prop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\prop\tuple5.h">
+      <Filter>Header Files\prop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\prop\tuple6.h">
+      <Filter>Header Files\prop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\prop\tuple7.h">
+      <Filter>Header Files\prop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\prop\tuple8.h">
+      <Filter>Header Files\prop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\prop\tuple9.h">
+      <Filter>Header Files\prop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rete\agenda.h">
+      <Filter>Header Files\rete</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rete\alphamem.h">
+      <Filter>Header Files\rete</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rete\betamem.h">
+      <Filter>Header Files\rete</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rete\fact.h">
+      <Filter>Header Files\rete</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rete\gen_rete.h">
+      <Filter>Header Files\rete</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rete\newrete.h">
+      <Filter>Header Files\rete</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rete\rete.h">
+      <Filter>Header Files\rete</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rete\retenet.h">
+      <Filter>Header Files\rete</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rete\token.h">
+      <Filter>Header Files\rete</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rewrite\b_item.h">
+      <Filter>Header Files\rewrite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rewrite\b_items.h">
+      <Filter>Header Files\rewrite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rewrite\b_rules.h">
+      <Filter>Header Files\rewrite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rewrite\burs.h">
+      <Filter>Header Files\rewrite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rewrite\burs2.h">
+      <Filter>Header Files\rewrite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rewrite\burs_gen.h">
+      <Filter>Header Files\rewrite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rewrite\burs_gn2.h">
+      <Filter>Header Files\rewrite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rewrite\cache.h">
+      <Filter>Header Files\rewrite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rewrite\complete.h">
+      <Filter>Header Files\rewrite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rewrite\costgen.h">
+      <Filter>Header Files\rewrite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rewrite\gccache.h">
+      <Filter>Header Files\rewrite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rewrite\reduce.h">
+      <Filter>Header Files\rewrite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rewrite\termobj.h">
+      <Filter>Header Files\rewrite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rewrite\twig.h">
+      <Filter>Header Files\rewrite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\rewrite\twig_gen.h">
+      <Filter>Header Files\rewrite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\scheduling\cyclescheduler.h">
+      <Filter>Header Files\scheduling</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\scheduling\listscheduler.h">
+      <Filter>Header Files\scheduling</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\scheduling\operationscheduler.h">
+      <Filter>Header Files\scheduling</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\setl\elem.h">
+      <Filter>Header Files\setl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\setl\setl.h">
+      <Filter>Header Files\setl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\sort\bubble.h">
+      <Filter>Header Files\sort</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\sort\bubble2.h">
+      <Filter>Header Files\sort</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\sort\heapsort.h">
+      <Filter>Header Files\sort</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\sort\heapsrt2.h">
+      <Filter>Header Files\sort</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\sort\insort.h">
+      <Filter>Header Files\sort</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\sort\insort2.h">
+      <Filter>Header Files\sort</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\sort\insortl.h">
+      <Filter>Header Files\sort</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\sort\mergesrt.h">
+      <Filter>Header Files\sort</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\sort\ordering.h">
+      <Filter>Header Files\sort</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\sort\quicksrt.h">
+      <Filter>Header Files\sort</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\sort\radixsrt.h">
+      <Filter>Header Files\sort</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\sort\shellsrt.h">
+      <Filter>Header Files\sort</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\sort\shellst2.h">
+      <Filter>Header Files\sort</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\sort\sorting.h">
+      <Filter>Header Files\sort</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\sort\sorting2.h">
+      <Filter>Header Files\sort</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\strings\approx.h">
+      <Filter>Header Files\strings</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\strings\atom.h">
+      <Filter>Header Files\strings</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\strings\bm.h">
+      <Filter>Header Files\strings</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\strings\charesc.h">
+      <Filter>Header Files\strings</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\strings\editdist.h">
+      <Filter>Header Files\strings</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\strings\fansu.h">
+      <Filter>Header Files\strings</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\strings\kmp.h">
+      <Filter>Header Files\strings</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\strings\kr.h">
+      <Filter>Header Files\strings</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\strings\quark.h">
+      <Filter>Header Files\strings</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\strings\regexp.h">
+      <Filter>Header Files\strings</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\strings\shiftadd.h">
+      <Filter>Header Files\strings</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\strings\str.h">
+      <Filter>Header Files\strings</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\strings\string.h">
+      <Filter>Header Files\strings</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\strings\strmatch.h">
+      <Filter>Header Files\strings</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\strings\twoway.h">
+      <Filter>Header Files\strings</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\symbolic\atom.h">
+      <Filter>Header Files\symbolic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\symbolic\bdd.h">
+      <Filter>Header Files\symbolic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\symbolic\boolunif.h">
+      <Filter>Header Files\symbolic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\symbolic\expr.h">
+      <Filter>Header Files\symbolic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\symbolic\feature.h">
+      <Filter>Header Files\symbolic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\symbolic\featuretree.h">
+      <Filter>Header Files\symbolic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\symbolic\fouriermotzkin.h">
+      <Filter>Header Files\symbolic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\symbolic\linsolver.h">
+      <Filter>Header Files\symbolic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\symbolic\string.h">
+      <Filter>Header Files\symbolic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\symbolic\term.h">
+      <Filter>Header Files\symbolic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\symbolic\unifier.h">
+      <Filter>Header Files\symbolic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\symbolic\wam.h">
+      <Filter>Header Files\symbolic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\symbolic\wamconfig.h">
+      <Filter>Header Files\symbolic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\trees\avl.h">
+      <Filter>Header Files\trees</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\trees\bnmqueue.h">
+      <Filter>Header Files\trees</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\trees\fibheap.h">
+      <Filter>Header Files\trees</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\trees\leftist.h">
+      <Filter>Header Files\trees</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\trees\pagoda.h">
+      <Filter>Header Files\trees</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\trees\redblack.h">
+      <Filter>Header Files\trees</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\trees\rlxheap.h">
+      <Filter>Header Files\trees</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\trees\rnktrees.h">
+      <Filter>Header Files\trees</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\trees\splay.h">
+      <Filter>Header Files\trees</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\trees\trees.h">
+      <Filter>Header Files\trees</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\trees\vbpq.h">
+      <Filter>Header Files\trees</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\tries\briandai.h">
+      <Filter>Header Files\tries</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\tries\comptrie.h">
+      <Filter>Header Files\tries</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\tries\hashtrie.h">
+      <Filter>Header Files\tries</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\tries\patricia.h">
+      <Filter>Header Files\tries</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\tries\trie.h">
+      <Filter>Header Files\tries</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\visualize\vcg.h">
+      <Filter>Header Files\visualize</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Ad\visualize\visualizer.h">
+      <Filter>Header Files\visualize</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuildStep Include="..\..\include\Ad\strings\sunday.h">
+      <Filter>Header Files\strings</Filter>
+    </CustomBuildStep>
+  </ItemGroup>
+</Project>

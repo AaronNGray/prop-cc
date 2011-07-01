@@ -1,0 +1,157 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the datatype compiler of Prop.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include <AD/strings/quark.h>
+#include "ir.ph"
+#include "ast.ph"
+#include "type.h"
+#include "datagen.h"
+#include "options.h"
+#include "datatype.ph"
+#include "list.h"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor and destructors for datatype compiler
+//
+///////////////////////////////////////////////////////////////////////////////
+
+int DatatypeCompiler::max_embedded_tags = 0;
+int DatatypeCompiler::max_embedded_bits = 0;
+LabelGen DatatypeCompiler::temp_vars("_T");
+
+DatatypeCompiler::DatatypeCompiler( TyOpt opt, int embedded_tags)
+    : optimizations(opt)
+{
+  max_embedded_tags = embedded_tags;
+  max_embedded_bits = 0;
+  for (int i = embedded_tags - 1; i > 0; i >>= 1)
+    max_embedded_bits++;
+}
+
+DatatypeCompiler::~DatatypeCompiler() {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to create a datatype hierarchy
+//
+///////////////////////////////////////////////////////////////////////////////
+
+static DatatypeHierarchy *create_datatype_hierarchy
+   (Id name, TyVars parameters, Inherits inhs, TyQual qual,
+    TermDefs terms, Decls body)
+{
+  match ( lookup_ty( name))
+  {
+  DATATYPEty({ hierarchy ... }, _):
+    { return hierarchy; }
+  |  _:
+    { return new DatatypeHierarchy( name, parameters, inhs, qual, terms, body); }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Top level method to map datatype and type definitions into
+//  a C++ class hierarchy.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void DatatypeCompiler::gen_datatype
+  (
+    DatatypeDefs data_defs,   // datatype definitions
+    ViewDefs     view_defs,   // view definitions
+    LawDefs      law_defs,    // law definitions
+    TyDefs       ty_defs      // type definitions
+  )
+{
+  // Build the classes hierarchies
+
+  int N = length(data_defs);
+  DatatypeHierarchy ** H = new DatatypeHierarchy * [N];
+  {
+    int i = 0;
+    for_each (DatatypeDef, d, data_defs)
+    {
+      match (d)
+      {
+      DATATYPEdef(name,tvs,inh,q,terms,body):
+        {
+          H[i] = create_datatype_hierarchy(name,tvs,inh,q,terms,body);
+          i++;
+        }
+      }
+    }
+  }
+
+  // Generate forward datatype definitions
+
+    for (int i = 0; i < N; i++)
+      if (H[i])
+        H[i]->generate_forward_declarations(*this);
+
+  //  Generate type definitions
+
+    for_each (TyDef, t, ty_defs)
+      gen_type_def(t);
+
+  //  Generate the class hierarchies
+
+    for (int i = 0; i < N; i++)
+      if (H[i])
+        H[i]->generate_datatype_definitions(*this);
+
+  //  Compile the pattern laws
+  gen_law_defs(law_defs);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a type definition
+//
+///////////////////////////////////////////////////////////////////////////////
+void DatatypeCompiler::gen_type_def( TyDef ty_def)
+{
+  match (ty_def)
+  {
+  TYdef( id, tyvars, ty, generative) | generative:
+    {
+      pr(
+          "%^%/%^// Definition of type %s%V%^%/"
+          "%#"
+          "%^%^typedef %t;\n\n",
+          id, tyvars, ty_def->begin_line, ty_def->file_name, ty, id);
+    }
+  | _: /* skip */
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to preprocess a datatype (for constraints)
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void DatatypeCompiler::preprocess_def( DatatypeDef def)
+{
+  match (def) of
+  DATATYPEdef( id, tyvars, _, qual, terms, _) | qual & QUALunifiable:
+  {
+    Id      var_term_name = Quark(id,"_var");
+    TermDef var_term = TERMdef'
+                          {
+                            id   = var_term_name,
+                            ty   = mkidvarty(id,tyvars),
+                            qual = QUALvariable
+                          };
+    terms = #[ var_term ... terms ];
+    // msg("[Unifiable datatype %s]\n", id);
+  }
+  | _: // skip otherwise
+  end match;
+}

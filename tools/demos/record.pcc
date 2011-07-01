@@ -1,0 +1,8 @@
+struct Complex { double x, y; };
+
+double operator * (Complex c, Complex d)
+{   let { x, y } = c
+    and { a, b } = d
+    in
+    { return x*a + y*b; }
+}

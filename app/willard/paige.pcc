@@ -1,0 +1,201 @@
+#include <assert.h>
+#include <iostream.h>
+#include <fstream.h>
+#include <AD/pretty/postream.h>
+#include "paige.ph"
+#include "willard-ast.ph"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor for the Paige/Goyal query transformer
+//
+///////////////////////////////////////////////////////////////////////////////
+PaigeGoyal::PaigeGoyal() : log(*new ofstream), errlog(cerr)
+{  True     = LIT(BOOL(true));
+   False    = LIT(BOOL(false));
+   Zero     = LIT(INT(0));
+   One      = LIT(INT(1));
+   Two      = LIT(INT(2));
+   EmptySet = GENERATOR(#[],#[],Zero);
+   new_name = 0;
+   subquery_names = #[];
+   subqueries = #[];
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Destructor for the Paige/Goyal query transformer
+//
+///////////////////////////////////////////////////////////////////////////////
+PaigeGoyal::~PaigeGoyal() 
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to add a subquery
+//
+///////////////////////////////////////////////////////////////////////////////
+void PaigeGoyal::add_subquery(Id x, Exp e) 
+{  // PrettyOStream S; 
+   // S << "Subquery: " << x << '=' << e << '\n';
+   subquery_names = #[ x ... subquery_names ];
+   subqueries     = #[ e ... subqueries ];
+}
+Bool PaigeGoyal::has_subqueries() const { return subqueries != #[]; }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to collect subqueries into a LET
+//
+///////////////////////////////////////////////////////////////////////////////
+Exp PaigeGoyal::collect_subqueries(Exp exp) 
+{  exp = make_let(subquery_names, subqueries, exp);
+   subquery_names = #[];
+   subqueries     = #[];
+   return exp;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to make a nested LET
+//
+///////////////////////////////////////////////////////////////////////////////
+Exp PaigeGoyal::make_let(Ids xs, Exps es, Exp exp) 
+{  match while (xs) and (es) of
+      #[a ... b], #[c ... d]:
+      {  Id  x = a;
+	 Exp e = c; 
+	 exp = LET(x,e,exp); 
+	 xs = b; es = d;
+      }
+   end match;
+   return exp;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Methods to define/lookup the range of a variable
+//
+///////////////////////////////////////////////////////////////////////////////
+void PaigeGoyal::define_range(Id x, Exp e) { var_range.insert(x,e); }
+void PaigeGoyal::define_range(Ids xs, Exps es) 
+{  Ids  ids = xs;
+   Exps exps = es;
+   match while (ids) and (exps) of
+      #[x ... xs], #[e ... es]: { define_range(x,e); ids = xs; exps = es; }
+   end match;
+   if (ids != #[] || exps != #[])
+      errlog << "Arity mismatch in " << xs << "in" << es << ::newline; 
+}
+
+Exp  PaigeGoyal::range_of(Id x) 
+{  assert(var_range.contains(x));
+   return var_range[x]; 
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print messages
+//
+///////////////////////////////////////////////////////////////////////////////
+void PaigeGoyal::message(const char * msg, Exp e) 
+{  log << ::indent << e << ::newline << ::newline << ::unindent
+       << '[' << msg << ']' << ::newline << ::newline;
+}
+
+void PaigeGoyal::error(const char * msg, Exp e) 
+{  errlog << '[' << "ERROR:" << msg << ']' << ::newline << ::indent
+          << e << ::newline << ::unindent; 
+}
+
+void PaigeGoyal::set_log(ostream& f) { log.set_stream(f); }
+void PaigeGoyal::set_error(ostream& f) { errlog.set_stream(f); }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to add an edge into the query graph
+//
+///////////////////////////////////////////////////////////////////////////////
+void PaigeGoyal::add_edge(Id x, Id y)
+{  if (parent.contains(y))
+   {  Id z = parent[y];
+      if (x != z)
+	 errlog << "Edge: " << x << "->" << y << "conflicts with" 
+		<< z << "->" << y << "in the query graph\n";
+   }
+   parent.insert(y,x);
+}
+
+Bool PaigeGoyal::has_edge(Id x, Id y) const
+{  if (! parent.contains(y)) return false;
+   return parent[y] == x; 
+}
+
+void PaigeGoyal::add_edge_query(Id x, Id y, Exp q) 
+{
+   edge_queries.insert(.(x,y),q);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to compute the transitive closure of the query graph
+//
+///////////////////////////////////////////////////////////////////////////////
+void PaigeGoyal::compute_transitive_closure() 
+{  foreach (i,parent)
+   {  parent_closure.insert(parent.key(i),parent.value(i));
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Methods to push/pop from the quantifier stack
+//
+///////////////////////////////////////////////////////////////////////////////
+void PaigeGoyal::push_quantifier(Id x) { quantifier_vars.push(x); }
+void PaigeGoyal::push_quantifier(Ids xs) 
+{  match while (xs) of #[h ... t]: { push_quantifier(h); xs = t; } end match; }
+void PaigeGoyal::pop_quantifier(Id x) { quantifier_vars.pop(); }
+void PaigeGoyal::pop_quantifier(Ids xs) 
+{  match while (xs) of #[h ... t]: { pop_quantifier(h); xs = t; } end match; }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print the query graph
+//
+///////////////////////////////////////////////////////////////////////////////
+void PaigeGoyal::print_query_graph() 
+{  log << ::tab << "[Query Graph]" << ::newline << ::indent;
+   foreach (i,parent)
+   {  Id x = parent.value(i);
+      Id y = parent.key(i);
+      log << ::tab << "edge" << x << "->" << y;
+      if (edge_queries.contains(.(x,y)))
+	  log << '\t' << edge_queries[.(x,y)]; 
+      log << ::newline;
+   }
+   log << ::unindent;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Main method to decompose a query
+//
+///////////////////////////////////////////////////////////////////////////////
+Exp PaigeGoyal::decompose(Exp e) 
+{  subqueries = #[];
+   do {
+      changed = false;
+      e = remove_duplicate_names(e);
+      e = phase1(e);   // DNF construction
+      e = construct_query_graph(e); // query graph construction
+      e = phase2(e);   // quantifier elimination
+      e = phase3(e);   // disjunction removal
+      e = phase4(e);   // conjunction removal 
+      e = projection_recognition(e);
+      e = phase5(e);
+      if (changed) message("Reiterating the transformation",e);
+   } while (changed);
+   return e;
+}

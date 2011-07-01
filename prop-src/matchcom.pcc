@@ -1,0 +1,1759 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file contains the pattern matching compiler of the Prop -> C++
+//  translator.  The following methods are implemented:
+//
+//    (i)   Variable bindings computation of patterns.
+//    (ii)  Translation of patterns into decision trees.
+//    (iii) Merging, transformation and minimization of decision trees/dags.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <string.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <AD/contain/bitset.h>
+#include <AD/generic/ordering.h>
+#include <AD/strings/quark.h>
+#include <AD/strings/charesc.h>
+#include "ir.ph"
+#include "ast.ph"
+#include "matchcom.ph"
+#include "patenv.h"
+#include "hashtab.h"
+#include "config.h"
+#include "type.h"
+#include "options.h"
+#include "list.h"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor and destructor for class MatchCompiler
+//
+///////////////////////////////////////////////////////////////////////////////
+
+MatchCompiler:: MatchCompiler()
+    : vars("_X"), labels("L"),
+      merges(0), ifs(0), switches(0), gotos(0), goto_labels(0),
+      current_options(MATCHnone), current_rule(0)
+    {}
+
+MatchCompiler::~MatchCompiler() {}
+
+MatchBase::MatchBase() : shared(0), label(0) {}
+
+HashTable MatchCompiler::quark_map( string_hash, string_equal);
+LabelGen MatchCompiler::quark_labels("_Q");
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor for MatchRuleInfo
+//
+///////////////////////////////////////////////////////////////////////////////
+
+MatchRuleInfo::MatchRuleInfo ()
+  : used(false), ty(NOty), rule_number(0), negated(false), rewriting(false),
+    is_chain_rule(false), mode(BOTTOMUP), option(NO_OPTIONS)
+  {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Flag that makes all selectors refer to the same object.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool same_selectors = false;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Allocation routines
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Literal * MatchCompiler::Literals(int n)
+  { return (Literal *)mem_pool[n * sizeof(Literal)]; }
+
+Match   * MatchCompiler::Matches(int n)
+  { return (Match *)mem_pool[n * sizeof(Match)]; }
+
+static Literal * vec (Literal l)
+{
+  Literal * L = (Literal *)mem_pool[sizeof(Literal)];
+  L[0] = l;
+  return L;
+}
+
+static Match * vec (Match m)
+{
+  Match * M = (Match *)mem_pool[sizeof(Match)];
+  M[0] = m;
+  return M;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  The mapping from quark name to identifiers
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Id MatchCompiler::quark_name(Id id)
+{
+  HashTable::Entry * e = quark_map.lookup(id);
+  if (e)
+    return (Id)e->v;
+  else
+  {
+    Id name = Quark( options.mangled_file_name, quark_labels.new_label());
+    quark_map.insert( (HashTable::Key) id, (HashTable::Value) name);
+    return name;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Reverse the polarity of a pattern.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+fun rev ISpositive: Polarity: return ISnegative
+  | rev ISnegative:           return ISpositive
+  | rev ISneither:            return ISneither
+  ;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to perform substitution on a pattern.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Pat subst( Pat pat, Pat env[], Bool copy)
+{
+  match while (pat)
+  {
+    NOpat || WILDpat _ || LEXEMEpat _:
+      { return pat; }
+  | IDpat( id, ty, e):
+      { return IDpat(id,ty,e); }
+  | LITERALpat l:
+      { return LITERALpat(l); }
+  | CONSpat c:
+      { return CONSpat(c); }
+  | CONTEXTpat( context, p):
+      { return CONTEXTpat( context, subst( p, env, copy)); }
+  | INDpat( id, i, t) | copy:
+      { return INDpat( id, i, t); }
+  | INDpat( _, i, _):
+      { return subst( env[i], env, true); }
+  | APPpat( a, b):
+      { return APPpat( subst( a, env, copy), subst( b, env, copy)); }
+  | TYPEDpat( p, ty):
+      { return TYPEDpat( subst( p, env, copy), ty); }
+  | ASpat( id, p, ty, e):
+      { return ASpat( id, subst( p, env, copy), ty, e); }
+  | TUPLEpat ps:
+      { return TUPLEpat( subst( ps, env, copy)); }
+  | EXTUPLEpat ps:
+      { return EXTUPLEpat( subst( ps, env, copy)); }
+  | ARRAYpat( ps, flex):
+      { return ARRAYpat( subst( ps, env, copy), flex); }
+  | VECTORpat { cons, elements, len, array, head_flex, tail_flex }:
+      {
+        return VECTORpat'
+             {
+               cons      = cons,
+               elements  = subst(elements,env,copy),
+               len       = subst(len,env,copy),
+               array     = subst(array,env,copy),
+               head_flex = head_flex,
+               tail_flex = tail_flex
+             };
+      }
+  | RECORDpat( ps, flex):
+      { return RECORDpat( subst( ps, env, copy), flex); }
+  | LISTpat{ cons, nil, head, tail}:
+      {
+        return LISTpat'
+                  {
+                    cons = cons,nil = nil,
+                    head = subst(head,env,copy),
+                    tail = subst(tail,env,copy)
+                  };
+      }
+  | LOGICALpat( op, p1, p2):
+      { return LOGICALpat( op, subst( p1, env, copy), subst( p2, env, copy)); }
+  | MARKEDpat( _, p):
+      { pat = p; }
+  | GUARDpat( p, e):
+      { return GUARDpat( subst( p, env, copy), e); }
+  | _:
+      { bug("subst()"); }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to perform substitution on a pattern list.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Pats subst( Pats pats, Pat env[], Bool copy)
+{
+  match (pats)
+  {
+    #[]:        { return #[]; }
+  | #[a ... b]: { return #[ subst( a, env, copy) ... subst( b, env, copy) ]; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to perform substitution on a labeled pattern list.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+LabPats subst( LabPats pats, Pat env[], Bool copy)
+{
+  match (pats)
+  {
+    #[]:        { return #[]; }
+  | #[a ... b]:
+      {
+        LabPat l;
+        l.label = a.label;
+        l.pat   = subst(a.pat,env,copy);
+        return #[ l ... subst(b,env,copy) ];
+      }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pattern application.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Pat apply_pat (Pat scheme, Pat arg)
+{
+  match (scheme) and (arg)
+  {
+    POLYpat( _, 0, _, pat, _, _), NOpat: { return subst( pat, 0, false); }
+  | POLYpat( _, 1, _, pat, _, _), p:     { return subst( pat, &p, false); }
+  | POLYpat( _, n, _, pat, _, _), TUPLEpat ps | length(ps) == n:
+      {
+        Pat env[256];
+        int i = 0;
+        for_each (Pat, p, ps) env[i++] = p;
+        return subst(pat,env,false);
+      }
+  | _,  _:
+    {
+      error( "%Lunable to apply pattern scheme %p\n"
+             "%Lwith argument %p\n", scheme, arg);
+      return NOpat;
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//
+//  Substitution on expressions.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exp subst(Exp exp, Exp s[])
+{
+  match while (exp)
+  {
+    DOTexp( e, l):
+      { return DOTexp( subst( e, s), l); }
+  | RELexp i:
+      { return s[i]; }
+  | SELECTORexp( e, c, t):
+      { return SELECTORexp( subst( e, s), c, t); }
+  | DEREFexp( e):
+      { return DEREFexp( subst( e, s)); }
+  | ARROWexp( e, l):
+      { return ARROWexp( subst( e, s), l); }
+  | INDEXexp( a, b):
+      { return INDEXexp( subst( a, s), subst( b, s)); }
+  | BINOPexp( a, b, c):
+      { return BINOPexp( a, subst( b, s),subst( c, s)); }
+  | PREFIXexp( a, b):
+      { return PREFIXexp( a, subst( b, s)); }
+  | POSTFIXexp( a, b):
+      { return POSTFIXexp( a, subst( b, s)); }
+  | APPexp( a, b):
+      { return APPexp( subst( a, s), subst( b, s)); }
+  | ASSIGNexp( a, b):
+      { return ASSIGNexp( subst( a, s), subst( b, s)); }
+  | IFexp( a, b, c):
+      { return IFexp( subst( a, s), subst( b, s), subst( c, s)); }
+  | TUPLEexp es:
+      { return TUPLEexp( subst( es, s)); }
+  | RECORDexp es:
+      { return RECORDexp( subst( es, s)); }
+  | SENDexp( l, es):
+      { return SENDexp( l, subst( es, s)); }
+  | LISTexp( a, b, es, e):
+      { return LISTexp( a, b, subst( es, s), subst( e, s)); }
+  | CONSexp( c, es, e):
+      { return CONSexp( c, subst( es, s), subst( e, s)); }
+  | CASTexp( ty, e):
+      { return CASTexp( ty, subst( e, s)); }
+  | EQexp( ty, a, b):
+      { return EQexp( ty, subst( a, s), subst( b, s)); }
+  | UNIFYexp( ty, a, b):
+      { return UNIFYexp( ty, subst( a, s), subst( b, s)); }
+  | LTexp( ty, a, b):
+      { return LTexp( ty, subst( a, s), subst( b, s)); }
+  | HASHexp( ty, e):
+      { return HASHexp( ty, subst( e, s)); }
+  | SETLexp( op, es):
+      { return SETLexp( op, subst( es, s)); }
+  | MARKEDexp( _, e):
+      { exp = e; }
+  | _:
+      { return exp; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Substitution on expression lists.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exps subst( Exps es, Exp s[])
+{
+  match (es)
+  {
+    #[]:        { return #[]; }
+  | #[a ... b]: { return #[ subst(a,s) ... subst(b,s) ]; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Substitution on labeled expression lists.
+//
+///////////////////////////////////////////////////////////////////////////////
+LabExps subst( LabExps es, Exp s[])
+{
+  match (es)
+  {
+    #[]:        { return #[]; }
+  | #[a ... b]: {
+                   LabExp e;
+                   e.label = a.label;
+                   e.exp   = subst(a.exp,s);
+                   return #[ e ... subst(b,s) ];
+                 }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Compute the view selector given the type
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exp view_selector_of( Cons cons, Pat pat, Exp e, Ty ty)
+{
+  Exp selector_exp = default_val(ty);
+  if (selector_exp == NOexp)
+  {
+    error(
+           "%Laccessor is undefined for view pattern: %s %p\n",
+           (cons != NOcons ? cons->name : "???"), pat
+         );
+    return NOexp;
+  }
+  else
+    return subst( selector_exp, &e);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Decorate selector bindings for a view constructor
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void decor_view
+   (Cons cons, Pat pat, Exp sel,
+    Polarity polarity, Bool visible, PatternVarEnv& E, int& match_rule)
+{
+   if (boxed(pat)) pat->selector = sel; // annotate selector
+   match (cons)
+   {
+     ONEcons { view_selectors, ty ... } | view_selectors != 0:
+     {
+       match (arity_of(ty)) and (pat) and (deref ty)
+       {
+         0, _, _:  { bug ("decor_view()"); }
+       | 1, _, _:
+         {
+           decor( pat, view_selector_of( cons, pat, sel, ty),
+                 polarity, visible, E, match_rule); }
+       | n, TUPLEpat ps, TUPLEty tys:
+         {
+           int i;
+           List<Pat> pat_list;
+           List<Ty>  ty_list;
+           for (i = 0, pat_list = ps, ty_list = tys;
+                pat_list && ty_list;
+                pat_list = pat_list->#2, ty_list = ty_list->#2)
+           {
+             decor( pat_list->#1, view_selector_of( cons, pat, sel, ty_list->#1),
+                    polarity, visible, E, match_rule);
+             i++;
+           }
+         }
+       | n, RECORDpat( ps, _), RECORDty( labs, _, tys):
+         {
+           for_each ( LabPat, p, ps)
+           {
+             int i;
+             List<Id> lab_list;
+             List<Ty> ty_list;
+             for (i = 0, lab_list = labs, ty_list = tys;
+                  lab_list && ty_list;
+                  lab_list = lab_list->#2, ty_list = ty_list->#2, i++)
+             {  if (lab_list->#1 == p.label)
+                   decor(p.pat,view_selector_of(cons,pat,sel,ty_list->#1),
+                         polarity,visible,E,match_rule);
+             }
+           }
+         }
+       | n, _, _:
+         { error ("%Lbad view constructor pattern: %p", pat); }
+       }
+     }
+   | ONEcons _:
+     { error ("%Lmissing view selector for pattern: %p", pat); }
+   | _: // skip
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Decorate patterns with selector bindings.
+//
+///////////////////////////////////////////////////////////////////////////////
+void decor
+   (Pat pat, Exp sel, Polarity polarity, Bool visible, PatternVarEnv& E,
+    int& match_rule)
+{
+  for(;;)
+  {
+    if (! boxed(pat)) return;
+    pat->selector = sel; // annotate selector
+    match (pat)
+    {
+      NOpat || WILDpat _ || LITERALpat _ || CONSpat _: { return; }
+    | LEXEMEpat( _, ty, n, conses) | conses:
+         // generate lexeme pattern binding
+      {
+        if (visible)
+        {
+          Ty t = NOty;
+          Exp binding =
+             CASTexp( ty, BINOPexp( "+", IDexp( "rule__"),
+                     LITERALexp( INTlit( conses[0]->tag + 256 - 1 - match_rule))));
+          E.add( #"?lexeme", binding, t, polarity);
+          match_rule += n - 1;
+        }
+        return;
+      }
+    | LEXEMEpat _: { return; } // skip
+    | IDpat( id, ty, e):  // generate pattern variable binding
+      {
+        if (visible)
+        {
+          Exp exp = E.add(id,sel,ty,polarity);
+          if (E.separate_guard() && ! E.tree_grammar() && exp != NOexp)
+            E.add_guard(EQexp(ty,sel,exp));
+          else
+            e = exp;
+        }
+        return;
+      }
+    | ASpat( id, p, ty, e): // generate pattern variable alias binding
+      {
+        if (visible)
+        {
+          Exp exp = E.add(id,sel,ty,polarity);
+          if (E.separate_guard() && ! E.tree_grammar() && exp != NOexp)
+            E.add_guard(EQexp(ty,sel,exp));
+          else
+            e = exp;
+        }
+        pat = p;
+      }
+    | MARKEDpat(_,p):   { pat = p; }
+    | UNIFYpat(p,_):    { pat = p; }
+    | CONTEXTpat(_,p):  { pat = p; }
+    | TYPEDpat(p,_):    { pat = p; }
+    | GUARDpat(p,e):    { pat = p; }
+    | TUPLEpat(ps):
+      {
+        int i = 1;
+        for_each ( Pat, p, ps)
+        {
+          decor( p, DOTexp( sel, index_of(i)), polarity, visible, E, match_rule);
+          i++;
+        }
+        return;
+      }
+    | EXTUPLEpat (ps):
+      {
+        int i = 1;
+        for_each ( Pat, p, ps)
+        {
+          decor( p, DOTexp( sel, index_of(i)), polarity, visible, E, match_rule);
+          i++;
+        }
+        return;
+      }
+    | ARRAYpat( ps, _):
+      {
+        int i = 0;
+        for_each ( Pat, p, ps)
+        {
+          decor( p, INDEXexp( sel, LITERALexp( INTlit(i))), polarity, visible, E,
+                 match_rule);
+           i++;
+        }
+        return;
+      }
+    | VECTORpat { cons, elements, array, len, head_flex, tail_flex ... }:
+      {
+        int i       = 0;
+        Exp s       = select( sel, cons);
+        Exp len_exp = DOTexp( s, "len()");
+        int n       = length( elements);
+        for_each ( Pat, p, elements)
+        {
+          Exp index_exp =
+            head_flex ? BINOPexp( "-", len_exp, LITERALexp( INTlit( n-i)))
+                      : LITERALexp( INTlit(i));
+          decor( p, APPexp( DOTexp( s, "at"), index_exp), polarity, visible, E,
+                match_rule);
+          i++;
+        }
+        decor( len, len_exp, polarity, visible, E, match_rule);
+        decor( array, DOTexp( s, "array()"), polarity, visible, E, match_rule);
+        return;
+      }
+    | RECORDpat( ps, _):
+      {
+        for_each ( LabPat, lab_pat, ps)
+            decor( lab_pat.pat, DOTexp( sel, lab_pat.label),
+                  polarity, visible, E, match_rule);
+         return;
+      }
+    | APPpat( CONSpat(c as ONEcons {
+                alg_ty = DATATYPEty({ qualifiers ...},_) ...}),
+             p) | qualifiers & QUALview:
+      {  decor_view( c, p, sel, polarity, visible, E, match_rule); return; }
+    | APPpat( CONSpat(cons), p):
+      {  decor( p, select( sel, cons), polarity, visible, E, match_rule); return; }
+    | LOGICALpat( NOTpat, p, _): { polarity = rev(polarity); pat = p; }
+    | LOGICALpat( ANDpat, a, b):
+      { decor( a, sel, polarity, visible, E, match_rule); pat = b; }
+    | LOGICALpat( ORpat,a,b):
+      { decor(a,sel,polarity,false,E,match_rule); pat = b; visible = false; }
+    | LOGICALpat(EQUIVpat || XORpat || IMPLIESpat, a, b):
+      {
+        decor( a, sel, ISneither, false, E, match_rule);
+        pat = b; visible = false; polarity = ISneither;
+      }
+    | LISTpat{cons, nil, head = ps, tail = p}:
+      {
+        for_each (Pat, apat, ps)
+        {
+          decor( apat, DOTexp( select( sel, cons), "_1"), polarity, visible,
+                 E, match_rule);
+          sel = DOTexp( select( sel, cons), "_2");
+        }
+        pat = p;
+      }
+    | _: { bug("decor()"); }
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Decorate a pattern list with bindings.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void decor
+   (MatchExps exps, Pat pat, Polarity polarity, Bool visible,
+    PatternVarEnv& E, int& match_rule)
+{
+  int arity = length(exps);
+  if (arity == 1)
+  {
+    match (exps->#1)
+    {
+    MATCHexp(e,mv):
+       {  decor( pat, mv ? IDexp(mv) : e, polarity, visible, E, match_rule); }
+    }
+  }
+  else
+  {
+    match (pat)
+    {
+      WILDpat _:       { /* skip */ }
+    | MARKEDpat( _, p):  { decor( exps, p, polarity, visible, E, match_rule); }
+    | CONTEXTpat( _, p): { decor( exps, p, polarity, visible, E, match_rule); }
+    | TUPLEpat pats | length(pats) == arity:
+      {
+        Pats      ps;
+        MatchExps es;
+        for (ps = pats, es = exps; ps; ps = ps->#2, es = es->#2)
+        {
+          match (es->#1)
+          {
+          MATCHexp(e,mv):
+            {
+              decor( ps->#1, mv ? IDexp(mv) : e, polarity,
+                     visible, E, match_rule);
+            }
+          }
+        }
+      }
+    | LOGICALpat( NOTpat, p, _):
+      { decor( exps, p, rev(polarity), false, E, match_rule); }
+    | LOGICALpat( ANDpat, a, b):
+      {
+        decor( exps, a, polarity, visible, E, match_rule);
+        decor( exps, b, polarity, visible, E, match_rule);
+      }
+    | LOGICALpat( ORpat, a, b):
+      {
+        decor( exps, a, polarity, false, E, match_rule);
+        decor( exps, b, polarity, false, E, match_rule);
+      }
+    | LOGICALpat( _, a, b):
+      {
+        decor( exps, a, ISneither, false, E, match_rule);
+        decor( exps, b, ISneither, false, E, match_rule);
+      }
+    | _:
+      {
+        error( "%Larity mismatch (expecting %i) in pattern: %p\n", arity, pat);
+      }
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Return the arity of a pattern
+//
+///////////////////////////////////////////////////////////////////////////////
+
+fun arity_of TUPLEpat  ps: int:           return length(ps)
+  | arity_of RECORDpat (l,flex) | ! flex: return length(l)
+  | arity_of MARKEDpat(_,p):              return arity_of(p)
+  | arity_of LOGICALpat(NOTpat,p,_):      return arity_of(p)
+  | arity_of CONTEXTpat(_,p):             return arity_of(p)
+  | arity_of p as LOGICALpat(_,a,b):
+      {
+        int i = arity_of(a);
+        int j = arity_of(b);
+        if (i != j) error ("%Larity mismatch in logical pattern: %p\n", p);
+        return i;
+      }
+  | arity_of p as RECORDpat _:
+      { error ("%Lillegal incomplete record pattern: %p\n", p); return 0; }
+  | arity_of _:
+      { return 1; }
+  ;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Make a list of match expressions
+//
+///////////////////////////////////////////////////////////////////////////////
+
+MatchExps make_match_exps( int i, int n, int j)
+{
+  if (i > n)
+    return #[];
+  else
+  {
+     Exp e = j < 0 ? IDexp( index_of(i,"x")) : RELexp(j);
+     return #[ MATCHexp( e, #[]) ... make_match_exps( i+1, n, j) ];
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Main decoration routine
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void decor( MatchExps& exps, Pat pat, PatternVarEnv& E, int& match_rule, int i)
+{
+  if (exps == #[])  // create default match expressions if there are none
+      exps = make_match_exps( 1, arity_of(pat), i);
+  decor( exps, pat, ISpositive, true, E, match_rule);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Translate a string literal into a character array pattern.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+List<Pat> make_string_pattern( const char * string)
+{
+  if (string[0] == '\"' && string[1] == '\0')
+    return #[ LITERALpat(CHARlit('\0')) ];
+  else
+  {
+    char c;
+    const char * next_pos = parse_char( string,c);
+    List<Pat> pats        = make_string_pattern( next_pos);
+    return #[ LITERALpat( CHARlit(c)) ... pats ];
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Translate a pattern into a matching tree.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Match MatchCompiler::trans( Pat pat, Pos pos, Bool neg, Match yes, Match no)
+{  match while (pat)
+  {
+    NOpat || WILDpat _ || IDpat(_,_,NOexp): { return neg ? no : yes; }
+  | ASpat( _, p, _, NOexp):     { pat = p; }
+  | TYPEDpat( p, _):            { pat = p; }
+  | MARKEDpat( _, p):           { pat = p; }
+  | CONTEXTpat( c, p):          { pat = add_contexts(c,p); }
+  | LEXEMEpat( _, ty, n, cs):   { pat = expand_lexeme_pat(pat,ty,n,cs); }
+  | IDpat( _, ty, e):
+    { return GUARDmatch( EQexp( ty, pat->selector, e),
+                 neg ? no : yes, neg ? yes : no); }
+  | GUARDpat( p, e):
+    {
+      Match m = trans( p, pos, neg, yes, no);
+      return GUARDmatch(e, neg ? no : m, neg ? m : no);
+    }
+  | ASpat( _, p, ty, e):
+    {
+      Exp guard = EQexp( ty, pat->selector, e);
+      if (neg)
+        no  = GUARDmatch( guard, no, yes);
+      else
+        yes = GUARDmatch( guard, yes, no);
+      pat = p;
+    }
+  | LITERALpat l:
+    {
+      return LITERALmatch( pos, pat->selector, vec(l), 1, vec(neg ? no : yes),
+                          neg ? yes : no);
+    }
+  | TUPLEpat ps:
+    {
+      if (current_index_map)
+      {
+        HashTable::Entry * e = current_index_map->lookup(pos);
+        if (e)
+          return trans( ps, pos, neg, yes, no,
+                          (int *)current_index_map->value(e));
+      }
+      return trans( ps, 0, pos, neg, yes, no);
+    }
+  | EXTUPLEpat ps:
+    {
+      if (current_index_map)
+      {
+          HashTable::Entry * e = current_index_map->lookup(pos);
+          if (e)
+             return trans( ps, pos, neg, yes, no,
+                          (int *)current_index_map->value(e));
+      }
+      return trans( ps, 0, pos, neg, yes, no);
+    }
+  | ARRAYpat( ps, _):     { return trans( ps, 0, pos, neg, yes, no); }
+  | VECTORpat{ elements, len, array, head_flex, tail_flex ... }:
+    {
+      int low   = length(elements);
+      int high  = (head_flex || tail_flex) ? INT_MAX : low;
+      int start = head_flex ? (INT_MAX - length(elements)) : 0;
+      Match p1 = trans( elements, start, pos, neg, yes, no);
+      Match p2 = trans( array, pos, neg, (neg ? no : p1),(neg ? p1 : no));
+      Match p3 = trans( len, pos, neg, (neg ? no : p2),(neg ? p3 : no));
+      return RANGEmatch( pos, ARROWexp( pat->selector,"len()"), low, high,
+                        (neg ? no : p3), (neg ? p3 : no));
+    }
+  | RECORDpat (ps,flex): { return trans(ps,pos,neg,yes,no); }
+  | APPpat( CONSpat( ONEcons {
+              alg_ty = alg_ty as DATATYPEty({ unit, arg ... },_),
+              tag
+              ...
+            }), pattern_argument):
+    {
+      int arity = unit + arg;
+      Match * m = Matches(arity);
+      int i;
+      for (i = arity - 1; i >= 0; i--)
+        m[i] = neg ? yes : no;
+      i = tag + unit;
+      m[i] = trans( pattern_argument, POSint( i, pos), neg, yes, no);
+      return CONSmatch( pos, pat->selector, pat->ty, alg_ty, arity, m, neg ? yes : no);
+    }
+  | CONSpat( ONEcons {
+               tag,
+               alg_ty = alg_ty as DATATYPEty({ unit, arg ... },_)
+               ... }):
+    {
+      int arity = unit + arg;
+      Match * m = Matches( arity);
+      for (int i = arity - 1; i >= 0; i--) m[i] = neg ? yes : no;
+      m[tag] = neg ? no : yes;
+      return CONSmatch( pos, pat->selector, pat->ty, alg_ty, arity, m, neg ? yes : no);
+    }
+  | LOGICALpat( NOTpat, p, _):
+    { return trans( p, pos,! neg, yes, no); }
+  | LOGICALpat( ANDpat, a, b):
+    {
+      return neg ? merge( trans( a, pos, neg, yes, no), trans( b, pos, neg, yes, no))
+                 : trans( a, pos, neg, trans(b, pos, neg, yes, no), no);
+    }
+  | LOGICALpat( ORpat, a, b):
+    { return neg ? trans( a, pos, neg, trans(b, pos, neg, yes, no), no)
+                 : merge( trans( a, pos, neg, yes, no), trans( b, pos, neg, yes, no));
+    }
+  | LOGICALpat( IMPLIESpat, a, b): // a -> b   <=>  ! a \/ b
+    { pat = LOGICALpat( ORpat, LOGICALpat( NOTpat, a, NOpat), b); }
+  | LOGICALpat( EQUIVpat, a, b):   // a <-> b  <=>  (a /\ b) \/ (! a /\ ! b)
+    {
+      pat = LOGICALpat( ORpat,
+               LOGICALpat( ANDpat, a, b),
+               LOGICALpat( ANDpat, LOGICALpat( NOTpat, a, NOpat),
+                                  LOGICALpat( NOTpat, b, NOpat)));
+    }
+  | LOGICALpat( XORpat, a, b):    // a xor b <=> (a /\ ! b) \/ (! a /\ b)
+    {
+      pat = LOGICALpat( ORpat,
+               LOGICALpat( ANDpat, a, LOGICALpat( NOTpat, b, NOpat)),
+               LOGICALpat( ANDpat, LOGICALpat( NOTpat, a, NOpat), b));
+    }
+  | LISTpat{ cons, nil, head = #[], tail = NOpat}:
+    {
+      Pat p = CONSpat(nil);
+      p->selector = pat->selector;
+      pat = p;
+    }
+  | LISTpat{ cons, nil, head = #[], tail }: { pat = tail; }
+  | LISTpat{ cons, nil, head = #[h ... t], tail}:
+    {
+      Pat new_tail   = LISTpat'{ cons = cons, nil = nil, head = t ,tail = tail};
+      Pat list_pat   = APPpat( CONSpat( cons), TUPLEpat( #[h, new_tail]));
+      new_tail->selector = DOTexp( select( pat->selector, cons), "_2");
+      list_pat->selector = pat->selector;
+      pat = list_pat;
+    }
+    // skip all these cases (error is already caught elsewhere)
+  | CONSpat NOcons ||
+    APPpat (CONSpat NOcons, _) ||
+    LISTpat { cons = NOcons ... } ||
+    LISTpat { nil = NOcons ... }:
+       { return neg ? no : yes; }
+  | _: { bug("MatchCompiler::trans(): %p", pat); }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Translate a pattern list into a matching tree using ranking function.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Match MatchCompiler::trans
+   (Pats ps, Pos pos, Bool neg, Match yes, Match no, int rank[])
+{
+  Pat Ps[256];
+  int i = 0;
+  for_each (Pat, p, ps)
+    Ps[i++] = p;
+  int n = i;
+  Match m = yes;
+  for (i = n - 1; i >= 0; i--)
+     m = trans( Ps[ rank[i]], POSint( i, pos), neg, m, no);
+  return m;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Translate a pattern list into a matching tree.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Match MatchCompiler::trans
+   (Pats ps, int i, Pos pos, Bool neg, Match yes, Match no)
+{
+  match (ps)
+  {
+    #[]:        { return yes; }
+  | #[a ... b]: {
+                  return trans( a, POSint( i, pos), neg,
+                            trans( b, i+1, pos, neg, yes, no), no);
+                }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Translate a labeled pattern list into a matching tree.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Match MatchCompiler::trans
+   (LabPats ps, Pos pos, Bool neg, Match yes, Match no)
+{
+  match (ps)
+  {
+    #[]:        { return yes; }
+  | #[a ... b]: {
+                  return trans( a.pat, POSlabel( a.label, pos), neg,
+                             trans( b, pos, neg, yes, no), no);
+                 }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Get the position list of a matching tree node.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+fun get_pos LITERALmatch(pos,_,_,_,_,_): Pos:   { return pos; }
+  | get_pos RANGEmatch  (pos,_,_,_,_,_):        { return pos; }
+  | get_pos CONSmatch   (pos,_,_,_,_,_,_):      { return pos; }
+  | get_pos SUCCESSmatch _ || SUCCESSESmatch _ || COSTmatch _:
+                                                { return (Pos)POSinfinity; }
+  | get_pos _:                                  { return POSzero; }
+  ;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Position list comparison result.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+datatype CompareResult = LESS | SAME | MORE | NEITHER;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Compare two position lists lexicographically.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+CompareResult compare_pos(Pos a, Pos b)
+{
+  Pos u, v;
+  match (a) and (b)
+  {
+    a,                  b | a == b:         { return SAME; }
+  | POSzero,            _:                  { return LESS; }
+  | _,                  POSzero:            { return MORE; }
+  | POSinfinity,        _:                  { return MORE; }
+  | _,                  POSinfinity:        { return LESS; }
+  | POSint(_,x),        POSlabel(_,y):      { u = x; v = y; }
+  | POSint(_,x),        POSadaptive(_,_,y): { u = x; v = y; }
+  | POSlabel(_,x),      POSint(_,y):        { u = x; v = y; }
+  | POSlabel(_,x),      POSadaptive(_,_,y): { u = x; v = y; }
+  | POSadaptive(_,_,y), POSint(_,x):        { u = x; v = y; }
+  | POSadaptive(_,_,y), POSlabel(_,x):      { u = x; v = y; }
+  | POSint(i,x),        POSint(j,y):
+    {
+      CompareResult r = compare_pos(x,y);
+      if (r != SAME) return r;
+      if (i == j) return SAME;
+      if (i <  j)  return LESS;
+      return MORE;
+    }
+  | POSlabel(i,x),      POSlabel(j,y):
+    {
+      CompareResult r = compare_pos(x,y);
+      if (r != SAME) return r;
+      int s = strcmp(i,j);
+      if (s == 0) return SAME;
+      if (s < 0)  return LESS;
+      return MORE;
+    }
+  | POSadaptive(i,rank1,x), POSadaptive(j,rank2,y):
+    {
+      CompareResult r = compare_pos(x,y);
+      if (r != SAME) return r;
+      if (rank1[i] == rank2[j]) return SAME;
+      if (rank1[i] <  rank2[j]) return LESS;
+      return MORE;
+    }
+  }
+
+  CompareResult r = compare_pos(u,v);
+  if (r != SAME) return r;
+  return NEITHER;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Compare two position lists lexicographically.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool pos_equal( HashTable::Key p, HashTable::Key q)
+{  return compare_pos((Pos)p, (Pos)q) == SAME; }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Compare two literals.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+fun compare_literals INTlit i,    INTlit j:int:{ return i - j; }
+  | compare_literals REALlit x,   REALlit y:   { return x < y ? -1 : (x > y ? 1 : 0); }
+  | compare_literals CHARlit c,   CHARlit d:   { return (int)c - (int)d; }
+  | compare_literals BOOLlit b,   BOOLlit c:   { return b - c; }
+  | compare_literals STRINGlit s, STRINGlit t: { return strcmp(s,t); }
+  | compare_literals REGEXPlit s, REGEXPlit t: { return strcmp(s,t); }
+  | compare_literals QUARKlit  s, QUARKlit  t: { return strcmp(s,t); }
+  | compare_literals BIGINTlit s, BIGINTlit t: { return strcmp(s,t); }
+  | compare_literals _,           _:           { return 1; }
+  ;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Compare two expressions.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool equal( Exp a, Exp b)
+{
+  match while (a) and (b)
+  {
+    a,               b | a == b:        { return true; }
+  | LITERALexp x,    LITERALexp y:      { return compare_literals(x,y)==0; }
+  | IDexp      x,    IDexp      y:      { return x == y; }
+  | RELexp     i,    RELexp     j:      { return same_selectors || i == j; }
+  | DOTexp (a,x),    DOTexp (b,y):      { return x == y && equal(a,b); }
+  | SELECTORexp(a,x,u),SELECTORexp(b,y,v):
+        { return x == y && equal(a,b); }
+  | DEREFexp   x,    DEREFexp   y:      { return equal(x,y); }
+  | ARROWexp(a,x),   ARROWexp(b,y):     { return x == y && equal(a,b); }
+  | INDEXexp(a,i),   INDEXexp(b,j):     { return equal(a,b) && equal(i,j); }
+  | BINOPexp(a,b,c), BINOPexp(d,e,f):
+        { return strcmp(a,d) == 0 && equal(b,e) && equal(c,f); }
+  | PREFIXexp(a,b),  PREFIXexp(c,d):    { return !strcmp(a,c) && equal(b,d);}
+  | POSTFIXexp(a,b), POSTFIXexp(c,d):   { return !strcmp(a,c) && equal(b,d);}
+  | APPexp(a,b),     APPexp(c,d):       { return equal(a,c) && equal(b,d); }
+  | ASSIGNexp(a,b),  ASSIGNexp(c,d):    { return equal(a,c) && equal(b,d); }
+  | IFexp(a,b,c),    IFexp(d,e,f):
+        { return equal(a,d) && equal(b,e) && equal(c,f); }
+  | TUPLEexp a,      TUPLEexp b:        { return equal(a,b); }
+  | RECORDexp a,     RECORDexp b:       { return equal(a,b); }
+  | SENDexp(a,b),    SENDexp(c,d):      { return a == c && equal(b,d); }
+  | LISTexp(a,_,b,c), LISTexp(d,_,e,f):
+        { return a == d && equal(b,e) && equal(c,f); }
+  | CONSexp(a,b,c),  CONSexp(d,e,f):    { return a == d && equal(b,e) && equal(c,f); }
+  | EQexp(_,a,b),    EQexp(_,c,d):      { return equal(a,c) && equal(b,d); }
+  | UNIFYexp(_,a,b), UNIFYexp(_,c,d):   { return equal(a,c) && equal(b,d); }
+  | LTexp(_,a,b),    LTexp(_,c,d):      { return equal(a,c) && equal(b,d); }
+  | HASHexp(_,x),    HASHexp(_,y):      { a = x; b = y; }
+  | THISCOSTexp _,   THISCOSTexp _:     { return true; }
+  | COSTexp i,       COSTexp j:         { return i == j; }
+  | SYNexp(a,b,_,_), SYNexp(c,d,_,_):   { return a == c && b == d; }
+  | THISSYNexp(i,_,_), THISSYNexp(j,_,_):
+        { return i == j; }
+  | MARKEDexp(_,x),  _:                 { a = x; }
+  | _,               MARKEDexp(_,y):    { b = y; }
+  | _,               _:                 { return false; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Equality between two expression lists
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool equal( Exps a, Exps b)
+{
+  match while (a) and (b)
+  {
+    #[u ... v],  #[w ... x]:
+      { if (! equal(u, w)) return false; a = v; b = x; }
+  }
+  return a == #[] && b == #[];
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Equality between two labeled expression lists
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool equal( LabExps a, LabExps b)
+{
+  match while (a) and (b)
+  {
+    #[u ... v],  #[w ... x]:
+      {  if (! equal(u.exp, w.exp)) return false; a = v; b = x; }
+  }
+  return a == #[] && b == #[];
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Check to see if we have a regular expression.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool has_regexp( int n, Literal l[])
+{
+  for (int i = n - 1; i >= 0; i--)
+  { match (l[i]) { REGEXPlit _: { return true; } | _: { /* skip */ } } }
+  return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Convert all string literals into regular expression literals.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void convert_regexp( int n, Literal l[])
+{
+  for (int i = n-1; i >= 0; i--)
+  {
+    match (l[i])
+    {
+      STRINGlit s: { l[i] = REGEXPlit( convert_regexp(s)); }
+    | _:           { /* skip */ }
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Compose two matching trees.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Match MatchCompiler::compose( Match a, Match b)
+{
+  match (a) and (b)
+
+  {
+    SUCCESSESmatch (n,a,rules), SUCCESSESmatch (_,b,_):
+    {
+      BitSet * c = new (mem_pool, n) BitSet;
+      c->Union( *a, *b);
+      return SUCCESSESmatch( n, c, rules);
+    }
+    // Cost minimization
+  | COSTmatch (n, costs, set1, rules), COSTmatch (_, _, set2, _):
+    {
+      register BitSet * set = new (mem_pool, n) BitSet;
+      set->Union (*set1, *set2);
+      register int min_cost = MAX_COST;
+      register int r;
+
+      // Find the minimal known cost
+
+      for (r = 0; r < n; r++)
+      {
+        if (set->contains(r))
+        {
+          match (costs[r])
+          {
+            NOcost:                   { min_cost = 0; }
+          | INTcost c | c < min_cost: { min_cost = c; }
+          | _:
+          }
+        }
+      }
+
+      // Prune away all the rules with higher or equal cost than min_cost.
+
+      Bool found = false;
+      for (r = 0; r < n; r++)
+      {
+        if (set->contains(r))
+        {
+          match (costs[r])
+          {
+            NOcost:
+            {
+              if (! found)
+                set->remove(r);
+              found = true;
+            }
+          | INTcost c:
+            {
+              if (c > min_cost || found)
+                set->remove(r);
+              found = true;
+            }
+          | _: // skip
+          }
+        }
+      }
+
+      return COSTmatch( n, costs, set, rules);
+    }
+  | _: { /* skip */ }
+  }
+
+  match (a)
+  {
+    FAILmatch:                        { return b; }
+  | DONTCAREmatch:                    { return a; }
+  | BACKEDGEmatch _:                  { return a; }
+  | SUCCESSmatch _:                   { return a; }
+  | SUCCESSESmatch _ || COSTmatch _:  { return compose(b,a); }
+  | GUARDmatch( e, y, n):
+    { return GUARDmatch( e, merge( y, b), merge( n, b)); }
+  | LITERALmatch( p, e, l, n, m, d):
+    {
+      Match * br = Matches(n);
+      for (int i = n - 1; i >= 0; i--)
+        br[i] = merge(m[i],b);
+      return LITERALmatch( p, e, l, n, br, merge( d, b));
+    }
+  | CONSmatch( p, e, c, c', n, m, d):
+    {
+      Match * br = Matches(n);
+      for (int i = n - 1; i >= 0; i--)
+        br[i] = merge(m[i],b);
+      return CONSmatch( p, e, c, c', n, br, merge( d, b));
+    }
+  | RANGEmatch( p, e, lo, hi, y, n):
+    { return RANGEmatch( p, e, lo, hi, merge( y, b), merge( n, b)); }
+  | TREECOSTmatch _ || TREELABELmatch _:
+    { bug("MatchCompiler::compose: %m, %m",a,b); return a; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Merge two matching trees.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Match MatchCompiler::merge( Match a, Match b)
+{
+  match (a) and (b)
+  {
+    FAILmatch,         _:           { return b; }
+  | _,                 FAILmatch:   { return a; }
+  | SUCCESSmatch _,    _:           { return a; }
+  | (_,                SUCCESSmatch _  ) ||
+    (SUCCESSESmatch _, _               ) ||
+    (_,                SUCCESSESmatch _) ||
+    (COSTmatch _,      _               ) ||
+    (_,                COSTmatch _     ): { return compose(a,b); }
+  | _,                _:                  // skip
+  }
+
+  match ( compare_pos( get_pos(a), get_pos(b))) and (a) and (b)
+  {
+    SAME, GUARDmatch( e1, yes1, no1), GUARDmatch( e2, yes2, no2):
+    {
+      if (equal( e1, e2))
+        return GUARDmatch( e1, merge( yes1, yes2), merge( no1, no2));
+      else
+        return GUARDmatch( e1, merge( yes1, b), merge( no1, b));
+    }
+  | SAME, RANGEmatch( p, e1, lo1, hi1, y1, n1), RANGEmatch( _, e2, lo2, hi2, y2, n2):
+    {
+      if (lo1 == 0 && hi1 == INT_MAX)
+        return merge(y1,b);
+      else if (lo1 <= lo2 && hi1 >= hi2)
+        return RANGEmatch( p, e1, lo1, hi1, merge( y1, y2), merge( n1, n2));
+      else
+        return RANGEmatch( p, e2, lo1, hi1, merge( y1, b), merge( n1, b));
+    }
+  | SAME, LITERALmatch( p, e1, l1, n1, m1, d1), LITERALmatch( _, e2, l2, n2, m2, d2):
+    {
+      int i, n = n1 + n2;
+      Match   * br = Matches(n);
+      Literal * ls = Literals(n);
+
+      if (has_regexp( n1, l1) || has_regexp( n2, l2))
+      {
+        for (i = 0; i < n1; i++)
+        {
+          br[i] = m1[i];
+          ls[i] = l1[i];
+        }
+        for (i = 0; i < n2; i++)
+        {
+          br[n1+i] = m2[i];
+          ls[n1+i] = l2[i];
+        }
+        convert_regexp(n,ls);
+      }
+      else
+      {
+        // merge and eliminate duplicates
+        int i, j, k;
+        for (i = 0, j = 0, k = 0; i < n1 && j < n2; )
+        {
+          int dir = compare_literals( l1[i], l2[j]);
+          if (dir == 0)
+          {
+            ls[k] = l1[i];
+            br[k] = merge( m1[i], m2[j]);
+            i++;
+            j++;
+          }
+          else if (dir < 0)
+          {
+            ls[k] = l1[i];
+            br[k] = merge( m1[i], d2);
+            i++;
+          }
+          else
+          {
+            ls[k] = l2[j];
+            br[k] = merge( d1, m2[j]);
+            j++;
+          }
+          k++;
+        }
+        while (i < n1)
+        {
+          ls[k] = l1[i];
+          br[k++] = merge( m1[i++], d2);
+        }
+        while (j < n2)
+        {
+          ls[k] = l2[j];
+          br[k++] = merge( d1, m2[j++]);
+        }
+        n = k;
+      }
+      return LITERALmatch( p, e1, ls, n, br, merge( d1, d2));
+    }
+  | SAME, CONSmatch( p, e1, c, c', n, m1, d1), CONSmatch(_,_,_,_,_,m2,d2):
+    {
+      Match * br = Matches(n);
+      for (int i = n - 1; i >= 0; i--)
+        br[i] = merge( m1[i], m2[i]);
+      return CONSmatch( p, e1, c, c', n, br, merge( d1, d2));
+    }
+  | LESS, GUARDmatch( e, yes, no), _:
+    { return GUARDmatch( e, merge( yes, b), merge( no, b)); }
+  | LESS, LITERALmatch( p, e, l, n, m, d), _:
+    {
+      Match * br = Matches(n);
+      for (int i = n - 1; i >= 0; i--)
+        br[i] = merge( m[i], b);
+      return LITERALmatch( p, e, l, n, br, merge( d, b));
+    }
+  | LESS, CONSmatch( p, e, c, c', n, m, d), _:
+    {
+      Match * br = Matches(n);
+      for (int i = n - 1; i >= 0; i--)
+        br[i] = merge( m[i], b);
+      return CONSmatch( p, e, c, c', n, br, merge( d, b));
+    }
+  | MORE, _, GUARDmatch( e, yes, no):
+    { return GUARDmatch( e, merge( a, yes), merge( a, no)); }
+  | MORE, _, LITERALmatch( p, e, l, n, m, d):
+    {
+      Match * br = Matches(n);
+      for (int i = n - 1; i >= 0; i--)
+        br[i] = merge( a, m[i]);
+      return LITERALmatch( p, e, l, n, br, merge( a, d));
+    }
+  | MORE, _, CONSmatch( p, e, c, c', n, m, d):
+    {
+      Match * br = Matches(n);
+      for (int i = n - 1; i >= 0; i--)
+        br[i] = merge( a, m[i]);
+      return CONSmatch( p, e, c, c', n, br, merge( a, d));
+    }
+  | _, _, _: { return compose( a, b); }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Equality between two matching tree.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool match_equal( HashTable::Key a, HashTable::Key b)
+{
+  match (Match(a)) and (Match(b))
+  {
+    FAILmatch,              FAILmatch:             { return true; }
+  | SUCCESSmatch _,         SUCCESSmatch _:        { return a == b; }
+  | SUCCESSESmatch (_,a,_), SUCCESSESmatch(_,b,_): { return equal(a,b); }
+  | COSTmatch (_,_,a,_),    COSTmatch (_,_,b,_):   { return equal(a,b); }
+  | GUARDmatch(e1,a,b),     GUARDmatch(e2,c,d):
+    { return equal(e1,e2) && a == c && b == d; }
+  | TREECOSTmatch(a,s1,_),  TREECOSTmatch(b,s2,_):
+    { return a == b && equal(s1,s2); }
+  | TREELABELmatch(a,t1,t2,i), TREELABELmatch(b,t3,t4,j):
+    { return a == b && ty_equal(t1,t3) && ty_equal(t2,t4) && i == j; }
+  | LITERALmatch (x,_,a,i,b,c), LITERALmatch(y,_,e,j,f,g) | i == j:
+    {
+      if (compare_pos(x,y) != SAME)
+        return false;
+      for (int k = i-1; k >= 0; k--)
+        if (b[k] != f[k])
+          return false;
+      return c == g;
+    }
+  | CONSmatch (x,_,_,a,i,b,c), CONSmatch(y,_,_,e,j,f,g) | a == e && i == j:
+    {
+      if (compare_pos(x,y) != SAME)
+        return false;
+      for (int k = i-1; k >= 0; k--)
+        if (b[k] != f[k])
+          return false;
+      return c == g;
+    }
+  | RANGEmatch(x,_,lo1,hi1,y1,n1), RANGEmatch(y,_,lo2,hi2,y2,n2):
+    {
+      return compare_pos(x,y) == SAME &&
+              lo1 == lo2 && hi1 == hi2 && y1 == y2 && n1 == n2;
+    }
+  | _: { return false; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Hashing function on a literal.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+unsigned int literal_hash( HashTable::Key k)
+{
+  match (Literal(k))
+  {
+    INTlit    i: { return i; }
+  | BOOLlit   b: { return b; }
+  | REALlit   r: { return (unsigned int)r; }
+  | STRINGlit s: { return hash(s); }
+  | REGEXPlit r: { return hash(r); }
+  | CHARlit   c: { return c; }
+  | QUARKlit  q: { return hash(q); }
+  | BIGINTlit n: { return hash(n); }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Equality function on literals.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool literal_equal( HashTable::Key a, HashTable::Key b)
+{
+  return compare_literals((Literal)a, (Literal)b) == 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Hashing function on a matching tree.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+unsigned int match_hash( HashTable::Key m)
+{
+  match (Match(m))
+  {
+    FAILmatch:              { return 0; }
+  | DONTCAREmatch:          { return 179; }
+  | BACKEDGEmatch (i,_,_):  { return i + 1249; }
+  | SUCCESSmatch _:         { return (unsigned int)m; }
+  | SUCCESSESmatch (_,a,_): { return 93 + hash (a); }
+  | COSTmatch (_,_,a,_):    { return 457 + hash (a); }
+  | TREECOSTmatch (a,b,_):  { return hash(b) + (unsigned int)a; }
+  | TREELABELmatch(a,t,u,i):{ return ty_hash(t) + ty_hash(u) + i + (unsigned int)a; }
+  | GUARDmatch (_,a,b):     { return (unsigned int)a + (unsigned int)b;}
+  | RANGEmatch(_,_,lo,hi,y,n):
+    { return 235 + lo + hi + (unsigned int) y + (unsigned int) n; }
+  | LITERALmatch(_,_,l,n,a,b):
+    {
+      unsigned h = 117 + n + (unsigned int)b;
+      for (int i = n - 1; i >= 0; i--)
+        h += literal_hash(l[i]) + (unsigned int)a[i];
+      return h;
+    }
+  | CONSmatch (_,_,_,_,n,a,b):
+    {
+      unsigned h = 657 + n + (unsigned int)b;
+      for (int i = n - 1; i >= 0; i--)
+        h += (unsigned int)a[i];
+      return h;
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Tree to dag conversion for a matching tree.
+//
+///////////////////////////////////////////////////////////////////////////////
+Match make_dag( Match m, HashTable& map, int& merges)
+{
+  int i;
+  if (boxed(m)) { m->shared = 0; m->label = 0; }
+  match (m)
+  {
+    LITERALmatch (_,_,l,n,a,b):
+    {
+      for (i = n - 1; i >= 0; i--) a[i] = make_dag (a[i], map, merges);
+      b = make_dag(b, map, merges);
+      // Eliminate the node if every branch is the same.
+      for (i = n - 1; i >= 1; i--) if (a[i] != a[i-1]) break;
+      if (i == 0 && a[0] == b) { merges++; return b; }
+      // Eliminate all branches that are the same as the default
+      for (i = 0; i < n; i++)
+      {
+        if (a[i] == b)
+        { // shift one over
+          for (int j = i+1; j < n; j++)
+          {  a[j-1] = a[j]; l[j-1] = l[j]; }
+          n--;
+        }
+      }
+    }
+  | CONSmatch    (_,_,_,_,n,a,b):
+    {
+      for (i = n - 1; i >= 0; i--) a[i] = make_dag (a[i], map, merges);
+      b = make_dag(b, map, merges);
+      // Eliminate the node if every branch is the same.
+      for (i = n - 1; i >= 1; i--)
+        if (a[i] != a[i-1])
+          break;
+      if (i == 0 && a[0] == b)
+      {
+        merges++;
+        return b;
+      }
+    }
+  | GUARDmatch   (_,a,b):
+    {
+      if ((a = make_dag(a,map,merges)) == (b = make_dag(b,map,merges)))
+      {
+        merges++;
+        return a;
+      }
+    }
+  | RANGEmatch  (_,_,_,_,a,b):
+    {
+      if ((a = make_dag(a,map,merges)) == (b = make_dag(b,map,merges)))
+      {
+        merges++;
+        return a;
+      }
+    }
+  | TREECOSTmatch (a,_,_):    {  a = make_dag(a,map,merges); }
+  | TREELABELmatch (a,_,_,_): {  a = make_dag(a,map,merges); }
+  | _:  { /* skip */ }
+  }
+
+  HashTable::Entry * found = map.lookup(m);
+  if (found)
+  {
+    merges++;
+    return (Match)found->v;
+  }
+  else
+  {
+    map.insert(m,m);
+    return m;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Mark all sharing
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void mark( Match m)
+{
+  if (boxed(m))
+    m->shared++;
+  match (m)
+  {
+    SUCCESSmatch (_,rule):      { rule->used = true; }
+  | FAILmatch || SUCCESSESmatch _ || COSTmatch _:
+                                { /* skip */ }
+  | GUARDmatch   (_,a,b):       { mark(a); mark(b); }
+  | LITERALmatch (_,_,_,n,a,b): { for (int i = n-1; i >= 0; i--) mark(a[i]);
+                                  mark(b);
+                                }
+  | RANGEmatch  (_,_,_,_,y,n):  { mark(y); mark(n); }
+  | TREECOSTmatch (a,_,_):      { mark(a); }
+  | TREELABELmatch (a,_,_,_):   { mark(a); }
+  | CONSmatch   (_,_,_,DATATYPEty({ qualifiers, unit, arg ... },_),n,a,b):
+    {
+      for (int i = n-1; i >= 0; i--) mark(a[i]);
+      // if (unit > 0)
+      // {  int i;
+      //    for (i = unit - 2; i >= 0; i--) if (a[i] != a[i+1]) break;
+      //    if (i < 0) mark(a[0]);
+      //    else       for (i = unit - 1; i >= 0; i--) mark(a[i]);
+      // }
+      // if (arg > 0)
+      // {  int i;
+      //    for (i = n - 2; i >= unit; i--) if (a[i] != a[i+1]) break;
+      //    if (i < unit) mark(a[unit]);
+      //    else          for (i = n - 1; i >= unit; i--) mark(a[i]);
+      // }
+      if (qualifiers & QUALextensible)
+        mark(b);
+    }
+  | _: { bug ("mark()"); }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Top level tree to dag conversion.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Match MatchCompiler::make_dag( Match m, MatchOptions options, MatchRules rules)
+{
+  HashTable map( match_hash, match_equal, 257);
+  m = ::make_dag( m, map, merges);
+  if (options & MATCHwithtreecost)
+    m = translate_treecost( m, rules);
+  mark(m);
+  return m;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Check to see if a matching tree is refutable (i.e. can fail.)
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool refutable( Match m)
+{
+  match while (m)
+  {
+    FAILmatch:                                          { return true; }
+  | SUCCESSmatch _ ||  SUCCESSESmatch _ || COSTmatch _: { return false; }
+  | GUARDmatch (_,a,b): { return refutable(a) || refutable(b); }
+  | RANGEmatch (_,_,_,_,a,b): { return refutable(a) || refutable(b); }
+  | LITERALmatch (_,_,l,n,a,b):
+    {
+      for (int i = n - 1; i >= 0; i--) if (refutable(a[i])) return true;
+      match (l[0])  // we can only have 2 booleans, duh!
+      {
+        BOOLlit _ | n >= 2: { return false; }
+      | _:                  { m = b; }
+      }
+    }
+  | CONSmatch (_,_,_,DATATYPEty({ qualifiers ... },_),n,a,b):
+    {
+      for (int i = n - 1; i >= 0; i--)
+        if (refutable(a[i]))
+          return true;
+      if (! (qualifiers & QUALextensible))
+        return false;
+      m = b;
+    }
+  | TREECOSTmatch (a,set,_): { m = a; }
+  | TREELABELmatch(a,_,_,_): { m = a; }
+  | _: { bug ("refutable()"); }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Compute the set of rules that can possibly match as a bitset.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void matchables( Match m, BitSet& set)
+{
+  match while (m)
+  {
+    FAILmatch:                { return; }
+  | SUCCESSESmatch (_,s,_):   { set.Union(*s); return; }
+  | COSTmatch      (_,_,s,_): { set.Union(*s); return; }
+  | SUCCESSmatch   (i,_):     { set.add(i); return; }
+  | GUARDmatch (_,a,b):       { matchables(a,set); m = b; }
+  | RANGEmatch (_,_,_,_,y,n): { matchables(y,set); m = n; }
+  | LITERALmatch (_,_,_,n,a,b):
+    {
+      for (int i = n - 1; i >= 0; i--)
+        matchables(a[i],set);
+      m = b;
+    }
+  | CONSmatch (_,_,_,DATATYPEty({ qualifiers ... },_),n,a,b):
+    {
+      for (int i = n - 1; i >= 0; i--)
+        matchables(a[i],set);
+      if ( !(qualifiers & QUALextensible))
+        return;
+      m = b;
+    }
+  | TREECOSTmatch (a,s,_):   { set.Union(*s); m = a; }
+  | TREELABELmatch(a,_,_,_): { m = a; }
+  | _: { bug("matchables()"); }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Compute the set of rules that can always match as a bitset.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void always_matchables( Match m, BitSet& set)
+{
+  match while (m)
+  {
+    SUCCESSESmatch (_,s,_):   { set.Intersect(*s); return; }
+  | COSTmatch    (_,_,s,_):   { set.Intersect(*s); return; }
+  | GUARDmatch (_,a,b):       { always_matchables(a,set); m = b; }
+  | RANGEmatch (_,_,_,_,a,b): { always_matchables(a,set); m = b; }
+  | LITERALmatch (_,_,_,n,a,b):
+    {  for (int i = n - 1; i >= 0; i--) always_matchables(a[i],set);
+       m = b;
+    }
+  | CONSmatch (_,_,_,DATATYPEty({ qualifiers ... },_),n,a,b):
+    {  for (int i = n - 1; i >= 0; i--) always_matchables(a[i],set);
+       if (! (qualifiers & QUALextensible)) return;
+       m = b;
+    }
+  | TREECOSTmatch (a,s,_):   { set.Intersect(*s); m = a; }
+  | TREELABELmatch(a,_,_,_): { m = a; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Top level routine to call the above
+//
+///////////////////////////////////////////////////////////////////////////////
+
+const BitSet& always_matchables( Match m, int n)
+{
+  BitSet * set = new (mem_pool, n) BitSet;
+  set->complement();
+  always_matchables(m, *set);
+  return *set;
+}

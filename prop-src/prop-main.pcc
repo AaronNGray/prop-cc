@@ -1,0 +1,206 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//      ////////
+//     //     //   //////   /////   ///////
+//    ////////   //       //   //  //    //
+//   //         //       //   //  ///////
+//  //         //        /////   //
+//                              //      Version 2.3.x
+//
+//                                      Allen Leung (leunga@cs.nyu.edu)
+///////////////////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include <stdlib.h>
+#include <string.h>
+#include "basics.h"
+#include "config.h"
+#include "author.h"
+#include "options.h"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Help message
+//
+///////////////////////////////////////////////////////////////////////////////
+
+static const char * HELP_MESSAGE =
+"%s version %s.%s, last updated on %s\n"
+"usage: %s [options] <files>\n"
+"options:  [-automake]\n"
+"          [-d -debug] [-G -GNU] [-html] [-I<path>]\n"
+"          [-l -no_line_directives] [-M -make_depends]\n"
+"          [-n -no_codegen] [-N -non_linear]\n"
+"          [-o<outfile>] [-O#]\n"
+"          [-Ofast_string_match] [-Oadaptive_matching]\n"
+"          [-Oinline_casts] [-Otagged_pointer] [-Orewriting]\n"
+"          [-r -report] [-s -strict] [-S -save_space]\n"
+"          [-t -stdout] [-v#] [-V# -vector#] [-vcg]\n"
+"          [-new_list_format]\n"
+"          [-use_global_pools]\n"
+"          [-memory_usage]\n"
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  The global options data structure.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+PropOptions options;
+static Bool print_memory_usage = false;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Routine to process command line arguments
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void PropOptions::process_command_line_arguments
+     (int argc, const char * argv[])
+{
+  Bool help = false;
+  prog_name = argv[0];
+  for (argc--, argv++; argc > 0; argc--, argv++)
+  {
+    match (argv[0]) of
+      /-automake/:               { automake = true; }
+    | /-(d|debug)/:              { debug = true; }
+    | /-(n|no_codegen)/:         { emit_code = false; }
+    | /-(l|no_line_directives)/: { line_directives = false; }
+    | /-(G|GNU)/:     { GNU_style_message = true; }
+    | /-html/:        { generate_html = true; }
+    | /-(r|report)/:  { generate_report = true; }
+    | /-(s|strict)/:  { strict_checking = true; }
+    | /-(t|stdout)/:  { to_stdout = true; }
+    | /-trace/:       { trace = true; }
+    | /-I.*/:
+      {
+        char c[2]; c[0] = FILE_SEPARATOR; c[1] = '\0';
+        strcat(search_paths,c);
+        strcat(search_paths,argv[0]+2);
+      }
+    | /-o.+/:     {  strcpy(output_file_name,argv[0]+2); }
+    | /-o/:
+      {
+        if (argc > 1)
+        {
+          argv++; argc--;
+          strcpy(output_file_name,argv[0]);
+        }
+        else
+          help = true;
+      }
+    | /-O[0-9]+/:
+      {
+        int opt = atol(argv[0]+2);
+        optimization_level = opt <= 0 ? 1 : opt;
+        fast_string_match = optimization_level & 1;
+        adaptive_matching = optimization_level & 2;
+        inline_casts      = optimization_level & 4;
+        tagged_pointer    = optimization_level & 8;
+        optimize_rewrite  = optimization_level & 16;
+      }
+    | /-Ofast_string_match/: { fast_string_match = true; }
+    | /-Oadaptive_matching/: { adaptive_matching = true; }
+    | /-Oinline_casts/:      { inline_casts = true; }
+    | /-Otagged_pointer/:    { tagged_pointer = true; }
+    | /-Orewriting/:         { optimize_rewrite = true; }
+    | /-(N|non_linear)/:     { nonlinear_patterns = true; }
+    | /-(S|save_space)/:     { save_space = true; }
+    | /-V[0-9]+/:            { max_vector_len = atol(argv[0]+2); }
+    | /-v[0-9]*/:
+      {
+        verbosity = atol(argv[0]+2);
+        if (verbosity <= 0)
+          verbosity = 1;
+      }
+    | /-vcg/:                { visualization = true; }
+    | /-(M|make_depends)/:   { gen_dependences = true; }
+    | /-(n|no_codegen)/:     { emit_code = false; }
+    | /-new_list_format/:    { new_list_format = true; }
+    | /-(h|help)/:           { help = true; }
+    | /-use_global_pools/:   { MEM::use_global_pools(); }
+    | /-memory_usage/:       { print_memory_usage = true; }
+    | /-.*/:
+      {
+        error("%s: unknown option %s\n", prog_name, argv[0]);
+        help = true;
+      }
+    | _:
+      { input_files[file_count++] = argv[0]; }
+    end match;
+    if ( argv[0][0] == '-')
+      input_options[option_count++] = argv[0];
+  }
+  input_file_name = input_files[0];
+
+  ////////////////////////////////////////////////////////////////////////////
+  //  Print help message
+  ////////////////////////////////////////////////////////////////////////////
+  if (help || file_count == 0)
+  {
+    error( HELP_MESSAGE, prog_name, VERSION, PATCH_LEVEL, LAST_UPDATED, prog_name);
+    exit(1);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Run a program recursively.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+static int run_prog( const char * prog, int argc, const char * argv[])
+{
+  char command[4096];
+  strcpy( command, prog);
+  for (int i = 0; i < argc; i++)
+  {
+    strcat( command, " ");
+    strcat( command, argv[i]);
+  }
+  int stat = system( command);
+  if (stat)
+    error("Error in command: %s\n", command);
+  return stat;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  The main program.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+int main( int argc, const char * argv [])
+{
+  extern int process_input( PropOptions&);
+
+  options.process_command_line_arguments( argc, argv);
+  options.compute_output_file_name();
+
+  int stat;
+
+  if (options.file_count == 1)
+  {
+    stat = process_input( options);
+    if (print_memory_usage)
+    {
+      msg("[global pool size = %i local pool size = %i string pool size = %i]\n",
+           global_pool.bytes_used(), mem_pool.bytes_used(), str_pool.bytes_used());
+    }
+  }
+  else
+  {
+    for (int i = 0; i < options.file_count; i++)
+    {
+      options.input_options[options.option_count] = options.input_files[i];
+      stat = run_prog(options.prog_name,
+                      options.option_count+1,
+                      options.input_options);
+      if (stat) break;
+    }
+  }
+  exit(stat);
+}

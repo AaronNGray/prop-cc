@@ -1,0 +1,19 @@
+//
+// Sample grammar that is LR(1) but not LALR(1)
+// 
+
+datatype T :: lexeme = Id;
+
+syntax class Testing {};
+
+syntax Testing
+{
+   S    : '(' Exp1 ')'  // Should have 2 reduce/reduce conflicts here.
+        | '[' Exp1 ']' 
+        | '(' Exp2 ']' 
+        | '[' Exp2 ')' 
+        | '[' Exp2 '>'
+        ;
+   Exp1 : Id ;
+   Exp2 : Id ;
+};

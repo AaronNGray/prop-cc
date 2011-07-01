@@ -1,0 +1,59 @@
+/////////////////////////////////////////////////////////////////////////////
+//  Testing polymorphic datatypes.
+//  (and garbage collection)
+/////////////////////////////////////////////////////////////////////////////
+#include <iostream.h>
+
+/////////////////////////////////////////////////////////////////////////////
+// The following datatype equations simulate an abstract syntax
+// for a small language.  All types are garbage collected.
+/////////////////////////////////////////////////////////////////////////////
+datatype LIST<T> :: printable collectable
+   = #[] 
+   | #[ T ... LIST<T> ]
+
+and EXP :: printable collectable 
+   = num  (int)                    => _
+   | var  (ID)                     => _
+   | add  (EXP, EXP)               => "(" _ "+" _ ")"
+   | sub  (EXP, EXP)               => "(" _ "-" _ ")"
+   | mul  (EXP, EXP)               => "(" _ "*" _ ")"
+   | div  (EXP, EXP)               => "(" _ "/" _ ")"
+   | list (LIST<EXP>)              => _
+
+and STMT :: printable collectable 
+   = assign_stmt(ID, EXP)         => _ ":=" _ ";"
+   | while_stmt (EXP, STMT)       => "while" _ "do" { _ } "end while;"
+   | if_stmt    (EXP, STMT, STMT) => "if" _ "then" { _ } "else" { _ } "endif;"
+   | block_stmt (LIST<STMT>)      => "begin" { _ } "end"
+
+where type ID = const char *
+   ;
+
+/////////////////////////////////////////////////////////////////////////////
+//  Instantiate the datatypes. 
+//  This will generate a bunch of methods, functions and classes
+//  to implement printing and garbage collection.
+/////////////////////////////////////////////////////////////////////////////
+instantiate extern datatype LIST<int>, LIST< EXP >, LIST< STMT >, EXP, STMT;
+instantiate datatype        LIST<int>, LIST< EXP >, LIST< STMT >, EXP, STMT;
+
+int main()
+{  
+   EXP  e1 = add(var("x"),num(1));
+   EXP  e2 = sub(var("y"),num(2));
+   STMT s1 = if_stmt (
+                var("z"),
+                while_stmt(e1, block_stmt(#[ assign_stmt("u", e2) ])),
+                assign_stmt("v",num(2))
+             );
+
+   LIST<EXP> list2 = #[ e1, e2, var("z") ];
+   LIST<EXP> list3 = #[ num(-1), list(list2), list(list2) ];
+  
+   cout << "list2 = " << list2 << '\n';
+   cout << "list3 = " << list3 << '\n';
+   cout << "Program =\n" << s1 << '\n';
+
+   return 0;
+}

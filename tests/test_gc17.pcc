@@ -1,0 +1,130 @@
+//
+//  Testing garbage collection with polymorphic datatypes
+//
+
+#include <iostream.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <unistd.h>
+#include <AD/gc/gcheaps.h>
+
+#define NODES (256 * 1024) 
+#define TRIALS 10
+#define SHARING
+
+//////////////////////////////////////////////////////////////////////////////
+//  Datatype TREE is just a simple binary tree (actually a dag in our case).
+//////////////////////////////////////////////////////////////////////////////
+datatype TREE<T> :: collectable 
+   = empty
+   | leaf (class T)
+   | node (TREE<T>, class T, TREE<T>)
+   ;
+
+instantiate datatype TREE<int>, TREE<const char *>;
+
+//////////////////////////////////////////////////////////////////////////////
+//  Compute the sum of all nodes of a tree
+//////////////////////////////////////////////////////////////////////////////
+int sum (TREE<int> t)
+{  match (t) {
+      case empty:        return 0;
+      case leaf i:       return i;
+      case node(x,i,y):  return sum(x) + i + sum(y);
+   }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//  Count the number of pointer sharings. 
+//////////////////////////////////////////////////////////////////////////////
+int sharing (TREE<int> t)
+{  match (t) {
+      case empty:        return 0;
+      case leaf _:       return 0;
+      case node(x,i,y):  return sharing(x) + sharing(y) 
+                                 + ((x != empty && x == y) ? 1 : 0);
+   }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//  Compute the size of a tree
+//////////////////////////////////////////////////////////////////////////////
+template <class T>
+   int size (TREE<T> t)
+   {  match (t) {
+         case empty:        return 0;
+         case leaf _:       return 1;
+         case node(x,i,y):  return size(x) + 1 + size(y);
+      }
+   }
+
+//////////////////////////////////////////////////////////////////////////////
+//  Check a tree for correctness.
+//////////////////////////////////////////////////////////////////////////////
+template <class T>
+   void check (TREE<T> t)
+   {  match (t) {
+         case empty:        return;
+         case leaf _:       return;
+         case node(x,i,y):    
+            assert (HM::is_mapped(t) && 
+                    HM::page_gc(t) == GC::get_default_gc().gc_id());
+            assert (HM::get_object_map().is_marked(t));
+            check(x); check(y); 
+      }
+   }
+
+//////////////////////////////////////////////////////////////////////////////
+//  Routine to make a random tree of a certain size.
+//////////////////////////////////////////////////////////////////////////////
+TREE<int> make_tree(int n)
+{  if (n == 0) return empty;
+   int split = rand() % n;
+   int data  = rand() % n;
+#ifdef SHARING
+   if ((n % 2 == 1) && (rand() % 2 == 1)) {
+      TREE<int> t = make_tree(n/2);
+      return node(t, data, t);
+   }
+#endif
+   return node(make_tree(split), data, make_tree(n - split - 1));
+}
+
+void testing()
+{  
+   for (int trial = 1; trial <= TRIALS; trial++) {
+       cout << "Trial number " << trial << '\n' << flush;
+       TREE<int> tree1    = make_tree(NODES);
+       int       size1    = size(tree1);
+       int       sum1     = sum(tree1);
+       int       sharing1 = sharing (tree1);
+       check(tree1);
+
+       cout << "Size = " << size1 << " check sum = " << sum1 
+            << " pointer sharing = " << sharing1 << '\n' << flush;
+
+       make_tree(NODES);              // this just generates a lot of garbage
+
+       // Now traverse the tree check things.
+       assert(size(tree1)     == NODES);
+       assert(sum(tree1)      == sum1);
+       assert(sharing(tree1)  == sharing1);
+       check(tree1);
+       cout << "Trial number " << trial << " has passed\n";
+   }
+}
+
+int main()
+{  
+   cout << 
+     "This test generate random dags and try to see if garbage collection\n"
+     "works on preserving pointer sharing correctly.  I'll do this " 
+      << TRIALS << " times.\n";
+   srand(getpid()); 
+   testing();
+   // force an explicit garbage collection
+   cout << "Finished.  Now I'm forcing another garbage collection to clean\n"
+           "things up.  There should be very little garbage left at the end.\n";
+   GC::garbage_collect();  
+   return 0;
+}

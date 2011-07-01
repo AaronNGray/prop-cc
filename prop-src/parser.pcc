@@ -1,0 +1,2636 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//      ////////
+//     //     //   //////   /////   ///////
+//    ////////   //       //   //  //    //
+//   //         //       //   //  ///////
+//  //         //        /////   //
+//                              //      Version 2.3.x
+//
+//                                      Allen Leung (leunga@cs.nyu.edu)
+///////////////////////////////////////////////////////////////////////////////
+
+#include <stdlib.h>
+#include <iostream>
+#include <AD/strings/charesc.h>
+#include <AD/strings/quark.h>
+#include "options.h"
+#include "basics.h"
+#include "ir.ph"
+#include "ast.ph"
+#include "parser.ph"
+#include "parsegen.ph"
+#include "setl-ast.ph"
+#include "keywords.ph"
+#include "timespace.ph"
+#include "type.h"
+#include "patenv.h"
+#include "compiler.h"
+#include "list.h"
+#include "matchcom.h"
+// #include "wam.h"
+// #include "bitfield.ph"
+// #include "constraint.ph"
+// #include "dataflow.ph"
+#include "graphtype.ph"
+#include "graphedges.ph"
+#include "grsgen.ph"
+#include "aggen.ph"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Datatypes for processing refine.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+datatype RefineTyDecl   : MEM = REFINEtype( Id, Ids)
+and      RefineConsDecl : MEM = REFINEconstructor( Cons, Tys)
+where type RefineTyDecls   = List<RefineTyDecl>
+and        RefineConsDecls = List<RefineConsDecl>
+and        LabTyList       = { lab_list : Ids, ty_list : Tys }
+and        QualIdPat       = { label : QualId, pat : Pat }
+;
+
+instantiate datatype RefineTyDecl, RefineConsDecl;
+
+///////////////////////////////////////////////////////////////////////////////
+//  Functions to mark a tree with the current location.
+///////////////////////////////////////////////////////////////////////////////
+
+extern Pat mark(Pat p);
+extern Exp mark(Exp e);
+extern Decl mark(Decl d);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Functions to build lists.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+extern Pat mklistpat  (Id cons, Id nil, Pats ps, Pat p = NOpat);
+extern Pat mkvecpat   (Id, Pat, Pat, Pats, Bool = false, Bool = false);
+extern Exp mklistexp  (Id, Id, Exps, Exp = NOexp);
+extern Exp mkappexp   (Exp, Exp);
+extern Exp mkvecexp   (Id, Exps);
+extern Pat extuplepat (Pats);
+extern Exp extupleexp (Exps);
+extern Ty  extuplety  (Tys);
+extern TermDef mklistterm(Id, Ty, Ty, Decls);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  The Grammar of Prop
+//
+///////////////////////////////////////////////////////////////////////////////
+
+syntax PropParser
+{
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Operator precedence
+//
+///////////////////////////////////////////////////////////////////////////////
+
+left: 25 ',';
+left: 24 '?';
+left: 23 "as";
+left: 22 "::";
+left: 21 "||";
+left: 20 "equiv:";
+left: 19 "xor:";
+left: 18 "implies:";
+left: 17 "&&" "and";
+right: 16 "|=" "&=" "^=" "<<=" ">>=";
+right: 15 '=' ":=" "+=" "-=" "*=" "/=" "%=";
+left: 14 '|';
+left: 13 ':';
+left: 12 ';';
+left: 11 '^';
+left: 10 '&';
+left: 9 "==" "!=";
+left: 8 '<' '>' ">=" "<=";
+left: 7 "<<" ">>";
+left: 6 '+' '-' "with" "less";
+left: 5 '*' '/' '%';
+left: 4 "++" "--";
+left: 3 '!' '~' "arb" "dom" "ran";
+left: 2 '[' ']' '{' '}' '.' "->" ;
+// left: 1 APP;
+left: 1 "class" "const" "collectable" "finalizable" "unsigned" "signed";
+expect: 2;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Declarations
+//
+///////////////////////////////////////////////////////////////////////////////
+
+top:	decl_list	{ program = $1; };
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Special keywords
+//
+///////////////////////////////////////////////////////////////////////////////
+
+rewrite_(int):      "rewrite"     { Used::rewriting = Used::quark = true; $$ = line; };
+syntax_(int):       "syntax"      { Used::parser = true; $$ = line; };
+case_(int):         "case"        { $$ = line; };
+lexeme_(int):       "lexeme"      { $$ = line; };
+inference_(int):    "inference"   { Used::infer = true; $$ = line; };
+persistent_(int):   "persistent"  { Used::persistence = true; $$ = line; };
+traced_(int):       "traced"      { Used::refcount = true; $$ = line; };
+collectable_(int):  "collectable" { Used::gc = true; $$ = line; };
+finalizable_(int):  "finalizable" { Used::gc = true; $$ = line; };
+printable_(int):    "printable"   { Used::printer = true; $$ = line; };
+unifiable_(int):    "unifiable"   { Used::unification = true; $$ = line; };
+
+match_or_matchall(MatchOptions):
+  "match"         { $$ = MATCHnone; }
+| "match" '*'     { $$ = MATCHnone | MATCHcaseinsensitive; }
+| "matchall"      { $$ = MATCHall; }
+| "matchall" '*'  { $$ = MATCHall | MATCHcaseinsensitive; }
+| "matchscan"     { $$ = MATCHscanner; }
+| "matchscan" '*' { $$ = MATCHscanner | MATCHcaseinsensitive; }
+;
+where_or_if: "if" | "where" | '|'
+;
+implies : LONG_BAR | "=>"
+;
+negate: '~' | '!'
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Literals
+//
+///////////////////////////////////////////////////////////////////////////////
+
+id(Id):  ID_TOK     { $$ = Quark(lexbuf.text()); };
+
+poly_datatype(Id):	POLY_DATATYPE	{ $$ = Quark(lexbuf.text()); };
+
+cons(Cons):		CONS_TOK	{ $$ = my_cons; };
+id_or_cons(Id):		id		{ $$ = $1; }
+|           cons		{ $$ = $1->name; }
+;
+cons_or_string(Id):	id_or_cons	{ $$ = $1; }
+|           string		{ $$ = Quark($1); }
+;
+cons_id(Cons):		CONS_EXP	{ $$ = my_cons; };
+
+string(const char *):	STRING_TOK	{ $$ = str_pool(lexbuf.text(),lexbuf.length()); };
+regexp(const char *):	REGEXP_TOK	{ $$ = str_pool(lexbuf.text(),lexbuf.length()); };
+quark(Id):
+        QUARK_TOK
+            {
+              $$ = str_pool(lexbuf.text()+1,lexbuf.length()-1);
+              compiler->quark_name($$);
+              Used::quark = true;
+            };
+bigint(Id):
+        BIGINT_TOK
+            {
+              $$ = str_pool(lexbuf.text()+1,lexbuf.length()-1);
+              Used::bigint = true;
+            };
+meta_quote(const char *):
+        META_QUOTE
+            {
+              $$ = str_pool(meta.text(),meta.length());
+              meta.reset();
+            };
+integer(int):		INT_TOK		{ $$ = atol(lexbuf.text()); };
+real(double):		REAL_TOK	{ $$ = atof(lexbuf.text()); };
+character(char):	CHAR_TOK	{ parse_char(lexbuf.text()+1,$$); };
+boolean(Bool):
+        "false"		{ $$ = false; }
+|       "true"		{ $$ = true; }
+;
+
+complex_cons(Cons):
+        cons                { $$ = $1; }
+|       '#' '[' ']'         { $$ = lookup_cons("#[]"); }
+|       '#' '(' ')'         { $$ = lookup_cons("#()"); }
+|       '#' '{' '}'         { $$ = lookup_cons("#{}"); }
+|       '#' '[' "..." ']'   { $$ = lookup_cons("#[...]"); }
+|       '#' '(' "..." ')'   { $$ = lookup_cons("#(...)"); }
+|       '#' '{' "..." '}'   { $$ = lookup_cons("#{...}"); }
+|       "[|" "..." "|]"     { $$ = lookup_cons("[|...|]"); }
+|       "(|" "..." "|)"     { $$ = lookup_cons("(|...|)"); }
+|       "{|" "..." "|}"     { $$ = lookup_cons("{|...|}"); }
+;
+
+non_string_literal Literal:
+ 	integer     { $$ = INTlit($1); }
+|   boolean     { $$ = BOOLlit($1); }
+|   character   { $$ = CHARlit($1); }
+|   real        { $$ = REALlit($1); }
+|   quark       { $$ = QUARKlit($1); }
+|   bigint      { $$ = BIGINTlit($1); }
+;
+
+literal Literal:
+	non_string_literal  { $$ = $1; }
+|   string              { $$ = STRINGlit($1); }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Patterns
+//
+///////////////////////////////////////////////////////////////////////////////
+
+top_pat(Pat):
+        pat                 { $$ = mark($1); }
+|    	top_pat_list2       { $$ = mark(TUPLEpat($1)); }
+;
+
+pat(Pat):
+        simple_pat      { $$ = $1; }
+|       logical_pat     { $$ = $1; }
+;
+
+logical_pat(Pat):
+    '!' pat             { $$ = LOGICALpat(NOTpat,$2,NOpat); }
+|   pat "&&" pat        { $$ = LOGICALpat(ANDpat,$1,$3); }
+|   pat "||" pat        { $$ = LOGICALpat(ORpat,$1,$3); }
+|   pat "implies:" pat  { $$ = LOGICALpat(IMPLIESpat,$1,$3); }
+|   pat "xor:" pat      { $$ = LOGICALpat(XORpat,$1,$3); }
+|   pat "equiv:" pat    { $$ = LOGICALpat(EQUIVpat,$1,$3); }
+;
+
+simple_pat(Pat):
+            prim_pat    { $$ = $1; }
+|           aggr_pat    { $$ = $1; }
+;
+
+prim_pat(Pat):
+	id                          { $$ = lookup_patvar($1); }
+|   id "as" pat                 { $$ = ASpat($1,$3,mkvar(),NOexp); }
+|   non_string_literal          { $$ = LITERALpat($1); }
+|   string_pat                  { $$ = $1; }
+|   meta_quote                  { $$ = compiler->parse_pat("",$1); }
+|   '_'                         { $$ = WILDpat(); }
+|   '(' ')'                     { $$ = TUPLEpat(#[]); }
+|   '(' pat ')'                 { $$ = $2; }
+|   '(' pat_list2 ')'           { $$ = TUPLEpat($2); }
+|   '{' lab_pat_list '}'        { $$ = RECORDpat($2,false); }
+|   '{' lab_pat_list "..." '}'  { $$ = RECORDpat($2,true); }
+|   '(' pat ':' ty ')'          { $$ = TYPEDpat($2,$4); }
+|   cons                        { $$ = mkconspat($1); }
+|   cons simple_pat             { $$ = APPpat(CONSpat($1),$2); }
+|   "<<" cons_list ">>" pat     { $$ = CONTEXTpat($2,$4); }
+|   id simple_pat
+    {
+    Pat scheme = DatatypeCompiler::lookup_pat($1);
+    if (scheme != NOpat)
+      $$ = apply_pat( scheme, $2);
+    else
+      { lookup_cons($1); $$ = WILDpat(); }
+	}
+;
+
+string_pat(Pat):
+    regexp  { $$ = mk_regexp_pat($1); Used::regexp = true; }
+|   string
+    {  if (options.fast_string_match && ! in_rewrite) {
+	      $$ = ARRAYpat(make_string_pattern($1+1),false);
+	   } else {
+	      $$ = LITERALpat(STRINGlit($1)); Used::string_match = true;
+	   }
+	}
+|   lexeme_ "class" id
+        {  match (lookup_lexeme_class($3))
+           {  termdefs as #[TERMdef { id = cons_name ... } ... _]:
+              {  match (lookup_cons(cons_name))
+                 {  ONEcons { alg_ty = ty as DATATYPEty({ terms ... },_),
+                              tag ... }:
+                       { $$ = LEXEMEpat($3, ty, length(termdefs), terms + tag); }
+                 |  _: { $$ = LEXEMEpat($3, mkidty($3,#[]), 0, 0); }
+                 }
+              }
+           |  _: { $$ = LEXEMEpat($3, mkidty($3,#[]), 0, 0); }
+           }
+	   if (me_top >= 0) match_kind[me_top] |= MATCHlexemepat;
+	}
+;
+
+cons_list(Conses):
+            cons                { $$ = #[$1]; }
+|           cons ',' cons_list  { $$ = #[$1 ... $3]; }
+;
+
+aggr_pat(Pat):
+ 	'[' pat_list ']'                { $$ = ARRAYpat($2,false); }
+|   '[' pat_list "..." ']'          { $$ = ARRAYpat($2,true); }
+|   '#' '[' pat_list ']'            { $$ = mklistpat("#[...]","#[]",$3); }
+|   '#' '[' pat_list1 "..." pat ']' { $$ = mklistpat("#[...]","#[]",$3,$5);}
+|   '#' '{' pat_list '}'            { $$ = mklistpat("#{...}","#{}",$3); }
+|   '#' '{' pat_list1 "..." pat '}' { $$ = mklistpat("#{...}","#{}",$3,$5); }
+|   '#' '(' pat_list ')'            { $$ = mklistpat("#(...)","#()",$3); }
+|   '#' '(' pat_list1 "..." pat ')' { $$ = mklistpat("#(...)","#()",$3,$5); }
+|   "[|" "|]"           { $$ = mkvecpat("[|...|]",NOpat,NOpat,#[]); }
+|   "(|" "|)"           { $$ = mkvecpat("(|...|)",NOpat,NOpat,#[]); }
+|   "{|" "|}"           { $$ = mkvecpat("{|...|}",NOpat,NOpat,#[]); }
+|   "[|" dots_opt pat_list1 dots_opt "|]"
+        { $$ = mkvecpat("[|...|]",NOpat,NOpat,$3,$2,$4); }
+|   "(|" dots_opt pat_list1 dots_opt "|)"
+        { $$ = mkvecpat("(|...|)",NOpat,NOpat,$3,$2,$4); }
+|   "{|" dots_opt pat_list1 dots_opt "|}"
+        { $$ = mkvecpat("{|...|}",NOpat,NOpat,$3,$2,$4); }
+|   "[|" '|' pat pat_opt '|' dots_opt pat_list1 dots_opt "|]"
+        { $$ = mkvecpat("[|...|]",$3,$4,$7,$6,$8); }
+|   "(|" '|' pat pat_opt '|' dots_opt pat_list1 dots_opt "|)"
+        { $$ = mkvecpat("(|...|)",$3,$4,$7,$6,$8); }
+|   "{|" '|' pat pat_opt '|' dots_opt pat_list1 dots_opt "|}"
+        { $$ = mkvecpat("{|...|}",$3,$4,$7,$6,$8); }
+|   ".(" pat_list2 ')'  { $$ = EXTUPLEpat($2); }
+;
+
+dots_opt(Bool): { $$ = false; }
+|       "..."   { $$ = true; }
+;
+
+pat_opt(Pat):   { $$ = NOpat; }
+|       ':' pat { $$ = $2; }
+;
+
+lab_pat(LabPat):
+        id '=' pat  { $$.label = $1; $$.pat = $3; }
+|       id          { $$.label = $1; $$.pat = IDpat($1,mkvar(),NOexp); }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pattern lists
+//
+///////////////////////////////////////////////////////////////////////////////
+
+pat_list2(Pats):
+            big_pat ',' big_pat     { $$ = #[ $1, $3 ]; }
+|           big_pat ',' pat_list2   { $$ = #[ $1 ... $3 ]; }
+;
+
+pat_list(Pats):     { $$ = #[]; }
+|       pat_list1   { $$ = $1; }
+;
+
+pat_list1(Pats):
+            big_pat     { $$ = #[ $1 ]; }
+|           pat_list2   { $$ = $1; }
+;
+
+big_pat(Pat):
+        pat             { $$ = $1; }
+|       pat ':' ty      { $$ = TYPEDpat($1,$3); }
+;
+
+top_pat_list2(Pats):
+            pat ',' pat             { $$ = #[ $1, $3 ]; }
+|           pat ',' top_pat_list2   { $$ = #[ $1 ... $3 ]; }
+;
+
+lab_pat_list(LabPats):      { $$ = #[]; }
+|       lab_pat_list1       { $$ = $1; }
+;
+
+lab_pat_list1(LabPats):
+        lab_pat                     { $$ = #[$1]; }
+|       lab_pat ',' lab_pat_list1   { $$ = #[$1 ... $3]; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Type expressions
+//
+///////////////////////////////////////////////////////////////////////////////
+
+long_ty(Ty):
+        ty1                 { $$ = $1; }
+|       long_ty "->" ty1    { $$ = mkfunty($1,$3); }
+;
+
+ty1(Ty):
+	"type"      { $$ = mktypety(); }
+|       ty      { $$ = $1; }
+;
+
+ty Ty:
+    ty '=' exp      { $$ = DEFVALty($1,$3); }
+|   simple_ty       { $$ = $1; }
+|   ty '*'          { $$ = mkptrty($1); }
+|   ty '&'          { $$ = mkrefty($1); }
+|   ty '[' ']'      { $$ = mkptrty($1); }
+|   ty '[' exp ']'  { $$ = mkarrayty($1,$3); }
+;
+
+return_ty(Ty):
+    simple_ty1              { $$ = $1; }
+|   return_ty '*'           { $$ = mkptrty($1); }
+|   return_ty '&'           { $$ = mkrefty($1); }
+|   return_ty '[' ']'       { $$ = mkptrty($1); }
+|   return_ty '[' exp ']'   { $$ = mkarrayty($1,$3); }
+;
+
+inherit_ty(Ty): id ty_args  { $$ = mkidty($1,$2); }
+;
+
+simple_ty1(Ty):
+    "class" ty          { $$ = QUALty(QUALclass,$2); }
+|   "const" ty          { $$ = QUALty(QUALconst,$2); }
+|   "collectable" ty    { $$ = QUALty(QUALcollectable,$2); }
+|   "finalizable" ty    { $$ = QUALty(QUALfinalizable | QUALcollectable,$2); }
+|   "unsigned" ty       { $$ = QUALty(QUALunsigned,$2); }
+|   "signed" ty         { $$ = QUALty(QUALsigned,$2); }
+|   qualified_ty        { $$ = $1; }
+|   '(' ')'             { $$ = mktuplety(#[]); }
+|   '(' ty ')'          { $$ = $2; }
+|   '(' ty_list2 ')'    { $$ = mktuplety($2); }
+|   ".[" ty_list2 ']'   { $$ = extuplety($2); }
+|   setl_ty             { $$ = $1; }
+;
+
+simple_ty(Ty):
+    simple_ty1      { $$ = $1; }
+|   labeled_ty      { $$ = $1; }
+;
+
+labeled_ty(Ty):
+    '{' lab_ty_list '}' { $$ = mkrecordty($2.lab_list,$2.ty_list,false); }
+;
+
+qualified_ty(Ty):
+        id_ty                   { $$ = $1; }
+|       qualified_ty "::" id_ty { $$ = NESTEDty($1,$3); }
+;
+
+qual_id(QualId):
+        id                  { $$ = SIMPLEid($1); }
+|       id_ty "::" qual_id  { $$ = NESTEDid($1,$3); }
+;
+
+id_ty(Ty):
+        id                  { $$ = lookup_tyvar($1); }
+|       id '<' ty_list '>'  { $$ = mkidty($1, $3); }
+;
+
+lab_ty(LabTy):	id ':' ty   { $$.label = $1; $$.ty = $3; }
+;
+
+ty_args(Tys):           { $$ = #[]; }
+|       '<' ty_list '>' { $$ = $2; }
+;
+
+ty_list(Tys):
+        ty          { $$ = #[ $1 ]; }
+|       ty_list2    { $$ = $1; }
+;
+
+ty_list2(Tys):
+        ty ',' ty       { $$ = #[ $1, $3 ]; }
+|       ty ',' ty_list2 { $$ = #[ $1 ... $3 ]; }
+;
+
+lab_ty_list(LabTyList): { $$.lab_list = #[]; $$.ty_list = #[]; }
+|       lab_ty          {
+                          $$.lab_list = #[ $1.label ];
+                          $$.ty_list  = #[ $1.ty ];
+                        }
+|       lab_ty_list2    { $$ = $1; }
+;
+
+lab_ty_list2(LabTyList):
+        lab_ty ',' lab_ty
+        {
+          $$.lab_list = #[ $1.label, $3.label ];
+          $$.ty_list  = #[ $1.ty, $3.ty ];
+        }
+|       lab_ty ',' lab_ty_list2
+        {
+          $$.lab_list = #[ $1.label ... $3.lab_list ];
+          $$.ty_list  = #[ $1.ty ... $3.ty_list ];
+        }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Expressions
+//
+///////////////////////////////////////////////////////////////////////////////
+
+exp(Exp):
+    app_exp         { $$ = $1; }
+|   exp '+' exp     { $$ = BINOPexp("+",$1,$3); }
+|   exp '-' exp     { $$ = BINOPexp("-",$1,$3); }
+|   exp '*' exp     { $$ = BINOPexp("*",$1,$3); }
+|   exp '/' exp     { $$ = BINOPexp("/",$1,$3); }
+|   exp '%' exp     { $$ = BINOPexp("%",$1,$3); }
+|   exp '=' exp     { $$ = ASSIGNexp($1,$3); }
+|   exp ":=" exp    { $$ = ASSIGNexp($1,$3); }
+|   exp '<' exp     { $$ = BINOPexp("<",$1,$3); }
+|   exp '>' exp     { $$ = BINOPexp(">",$1,$3); }
+|   exp '|' exp     { $$ = BINOPexp("|",$1,$3); }
+|   exp '&' exp     { $$ = BINOPexp("&",$1,$3); }
+|   exp '^' exp     { $$ = BINOPexp("^",$1,$3); }
+|   exp "+=" exp    { $$ = BINOPexp("+=",$1,$3); }
+|   exp "-=" exp    { $$ = BINOPexp("-=",$1,$3); }
+|   exp "*=" exp    { $$ = BINOPexp("*=",$1,$3); }
+|   exp "/=" exp    { $$ = BINOPexp("/=",$1,$3); }
+|   exp "%=" exp    { $$ = BINOPexp("%=",$1,$3); }
+|   exp "&=" exp    { $$ = BINOPexp("&=",$1,$3); }
+|   exp "|=" exp    { $$ = BINOPexp("|=",$1,$3); }
+|   exp "^=" exp    { $$ = BINOPexp("^=",$1,$3); }
+|   exp ">=" exp    { $$ = BINOPexp(">=",$1,$3); }
+|   exp "<=" exp    { $$ = BINOPexp("<=",$1,$3); }
+|   exp "==" exp    { $$ = BINOPexp("==",$1,$3); }
+|   exp "!=" exp    { $$ = BINOPexp("!=",$1,$3); }
+|   exp "||" exp    { $$ = BINOPexp("||",$1,$3); }
+|   exp "&&" exp    { $$ = BINOPexp("&&",$1,$3); }
+|   exp "<<" exp    { $$ = BINOPexp("<<",$1,$3); }
+|   exp ">>" exp    { $$ = BINOPexp(">>",$1,$3); }
+|   exp "<<=" exp   { $$ = BINOPexp("<<=",$1,$3); }
+|   exp ">>=" exp   { $$ = BINOPexp(">>=",$1,$3); }
+|   exp "++"        { $$ = POSTFIXexp("++",$1); }
+|   exp "--"        { $$ = POSTFIXexp("--",$1); }
+|   '-' exp	        { $$ = PREFIXexp("-",$2); }
+|   '!' exp	        { $$ = PREFIXexp("!",$2); }
+|   "++" exp        { $$ = PREFIXexp("++",$2); }
+|   "--" exp        { $$ = PREFIXexp("--",$2); }
+|   '&' exp	        { $$ = PREFIXexp("&",$2); }
+|   '~' exp	        { $$ = PREFIXexp("~",$2); }
+|   '*' exp	        { $$ = DEREFexp($2); }
+|   exp '?' exp ':' exp { $$ = IFexp($1,$3,$5); }
+|   setl_exp        { $$ = $1; }
+;
+
+app_exp(Exp):
+        simple_exp          { $$ = $1; }
+|       app_exp simple_exp  { $$ = mkappexp($1,$2); }
+;
+
+primitive_app_exp(Exp):
+        primitive_exp                   { $$ = $1; }
+|       primitive_app_exp simple_exp    { $$ = mkappexp($1,$2); }
+;
+
+primitive_exp(Exp):
+    id          { $$ = lookup_exp($1); }
+|   literal     { $$ = LITERALexp($1); }
+|   cons        {
+                  $$ = my_cons->ty == NOty
+                  ? CONSexp(my_cons,#[],NOexp) : IDexp($1->name);
+                }
+;
+
+simple_exp(Exp):
+    primitive_exp               { $$ = $1; }
+|    '(' ')'                    { $$ = TUPLEexp(#[]); }
+|   '(' exp ')'                 { $$ = $2; }
+|   '(' exp_list2 ')'           { $$ = TUPLEexp($2); }
+|   tick '{' lab_exp_list '}'   { $$ = RECORDexp($3); }
+|   list_exp                    { $$ = $1; }
+|   cons_exp                    { $$ = $1; }
+|   meta_exp                    { $$ = $1; }
+|   simple_exp '.' id           { $$ = DOTexp($1,$3); }
+|   simple_exp '.' '#' integer  { $$ = DOTexp($1,Quark("_",$4)); }
+|   simple_exp '[' exp ']'      { $$ = INDEXexp($1,$3); }
+|   simple_exp "->" id          { $$ = ARROWexp($1,$3); }
+|   simple_exp "->" '#' integer { $$ = ARROWexp($1,Quark("_",$4)); }
+|   id "::" id                  { $$ = QUALexp(lookup_tyvar($1),$3); }
+;
+
+tick:
+|   '\'' tick
+;
+
+list_exp(Exp):
+    '#' '[' exp_list ']'            { $$ = mklistexp("#[...]","#[]",$3); }
+|   '#' '(' exp_list ')'            { $$ = mklistexp("#(...)","#()",$3); }
+|   '#' '{' exp_list '}'            { $$ = mklistexp("#{...}","#{}",$3); }
+|   '#' '[' exp_list "..." exp ']'  { $$ = mklistexp("#[...]","#[]",$3,$5); }
+|   '#' '(' exp_list "..." exp ')'  { $$ = mklistexp("#(...)","#()",$3,$5); }
+|   '#' '{' exp_list "..." exp '}'  { $$ = mklistexp("#{...}","#{}",$3,$5); }
+|   "[|" exp_list "|]"              { $$ = mkvecexp("[|...|]",$2); }
+|   "(|" exp_list "|)"              { $$ = mkvecexp("(|...|)",$2); }
+|   "{|" exp_list "|}"              { $$ = mkvecexp("{|...|}",$2); }
+|   ".(" exp_list2 ')'              { $$ = extupleexp($2); }
+;
+
+cons_exp(Exp):
+    cons_id tick '{' lab_exp_list '}'
+        { $$ = CONSexp($1,#[],RECORDexp($4)); }
+|   cons_id tick '(' exp_list ')' '{' lab_exp_list '}'
+        { $$ = CONSexp($1,$4,RECORDexp($7)); }
+|   cons_id tick '(' exp_list ')' '(' exp_list ')'
+        { $$ = CONSexp($1,$4,TUPLEexp($7)); }
+;
+
+meta_exp(Exp):	meta_quote  { $$ = compiler->parse_exp("",$1); }
+;
+
+lab_exp(LabExp):    id '=' exp  { $$.label = $1; $$.exp = $3; }
+;
+
+paren_exp(Exp): '(' exp ')' { $$ = $2; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Expression lists
+//
+///////////////////////////////////////////////////////////////////////////////
+
+exp_list(Exps):     { $$ = #[]; }
+|       exp         { $$ = #[ $1 ]; }
+|       exp_list2   { $$ = $1; }
+;
+
+exp_list2(Exps):
+        exp ',' exp         { $$ = #[ $1, $3 ]; }
+|       exp ',' exp_list2   { $$ = #[ $1 ... $3 ]; }
+;
+
+lab_exp_list(LabExps):      { $$ = #[]; }
+|       lab_exp             { $$ = #[ $1 ]; }
+|       lab_exp_list2       { $$ = $1; }
+;
+
+lab_exp_list2(LabExps):
+        lab_exp ',' lab_exp         { $$ = #[ $1, $3 ]; }
+|       lab_exp ',' lab_exp_list2   { $$ = #[ $1 ... $3 ]; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pattern matching rules
+//
+///////////////////////////////////////////////////////////////////////////////
+
+match_decl(Decl):
+    match_or_matchall match_ty match_options match_exps
+        {
+          compute_match_variables(me_stack[++me_top] = $4);
+          match_kind[me_top] = $1;
+          match_rule = 0;
+        }
+    '{' case_or_bar_rules '}'
+        {
+          $$ = MATCHdecl($4,$7,$1 | $3 | match_kind[me_top],$2);
+          me_top--;
+        }
+|   match_or_matchall match_ty match_options match_exps "of"
+        {
+          compute_match_variables(me_stack[++me_top] = $4);
+          match_kind[me_top] = $1;
+          match_rule = 0;
+        }
+    case_or_bar_rules "end" "match" ';'
+        {
+          $$ = MATCHdecl($4,$7,$1 | $3 | match_kind[me_top],$2);
+          me_top--;
+        }
+;
+
+match_options(MatchOptions):    { $$ = MATCHnone; }
+|       "while"                 { $$ = MATCHwhile; }
+;
+
+match_ty(Ty):       { $$ = NOty; }
+|       '[' ty ']'  { $$ = $2; }
+;
+
+match_exps(MatchExps):
+        match_exp                   { $$ = #[ $1 ]; }
+|       match_exp "and" match_exps  { $$ = #[ $1 ... $3 ]; }
+;
+
+match_exp(MatchExp):	paren_exp   { $$ = MATCHexp(mark($1),0); }
+;
+
+case_or_bar_rules(MatchRules):
+            case_rules  { $$ = $1; }
+|           bar_rules   { $$ = $1; }
+;
+
+case_rules(MatchRules):
+        a_case_rule             { $$ = #[ $1 ]; }
+|       a_case_rule case_rules  { $$ = #[ $1 ... $2 ]; }
+;
+
+bar_rules(MatchRules):
+        a_bar_rule                  { $$ = #[ $1 ]; }
+|       a_bar_rule '|' bar_rules    { $$ = #[ $1 ... $3 ]; }
+;
+
+a_case_rule MatchRule:
+        rewrite_mode case_rule  { $$ = $2; }
+;
+
+a_bar_rule MatchRule:
+        rewrite_mode bar_rule rewrite_mode  { $$ = $2; }
+;
+
+case_rule(MatchRule):
+    case_ top_pat
+        {
+          pv_env.new_scope(! options.nonlinear_patterns);
+          decor(me_stack[me_top],$2,pv_env,match_rule);
+          if (in_rewrite)
+          {
+            decor_rewrite($2,rule_count,pv_env); rule_count++;
+          }
+        }
+    guard_exp cost ':'
+        { start_statement(); }
+    decl_list
+        {
+          end_statement();
+          $$ = MATCHrule(0,$2,pv_env.guard($4),$5,$8);
+          $$->begin_line = $1;
+          $$->mode = rw_stack[rw_top].mode;
+          $$->option = rw_stack[rw_top].option;
+          pv_env.old_scope();
+          match_rule++;
+        }
+;
+
+guard_exp(Exp):         { $$ = NOexp; }
+|       where_or_if exp { $$ = mark($2); }
+;
+
+bar_rule(MatchRule):
+    line_number id_or_cons "->" top_pat
+        {
+          pv_env.new_scope( !in_rewrite && !options.nonlinear_patterns,
+                   in_rewrite,
+                   rw_stack[rw_top].qual & QUALtreeparser);
+          decor( me_stack[ me_top], $4, pv_env, match_rule);
+          if (in_rewrite)
+          {
+            decor_rewrite( $4, rule_count, pv_env);
+            rule_count++;
+          }
+        }
+    guard_exp cost ':' bar_rule_action
+        {
+          $$ = MATCHrule($2,$4,pv_env.guard($6),$7,$9);
+          $$->begin_line = $1;
+          pv_env.old_scope();
+          match_rule++;
+        }
+|   line_number top_pat
+        {
+          pv_env.new_scope( !options.nonlinear_patterns,
+                    in_rewrite,
+                    rw_stack[rw_top].qual & QUALtreeparser);
+          decor( me_stack[me_top], $2, pv_env, match_rule);
+          if (in_rewrite)
+          {
+            decor_rewrite( $2, rule_count, pv_env);
+            rule_count++;
+          }
+        }
+    guard_exp cost ':' bar_rule_action
+        {
+          $$ = MATCHrule( 0, $2, pv_env.guard($4), $5, $7);
+          $$->begin_line = $1;
+          $$->mode = rw_stack[rw_top].mode;
+          $$->option = rw_stack[rw_top].option;
+          pv_env.old_scope();
+          match_rule++;
+        }
+;
+
+line_number(int):   { $$ = line; }
+;
+
+bar_rule_action(Decls):
+        brace_body                      { $$ = $1; }
+|       replacement_decl semi_opt       { $$ = #[ mark($1) ]; }
+|       replacement_exp_decl semi_opt   { $$ = $1; }
+|       return_exp semi_opt             { $$ = $1; }
+|       compound_stmt                   { $$ = #[mark( SETLSTMTdecl($1))]; }
+|           			                { $$ = #[]; }
+;
+
+replacement_exp_decl(Decls):
+    replacement_exp
+    {
+      if (in_rewrite)
+      {
+        $$ = #[ mark(REPLACEMENTdecl($1,rw_stack[rw_top].mode))];
+        rw_stack[rw_top].option |= MatchRuleInfo::REPLACEMENT;
+      }
+      else
+      {
+        $$ = #[ mark(EXPdecl{ prefix = "", exp = $1, suffix = ";" }) ];
+      }
+    }
+;
+
+return_exp(Decls):
+    "return" replacement_exp
+    {
+      $$ = #[ mark(EXPdecl{ prefix = "return ", exp = $2, suffix = ";"}) ];
+    }
+;
+
+semi_opt:   | ';'
+;
+
+replacement_exp(Exp):
+         primitive_app_exp  { $$ = $1; }
+|        list_exp           { $$ = $1; }
+|        '(' exp ')'        { $$ = $2; }
+;
+
+cost(Cost): { $$ = NOcost; }
+|       '\\' exp
+        {
+        match ($2)
+          {
+          LITERALexp (INTlit i):
+            {
+            if (i < 0) error ("%Lnegative cost %i is illegal\n",i);
+            if (i <= 0)
+              $$ = NOcost;
+            else
+              $$ = INTcost(i);
+            }
+          | e: { $$ = EXPcost(e,NOty); }
+          }
+        }
+;
+
+brace_body(Decls):
+    '{'
+        { start_statement(); first_line = line; }
+    decl_list
+        { this->end_statement(); }
+    '}'
+        { $$ = $3; first_line = line; }
+;
+
+begin_end_body Decls:
+    "begin"
+        { start_statement(); first_line = line; }
+    decl_list
+        { this->end_statement(); }
+    "end"
+;
+
+brace_body_opt(Decls):  { $$ = #[]; }
+|           brace_body  { $$ = $1; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Scoping
+//
+///////////////////////////////////////////////////////////////////////////////
+
+scope(Scope):
+        "public"    { $$ = PUBLICscope; }
+|       "protected" { $$ = PROTECTEDscope; }
+|       "private"   { $$ = PRIVATEscope; }
+;
+
+scope_opt(Scope):   { $$ = PUBLICscope; }
+|       scope       { $$ = $1; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Prop declarations
+//
+///////////////////////////////////////////////////////////////////////////////
+decl(Decl):
+	one_decl
+        { $$ = options.emit_code ? mark($1) : NOdecl; end_sc(); }
+|   ATTRIB_ID
+        { $$ = options.emit_code ? EXPdecl(my_exp) : NOdecl; end_sc(); }
+|   "classof" id_or_cons
+        { $$ = options.emit_code ? CLASSOFdecl($2) : NOdecl; end_sc(); }
+|   typeexp_decl
+        { $$ = options.emit_code ? $1 : NOdecl; end_sc(); }
+;
+
+one_decl(Decl):
+    datatype_decl           { $$ = $1; }
+|   type_decl               { $$ = $1; }
+|   refine_decl             { $$ = $1; }
+|   instantiate_decl        { $$ = $1; }
+|   inference_class_decl    { $$ = $1; }
+|   inference_decl          { $$ = $1; }
+// |   constraint_decl      { $$ = $1; }
+|   rewrite_class_decl      { $$ = $1; }
+|   rewrite_decl            { $$ = $1; }
+|   rewriting_decl          { $$ = $1; }
+|   syntax_class_decl       { $$ = $1; }
+|   syntax_decl             { $$ = $1; }
+|   attribgram_class_decl   { $$ = $1; }
+|   attribgram_decl         { $$ = $1; }
+|   fun_decl                { $$ = $1; }
+|   match_decl              { $$ = $1; }
+|   exp_decl                { $$ = $1; }
+|   replacement_decl ';'    { $$ = $1; }
+|   lexeme_decl             { $$ = NOdecl; }
+// |   bitfield_decl        { $$ = $1; }
+|   compound_stmt           { $$ = SETLSTMTdecl($1); }
+|   compound_def            { $$ = SETLDEFdecl($1); }
+|   graph_class_decl        { $$ = $1; }
+|   graph_rewrite_decl      { $$ = $1; }
+//|   dataflow_class_decl   { $$ = $1; }
+//|   dataflow_decl         { $$ = $1; }
+|   ? ';'                   { $$ = NOdecl; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Declaration lists
+//
+///////////////////////////////////////////////////////////////////////////////
+decl_list(Decls):
+        { $$ = mkcode(#[]); }
+|       {
+          if (code_top >= MAX_LEXICAL_DEPTH)
+            bug("code stack overflow");
+          code_stack[code_top++] = mkcode(#[]);
+        }
+    decl decl_list
+        {
+          if (code_top <= 0) bug ("code stack underflow");
+            $$ = code_stack[--code_top];
+          if ($$ == #[])
+            if ($2 == NOdecl)
+              $$ = $3;
+            else
+              $$ = #[ $2 ... $3 ];
+          else
+            if ($2 == NOdecl)
+              $$->_2 = $3;
+            else
+              $$->_2 = #[ $2 ... $3 ];
+        }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Bitfield declaration
+//
+///////////////////////////////////////////////////////////////////////////////
+/*
+ *  Ignore for now
+bitfield_decl(Decl):
+        "bitfield" id '(' integer ')' '=' field_defs opt_field_laws ';'
+        {
+          $$ = BITFIELDdecl''
+                  {
+                    name        = $2,
+                    width       = $4,
+                    field_names = $7,
+                    laws        = $8
+                  };
+        }
+;
+
+field_defs(FieldDefs):
+        field_def                   { $$ = #[ $1 ]; }
+|       field_def '|' field_defs    { $$ = #[ $1 ... $3 ]; }
+;
+
+field_def(FieldDef):
+        id_or_cons '(' integer ':' integer ')' signedness
+        {
+          $$ = FIELDdef''
+                 {
+                   field_name = $1,
+                   from_bit   = $3,
+                   to_bit     = $5,
+                   is_signed  = $7
+                 };
+        }
+|       id_or_cons ty
+        { $$ = FIELDCONdef'' { field_name = $1, ty = $2 }; }
+;
+
+signedness(Bool):
+        "signed"    { $$ = true; }
+|       "unsigned"  { $$ = false; }
+|                   { $$ = false; }
+;
+
+opt_field_laws(FieldLaws):  { $$ = #[]; }
+|       "law" field_laws    { $$ = $2; }
+;
+
+field_laws(FieldLaws):
+        field_law                   { $$ = #[$1]; }
+|       field_law "and" field_laws  { $$ = #[$1 ... $3]; }
+;
+
+field_law(FieldLaw):
+    id
+        { var_top = 0; }
+    patvars guard_exp2 '=' exp
+        {
+          var_top = 0;
+          $$ = FIELDlaw''{ id = $1, args = $3, guard = $4, exp = $6 };
+        }
+;
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Special expression declarations
+//
+///////////////////////////////////////////////////////////////////////////////
+
+exp_decl(Decl):
+        cons_exp    { $$ = EXPdecl($1); }
+|       list_exp    { $$ = EXPdecl($1); }
+|       quark       { $$ = EXPdecl( LITERALexp( QUARKlit($1))); }
+|       bigint      { $$ = EXPdecl( LITERALexp( BIGINTlit($1))); }
+|       meta_exp    { $$ = EXPdecl($1); }
+;
+
+typeexp_decl(Decl):
+        poly_datatype '<' ty_list '>'
+            { $$ = TYPEEXPdecl( TYCONty( IDtycon($1), $3)); }
+|       ".[" ty_list2 ']'
+            { $$ = TYPEEXPdecl( extuplety($2)); }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Datatype declarations
+//
+///////////////////////////////////////////////////////////////////////////////
+
+datatype_decl(Decl):
+    "datatype" datatype_defs0 view_defs_opt law_defs_opt ty_defs_opt ';'
+        { $$ = DATATYPEdecl( $2, $3, $4, $5); }
+;
+
+datatype_defs0(DatatypeDefs):   { $$ = #[]; }
+|       datatype_defs           { $$ = $1; }
+;
+
+datatype_defs(DatatypeDefs):
+        datatype_def                        { $$ = #[ $1 ]; }
+|       datatype_def "and" datatype_defs    { $$ = #[ $1 ... $3 ]; }
+;
+
+datatype_def(DatatypeDef):
+    id tyvars inherit_list_opt qualifiers_opt '='
+        {  // add hook for view accessors expressions
+          if (is_view_def = ($4 & QUALview))
+          {
+            Ty junk_ty = NOty;
+            pv_env.new_scope();
+            pv_env.add( #"this", RELexp(0), junk_ty);
+          }
+        }
+    switch_exp
+    terms
+        {
+          var_top = 0;
+          if (is_view_def) // view accessors
+          {
+            pv_env.old_scope();
+            is_view_def = false;
+          }
+        }
+    datatype_body
+        {
+          $$ = DATATYPEdef( $1, $2, $3, $4, $8, $10);
+          compiler->preprocess_def($$);
+          match ($$)
+          {
+          DATATYPEdef( _, _, _, _, terms, _):
+      		{
+      		  add_datatype( $$->loc(), $1, $2, $3, $4, $7, terms, $10);
+      		}
+          }
+        }
+|   id tyvars inherit_list_opt qualifiers_opt
+        { $$ = DATATYPEdef( $1, $2, $3, $4, #[], #[]); var_top = 0; }
+;
+
+switch_exp(Exp):            { $$ = NOexp; }
+|        "match" paren_exp  { $$ = $2; }
+;
+
+datatype_body(Decls):           { $$ = #[]; }
+|       scope ':' brace_body    { $$ = $3; }
+;
+
+tyvars(TyVars):             { $$ = #[]; }
+|       '<' var_list '>'    { $$ = $2; }
+;
+
+var(TyVar):	id
+        {
+          $$ = var_stack[var_top] = $1;
+          pat_stack[var_top] = NOpat;
+          var_top++;
+        }
+;
+
+var_list0(TyVars):  { $$ = #[]; }
+|       var_list    { $$ = $1; }
+;
+
+var_list(TyVars):
+        var                 { $$ = #[ $1 ]; }
+|       var ',' var_list    { $$ = #[ $1 ... $3 ]; }
+;
+
+terms(TermDefs):    { $$ = #[]; }
+|       terms1      { $$ = $1; }
+;
+
+terms1(TermDefs):
+        term                { $$ = $1; }
+|       term '|' terms1     { $$ = append($1,$3); }
+;
+
+term(TermDefs):
+	'_' inherit_list_opt opt_with
+        { $$ = #[TERMdef{id = 0, inherits = $2, ty = NOty, decls = $3}]; }
+|   simple_term inherit_list_opt opt_with view_predicate
+        {
+          $1->inherits = $2;
+          $1->decls = $3;
+          if ($1->view_predicate == NOexp)
+            $1->view_predicate = $4;
+          $$ = #[$1];
+        }
+|   simple_term inherit_list_opt "=>" print_formats opt_with view_predicate
+        {
+          $1->inherits = $2;
+          $1->decls = $5;
+          $1->print_formats = $4;
+          Used::printer = true;
+          if ($1->view_predicate == NOexp)
+            $1->view_predicate = $6;
+          $$ = #[$1];
+        }
+|       lexeme_ "class" id
+        { $$ = lookup_lexeme_class($3); }
+;
+
+view_predicate(Exp):        { $$ = NOexp; }
+|       "if" app_exp        { $$ = $2; }
+;
+
+opt_with(Decls):            { $$ = #[]; }
+|       "with" brace_body   { $$ = $2; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Datatype terms.
+//
+///////////////////////////////////////////////////////////////////////////////
+simple_term(TermDef):
+    simple_term1                { $$ = $1; }
+|   simple_term1 '!'            { $$ = $1; $$->opt = OPTunboxed; }
+|   "view" exp "=>" simple_term { $$ = $4; $$->view_predicate = $2; }
+|   "virtual" simple_term       { $$ = $2; $$->qual |= QUALvirtualdestr; }
+;
+
+simple_term1(TermDef):
+    id_or_cons          { $$ = TERMdef''{ id = $1, ty = NOty }; }
+|   id_or_cons string
+        {
+          $$ = TERMdef''
+                {
+                  id = $1,
+                  ty = NOty,
+                  pat = LITERALpat(STRINGlit($2))
+                };
+        }
+|   id_or_cons regexp
+        {
+          $$ = TERMdef''
+                {
+                  id = $1,
+                  ty = NOty,
+                  pat = mk_regexp_pat($2)
+                };
+        }
+|   id_or_cons "<=>" string
+        {
+          $$ = TERMdef''
+                {
+                  id = $1,
+                  ty = NOty,
+                  pat = LITERALpat(STRINGlit($3)),
+                  print_formats = #[TERMSTRINGsym($3)]
+                };
+          Used::printer = true;
+        }
+|   string
+        {
+          $$ = TERMdef''
+                {
+                  id = $1,
+                  ty = NOty,
+                  print_formats = #[TERMSTRINGsym($1)]
+                };
+          Used::printer = true;
+        }
+|   cons_or_string opt_of ty        { $$ = TERMdef''{ id = $1, ty = $3 }; }
+|   cons_or_string opt_of ty_list2  { $$ = TERMdef''{ id = $1, ty = mktuplety($3) }; }
+|   '#' '[' ']'                     { $$ = TERMdef''{ id = "#[]", ty = NOty }; }
+|   '#' '(' ')'                     { $$ = TERMdef''{ id = "#()", ty = NOty }; }
+|   '#' '{' '}'                     { $$ = TERMdef''{ id = "#{}", ty = NOty }; }
+|   '#' '[' ty "..." ty ']'         { $$ = mklistterm( "#[...]", $3, $5, #[]); }
+|   '#' '(' ty "..." ty ')'         { $$ = mklistterm( "#(...)", $3, $5, #[]); }
+|   '#' '{' ty "..." ty '}'         { $$ = mklistterm( "#{...}", $3, $5, #[]); }
+|   "[|" ty "|]"		{ $$ = TERMdef''{ id = "[|...|]", ty = $2}; }
+|   "(|" ty "|)"		{ $$ = TERMdef''{ id = "(|...|)", ty = $2}; }
+|   "{|" ty "|}"		{ $$ = TERMdef''{ id = "{|...|}", ty = $2}; }
+;
+
+opt_of:
+|       "of"
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty printing formats
+//
+///////////////////////////////////////////////////////////////////////////////
+
+print_formats(PrintFormats):        { $$ = #[]; }
+|       print_format print_formats  { $$ = #[ $1 ... $2 ]; }
+;
+
+print_format ProductionSymbol:
+        integer                 { $$ = POSNONTERMsym($1); }
+|       id                      { $$ = NONTERMsym($1); }
+|       string                  { $$ = TERMSTRINGsym($1); }
+|       character               { $$ = TERMsym($1); }
+|       special_print_format    { $$ = SPECIALsym($1); }
+;
+
+special_print_format(char):
+        '{'     { $$ = '{'; }
+|       '}'     { $$ = '}'; }
+|       '('     { $$ = '('; }
+|       ')'     { $$ = ')'; }
+|       '['     { $$ = '['; }
+|       ']'     { $$ = ']'; }
+|       '^'     { $$ = '^'; }
+|       '_'     { $$ = '_'; }
+|       '/'     { $$ = '/'; }
+;
+
+ty_defs_opt(TyDefs):                { $$ = #[]; }
+|       "where" "type" type_defs    { $$ = $3; }
+;
+
+type_decl(Decl): "type" type_defs ';'   { $$ = DATATYPEdecl( #[], #[], #[], $2); }
+;
+
+type_defs(TyDefs):
+        type_def                        { $$ = #[ $1 ]; }
+|       type_def and_or_bar type_defs   { $$ = #[ $1 ... $3 ]; }
+;
+
+type_def(TyDef):
+        sharing_opt id tyvars '=' ty
+        {
+          $$ = TYdef( $2, $3, $5, $1);
+          add_type( $2, $3, $5);
+          var_top = 0;
+        }
+;
+
+sharing_opt(Bool):  { $$ = true; }
+|       "sharing"   { $$ = false; }
+;
+
+view_defs_opt(ViewDefs):            { $$ = #[]; }
+|       "type" "view" id view_defs  { $$ = $4; }
+;
+
+view_defs(ViewDefs):
+        view_def                { $$ = #[ $1 ]; }
+|       view_def '|' view_defs  { $$ = #[ $1 ... $3 ]; }
+;
+
+view_def(ViewDef):
+        { pv_env.new_scope(! options.nonlinear_patterns); }
+    simple_pat ':' app_exp selectors_opt
+        {
+          $$ = VIEWdef( $2, $4, $5);
+          pv_env.old_scope();
+        }
+;
+
+selectors_opt(LabExps): { $$ = #[]; }
+|       "and" selectors { $$ = $2; }
+;
+
+selectors(LabExps):
+        selector                    { $$ = #[ $1 ]; }
+|       selector "and" selectors    { $$ = #[ $1 ... $3 ]; }
+;
+
+selector(LabExp):
+        id '=' app_exp  { $$.label = $1; $$.exp = $3; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pattern law definitions
+//
+///////////////////////////////////////////////////////////////////////////////
+
+law_defs_opt(LawDefs):  { $$ = #[]; }
+|       "law" law_defs  { $$ = $2; }
+;
+
+law_defs(LawDefs):
+        law_def                     { $$ = #[ $1 ]; }
+|       law_def and_or_bar law_defs { $$ = #[ $1 ... $3 ]; }
+;
+
+and_or_bar:	"and" | '|'
+;
+
+law_def(LawDef):
+    invertible
+    id
+        { var_top = 0; }
+    patvars guard_exp2 '=' pat
+        {
+          $$ = LAWdef''
+                  {
+                    id = $2,
+                    args = $4,
+                    guard = $5,
+                    pat = $7,
+                    invert = $1
+                  };
+          var_top = 0;
+          DatatypeCompiler::add_law($$);
+        }
+;
+
+invertible(Bool):
+	"inline"    { $$ = true; }
+|          		{ $$ = false; }
+;
+
+guard_exp2(Exp):                { $$ = NOexp; }
+|       where_or_if paren_exp   { $$ = $2; }
+;
+
+patvars(TyVars):            { $$ = #[]; }
+|       var_list            { $$ = $1; }
+|       '(' var_list0 ')'   { $$ = $2; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Datatype refinement declarations.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+refine_decl(Decl):
+        "refine" refine_defs ';'    { $$ = NOdecl; }
+;
+
+refine_defs:
+        refine_def
+|       refine_def "and" refine_defs
+;
+
+refine_def:
+	refine_ty_list inherit_list_opt qualifiers_opt brace_body_opt
+        {
+          for_each (RefineTyDecl, r, $1)
+          {
+            match (r)
+            {
+            REFINEtype( id, tys):
+              { update_datatype( id, tys, $2, $3, $4); }
+            }
+          }
+        }
+|   refine_cons_list inherit_list_opt brace_body_opt
+        {
+          for_each (RefineConsDecl, r, $1)
+          {
+            match (r)
+            {
+            REFINEconstructor( c, tys):
+              { if (c) update_constructor( c->name, tys, $2, #[], $3); }
+            }
+          }
+        }
+|   printable_ printing_decls { }
+|   persistent_ persistent_decls { }
+|   "class" id_or_cons "::" id_or_cons '(' ')' brace_body
+        {
+          ClassDefinition::add_constructor_code( $2, $4, $7);
+        }
+|   "class" id_or_cons "::" '~' id_or_cons '(' ')' brace_body
+        {
+          ClassDefinition::add_destructor_code( $2, $5, $8);
+        }
+;
+
+refine_ty(RefineTyDecl):
+        id tyvars { $$ = REFINEtype( $1, $2); var_top = 0; }
+;
+
+refine_ty_list(RefineTyDecls):
+        refine_ty                       { $$ = #[ $1 ]; }
+|       refine_ty ',' refine_ty_list    { $$ = #[ $1 ... $3 ]; }
+;
+
+refine_cons(RefineConsDecl):
+        complex_cons ty_args { $$ = REFINEconstructor( $1, $2); }
+;
+
+refine_cons_list(RefineConsDecls):
+        refine_cons                         { $$ = #[ $1 ]; }
+|       refine_cons ',' refine_cons_list    { $$ = #[ $1 ... $3 ]; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty printing declarations.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+printing_decls:	printing_decl
+|       printing_decl '|' printing_decls
+;
+
+printing_decl:	complex_cons ty_args "=>" print_formats
+        { if ($1) update_constructor( $1->name, $2, #[], $4, #[]); }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Persistence ID definition
+//
+///////////////////////////////////////////////////////////////////////////////
+
+persistent_decls: persistent_decl
+|         persistent_decl '|' persistent_decls
+;
+
+persistent_decl:
+        id ty_args "=>" pid { update_persistent( $1, $2, $4); }
+;
+
+pid(Pid):
+        string  { $$ = PERSISTid($1); }
+;
+
+inherit_list_opt(Inherits): { $$ = #[]; }
+|       ':' inherit_list    { $$ = $2; }
+;
+
+inherit_list(Inherits):
+        inherit                     { $$ = #[ $1 ]; }
+|       inherit ',' inherit_list    { $$ = #[ $1 ... $3 ]; }
+;
+
+inherit(Inherit):
+        qualifiers scope_opt inherit_ty
+        {
+          $$ = INHERIT'
+                  {
+                    qualifiers = $1,
+                    scope = $2,
+                    super_class = $3
+                  };
+        }
+;
+
+qualifiers_opt(TyQual):     { $$ = 0; }
+|       '!' qualifiers_opt  { $$ = $2 | QUALtaggedpointer; }
+|       "::" qualifiers     { $$ = $2; }
+;
+
+qualifiers(TyQual):             { $$ = 0; }
+|       qualifier qualifiers    { $$ = $1 | $2; }
+;
+
+qualifier(TyQual):
+        printable_      { $$ = QUALprintable; }
+|       collectable_    { $$ = QUALcollectable | QUALvirtualdestr; }
+|       lexeme_         { $$ = QUALlexeme; }
+|       finalizable_    { $$ = QUALfinalizable | QUALcollectable | QUALvirtualdestr; }
+|       rewrite_        { $$ = QUALrewritable; }
+|       persistent_     { $$ = QUALpersistent | QUALvirtualdestr; }
+|       traced_         { $$ = QUALtracable; }
+|       unifiable_      { $$ = QUALunifiable; }
+|       "relation"      { $$ = QUALrelation | QUALvirtualdestr; Used::infer = true; }
+|       "virtual"       { $$ = QUALvirtual; }
+|       "const"         { $$ = QUALconst; }
+|       "applicative"   { $$ = QUALapplicative; }
+|       "treeparser"    { $$ = QUALtreeparser; }
+|       "view"          { $$ = QUALview; }
+|       "bitfield"      { $$ = QUALbitfield; }
+|       "inline"        { $$ = QUALinline; }
+|       "extern"        { $$ = QUALextern; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Datatype instantiation declaration
+//
+///////////////////////////////////////////////////////////////////////////////
+
+instantiate_decl(Decl):
+	"instantiate" extern_opt "datatype" ty_list ';'
+        { $$ = INSTANTIATEdecl($2,$4); }
+;
+
+extern_opt(Bool):   { $$ = false; }
+|       "extern"    { $$ = true; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Inference class declaration
+//
+///////////////////////////////////////////////////////////////////////////////
+
+inference_class_decl(Decl):
+    inference_ "class" id
+    inherit_list_opt qualifiers_opt brace_body ';'
+        { $$ = CLASSDEFdecl(new InferenceClass($3,$4,$5,$6)); }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Inference declaration
+//
+///////////////////////////////////////////////////////////////////////////////
+
+inference_decl(Decl):
+	inference_ id '{' inference_rules '}' ';'
+        { $$ = INFERENCEdecl($2,$4); }
+;
+
+inference_rules(InferenceRules):        { $$ = #[]; }
+|       inference_rule inference_rules  { $$ = #[ $1 ... $2 ]; }
+;
+
+inference_rule(InferenceRule):
+        {
+          antecedent_count = 0;
+          me_stack[++me_top] = #[];
+          pv_env.new_scope(! options.nonlinear_patterns, true);
+        }
+    antecedents LONG_BAR conclusions ';'
+        {
+          $$ = INFERENCErule($2, pv_env.guard(), $4);
+          me_top--;
+          pv_env.old_scope();
+        }
+;
+
+antecedents(MatchRules):    { $$ = #[]; }
+|       antecedents2        { $$ = $1; }
+;
+
+antecedents2(MatchRules):
+        antecedent                      { $$ = #[ $1 ]; }
+|       antecedent "and" antecedents2   { $$ = #[ $1 ... $3 ]; }
+;
+
+antecedent(MatchRule):
+    simple_antecedent
+        { $$ = $1; $$->negated = false; $$->rewriting = false; }
+|   "match" simple_antecedent
+        { $$ = $2; $$->negated = false; $$->rewriting = true; }
+|   '~' simple_antecedent
+        { $$ = $2; $$->negated = true; $$->rewriting = false; }
+;
+
+simple_antecedent(MatchRule):
+ 	pat
+        {
+          me_stack[me_top] = #[];
+          decor( me_stack[me_top], $1, pv_env, match_rule, antecedent_count);
+          $$ = MATCHrule( 0, $1, NOexp, NOcost, #[]);
+          $$->ty = NOty;
+          antecedent_count++;
+        }
+|   pat where_or_if
+        {
+          me_stack[me_top] = #[];
+          decor( me_stack[me_top], $1, pv_env, match_rule, antecedent_count);
+        }
+    exp
+        {
+          $$ = MATCHrule( 0, $1, $4, NOcost, #[]);
+          $$->ty = NOty;
+          antecedent_count++;
+        }
+;
+
+conclusions(Conclusions):
+        conclusion                      { $$ = #[ $1 ]; }
+|       conclusion "and" conclusions    { $$ = #[ $1 ... $3 ]; }
+;
+
+conclusion(Conclusion):
+     	primitive_app_exp       { $$ = ASSERTaction($1); }
+|    	'~' primitive_app_exp   { $$ = RETRACTaction($2); }
+|       brace_body              { $$ = STMTaction($1); }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Syntax class declaration
+//
+///////////////////////////////////////////////////////////////////////////////
+
+syntax_class_decl(Decl):
+    syntax_ "class" id inherit_list_opt qualifiers_opt brace_body ';'
+        {
+          $$ = CLASSDEFdecl(
+             new SyntaxClass( ClassDefinition::SYNTAX_CLASS, $3, $4, $5, $6));
+        }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Syntax declaration
+//
+///////////////////////////////////////////////////////////////////////////////
+
+syntax_decl(Decl):
+	syntax_ id
+        { symbol_count = 0; }
+    '{'
+    prec_rules expect_
+        { symbol_count = 0; }
+    bnf_rules
+    '}' ';'
+        { $$ = SYNTAXdecl( $2, EXPgram( $5, $6, $8)); }
+;
+
+prec_rules(PrecRules):              { $$ = #[]; }
+|           prec_rule prec_rules    { $$ = #[ $1 ... $2 ]; }
+;
+
+prec_rule(PrecRule):
+    "left:" integer production ';'
+        { $$ = PRECrule( LEFTassoc, $2, $3); }
+|   "right:" integer production ';'
+        { $$ = PRECrule( RIGHTassoc, $2, $3); }
+;
+
+expect_(int):               { $$ = -1; }
+|   "expect:" integer ';'   { $$ = $2; }
+|   "expect:" '_' ';'       { $$ = -2; }
+;
+
+bnf_rules(BNFs):
+                            { $$ = #[]; }
+|       bnf_rule bnf_rules  { $$ = #[ $1 ... $2 ]; }
+;
+
+bnf_rule(BNF):
+    line_number id ty_opt ':' alt_productions ';'
+        {  $$ = BNFrule( $2, $3, $5); $$->begin_line = $1; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Attribute grammar class declaration
+//
+///////////////////////////////////////////////////////////////////////////////
+
+attribgram_class_decl Decl:
+    "attributegrammar" "class" id inherit_list_opt qualifiers_opt brace_body ';'
+    {
+      Used::parser = true;
+      $$ = CLASSDEFdecl( new AttributeGrammarClass( $3, $4, $5, $6));
+    }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Attribute grammar declaration
+//
+///////////////////////////////////////////////////////////////////////////////
+
+attribgram_decl Decl:
+	"attributegrammar" id
+        { symbol_count = 0; }
+    '{' prec_rules expect_
+        { symbol_count = 0; }
+    bnf_rules
+    '}' ';'
+        { $$ = ATTRIBUTEGRAMMARdecl( $2, EXPgram( $5, $6, $8)); }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//   Lexeme declaration
+//
+///////////////////////////////////////////////////////////////////////////////
+
+lexeme_decl:
+    lexeme_ lexeme_rules ';' { }
+|   lexeme_ "class" lexeme_class_rules ';' { }
+;
+
+lexeme_rules:
+    lexeme_rule { }
+|   lexeme_rule and_or_bar lexeme_rules { }
+;
+
+lexeme_rule:
+    id '=' string_pat
+        { update_lexeme( $1, #[], $3); }
+;
+
+lexeme_class_rules:	lexeme_class_rule { }
+|   lexeme_class_rule "and" lexeme_class_rules { }
+;
+
+lexeme_class_rule:
+	id '=' terms
+        { update_lexeme_class( $1, $3); }
+;
+
+ty_opt(Ty):     { $$ = NOty; }
+|           ty  { $$ = $1; }
+;
+
+alt_productions(List<ProductionSymbols>):
+        production                      { $$ = #[ $1 ]; }
+|       production '|' alt_productions  { $$ = #[ $1 ... $3 ]; }
+;
+
+production(ProductionSymbols):
+        {
+          pv_env.new_scope();
+          ++symbol_count;
+          item_count = 0;
+          nonterm_count = 0;
+          add_parse_stack_binding(0,symbol_count,0);
+        }
+    a_production
+        {
+          $$ = $2;
+          pv_env.old_scope();
+        }
+;
+
+a_production(ProductionSymbols):
+        { $$ = #[]; }
+|       { ++symbol_count; ++item_count; }
+        symbol a_production { $$ = #[ $2 ... $3 ]; }
+;
+
+symbol(ProductionSymbol):
+    id
+        {
+          $$ = NONTERMsym($1);
+          ++nonterm_count;
+          add_parse_stack_binding(item_count,symbol_count,nonterm_count);
+        }
+|   cons            { $$ = TOKENsym($1); }
+|   character       { $$ = TERMsym($1); }
+|   string          { $$ = TOKENsym(lookup_token($1)); }
+|   regexp          { $$ = TERMREGEXPsym($1); }
+|   paren_exp       { ++nonterm_count; $$ = PREDICATEsym($1); }
+|   brace_body      { ++nonterm_count; $$ = ACTIONsym($1); }
+|   '?'             { $$ = ERRORsym(); }
+|   "prec:" cons    { $$ = PRECsym($2); }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Rewriting class declaration
+//
+///////////////////////////////////////////////////////////////////////////////
+
+rewrite_class_decl(Decl):
+    rewrite_ "class" id '(' protocols ')'
+    inherit_list_opt
+    qualifiers_opt
+    brace_body ';'
+        { $$ = CLASSDEFdecl( new RewriteClass( $3, $5, $7, $8, $9)); }
+;
+
+protocols_opt(Protocols):       { $$ = #[]; }
+|           '(' protocols ')'   { $$ = $2; }
+;
+
+protocols(Protocols):
+        protocol                { $$ = #[ $1 ]; }
+|       protocol ',' protocols  { $$ = #[ $1 ... $3 ]; }
+;
+
+protocol(Protocol):
+    ty inherited_opt synthesized_opt
+        { $$ = PROTOCOL( $1, $2, $3); }
+;
+
+inherited_opt(Ty):
+                    { $$ = NOty; }
+|   "inherited" ty  { $$ = $2; }
+;
+
+synthesized_opt(Ty):
+                            { $$ = NOty; }
+|       "synthesized" ty    { $$ = $2; }
+|       ':' ty              { $$ = $2; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//   Rewriting declaration
+//
+///////////////////////////////////////////////////////////////////////////////
+
+rewrite_decl(Decl):
+	rewrite_ id
+        {
+          in_rewrite = true;
+          rule_count = 0;
+          push_rw_stack();
+          ClassDefinition * C =
+                  ClassDefinition::lookup_class(
+                    ClassDefinition::REWRITE_CLASS, $2
+                    );
+          if (C) rw_stack[rw_top].qual = C->qualifiers;
+          me_stack[++me_top] = #[ MATCHexp(IDexp("redex"),0) ];
+        }
+    '{' rewrite_indexings case_or_bar_rules '}' ';'
+        {
+          $$ = REWRITEdecl($2,$5,$6);
+          in_rewrite = false; me_top--;
+          pop_rw_stack();
+        }
+;
+
+rewriting_decl(Decl):
+	rewrite_ paren_exp opt_dest "type" '(' protocols ')' qualifiers_opt
+        {
+          in_rewrite = true;
+          rule_count = 0;
+          me_stack[++me_top] = #[ MATCHexp(IDexp("redex"),0) ];
+          push_rw_stack();
+          rw_stack[rw_top].qual = $8;
+        }
+    '{' rewrite_indexings case_or_bar_rules '}'
+        {
+          $$ = REWRITINGdecl($6,$2,$3,$11,$12,$8);
+          in_rewrite = false; me_top--;
+          pop_rw_stack();
+        }
+|   rewrite_ paren_exp opt_dest "type" '(' protocols ')' qualifiers_opt
+        {
+          in_rewrite = true;
+          rule_count = 0;
+          me_stack[++me_top] = #[ MATCHexp(IDexp("redex"),0) ];
+          push_rw_stack();
+          rw_stack[rw_top].qual = $8;
+        }
+    "of" rewrite_indexings case_or_bar_rules "end" "rewrite" ';'
+        {
+          $$ = REWRITINGdecl($6,$2,$3,$11,$12,$8);
+          in_rewrite = false; me_top--;
+          pop_rw_stack();
+        }
+;
+
+rewrite_indexings RewriteIndexings:
+ 	"index:" rewrite_indices ';'    { $$ = $2; }
+|                                   { $$ = #[]; }
+;
+
+rewrite_indices RewriteIndexings:
+    rewrite_index                       { $$ = #[$1]; }
+|   rewrite_index ',' rewrite_indices   { $$ = #[$1 ... $3]; }
+;
+
+rewrite_index RewriteIndexing *:
+    simple_ty '=' id_or_cons
+        { $$ = new RewriteIndexing($1,$3,false); }
+|   simple_ty '=' "extern" id_or_cons
+        { $$ = new RewriteIndexing($1,$4,true); }
+;
+
+opt_dest(Exp):      { $$ = NOexp; }
+|       "=>" exp    { $$ = $2; }
+;
+
+replacement_decl(Decl):
+    rewrite_ paren_exp
+        {
+          if (in_rewrite)
+          {
+ 	        $$ = REPLACEMENTdecl($2,rw_stack[rw_top].mode);
+            rw_stack[rw_top].option |= MatchRuleInfo::REPLACEMENT;
+          }
+          else
+          {
+            error("%Lreplacement not in rewrite class: rewrite %e\n",$2);
+            $$ = NOdecl;
+          }
+        }
+|   "cutrewrite" paren_exp
+        {
+          $$ = CUTREWRITEdecl($2,rw_stack[rw_top].mode);
+          rw_stack[rw_top].option |= MatchRuleInfo::CUTREWRITE;
+        }
+|   "cutrewrite"
+        {
+          $$ = CUTREWRITEdecl(NOexp,rw_stack[rw_top].mode);
+          rw_stack[rw_top].option |= MatchRuleInfo::CUTREWRITE;
+        }
+|   "failrewrite"
+    {
+        $$ = FAILREWRITEdecl(rw_stack[rw_top].mode);
+        rw_stack[rw_top].option |= MatchRuleInfo::FAILREWRITE;
+    }
+;
+
+rewrite_mode:
+|   "topdown:"      { rw_stack[rw_top].mode = MatchRuleInfo::TOPDOWN; }
+|   "bottomup:"     { rw_stack[rw_top].mode = MatchRuleInfo::BOTTOMUP; }
+|   "before:"       { rw_stack[rw_top].mode = MatchRuleInfo::BEFORE; }
+|   "preorder:"     { rw_stack[rw_top].mode = MatchRuleInfo::PREORDER; }
+|   "postorder:"    { rw_stack[rw_top].mode = MatchRuleInfo::POSTORDER; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//   Function declaration
+//
+///////////////////////////////////////////////////////////////////////////////
+
+fun_decl(Decl):
+    "fun" fun_rules_list ';'    { $$ = FUNdecl($2); }
+;
+
+fun_rules_list(FunDefs):
+    this_fun_rules
+        { $$ = #[ FUNdef( $1.id, NOty, $1.return_ty, $1.rules) ]; }
+|   this_fun_rules "and" fun_rules_list
+        { $$ = #[ FUNdef( $1.id, NOty, $1.return_ty, $1.rules) ... $3 ]; }
+;
+
+this_fun_rules(LabMatchRules):
+        { me_stack[++me_top] = #[]; }
+    fun_rules
+        { $$ = $2; me_top--; }
+;
+
+fun_rules(LabMatchRules):
+    fun_rule
+        {
+          $$.id = $1.id; $$.rules = #[ $1.rule ];
+          $$.return_ty = $1.return_ty;
+        }
+|   fun_rule '|' fun_rules
+        {
+          $$.id = $1.id; $$.rules = #[ $1.rule ... $3.rules ];
+          if ($1.return_ty == NOty)
+            $$.return_ty = $3.return_ty;
+          else if ($3.return_ty == NOty)
+            $$.return_ty = $1.return_ty;
+          else
+          {
+            if ( !unify( $1.return_ty, $3.return_ty))
+              error( "%Ltype mismatch in rule %r\n"
+                     "%Lexpecting %T but found %T\n",
+                     $1.rule, $1.return_ty, $3.return_ty);
+            $$.return_ty = $1.return_ty;
+          }
+          if (! qualid_equal($1.id, $3.id))
+            error( "%Lfunction name mismatch: expecting %q ...\n"
+                   "%Lbut found %q %r\n",
+                   $1.id, $3.id, $1.rule);
+        }
+;
+
+
+fun_rule_head(QualIdPat):
+    qual_id top_pat
+        {
+          pv_env.new_scope( !options.nonlinear_patterns);
+          decor( me_stack[me_top], $2, pv_env, match_rule);
+          $$.label = $1; $$.pat = $2;
+        }
+;
+
+fun_rule(LabMatchRule):
+    fun_rule_head ':' return_ty where_or_if exp ':' fun_action
+        {
+          $$.id = $1.label;
+          $$.rule = MATCHrule( 0, $1.pat, $5, NOcost, $7);
+          $$.return_ty = $3;
+          pv_env.old_scope();
+        }
+|   fun_rule_head where_or_if exp ':' fun_action
+        {
+          $$.id = $1.label;
+          $$.rule = MATCHrule(0,$1.pat, $3, NOcost, $5);
+          $$.return_ty = NOty;
+          pv_env.old_scope();
+        }
+|   fun_rule_head ':' return_ty ':' fun_action
+        {
+          $$.id = $1.label;
+          $$.rule = MATCHrule(0,$1.pat, NOexp, NOcost, $5);
+          $$.return_ty = $3;
+          pv_env.old_scope();
+        }
+|   fun_rule_head ':' fun_action
+        {
+          $$.id = $1.label;
+          $$.rule = MATCHrule(0,$1.pat, NOexp, NOcost, $3);
+          $$.return_ty = NOty;
+          pv_env.old_scope();
+        }
+;
+
+fun_action(Decls):
+	brace_body      { $$ = $1; }
+|   return_exp      { $$ = $1; }
+//| replacement_exp_decl    { $$ = $1; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Definitions
+//
+///////////////////////////////////////////////////////////////////////////////
+
+def(Def):
+	id ':' ty ';'
+        { $$ = VARdef'{ id = $1, ty = $3 }; }
+|   id ':' ty ":=" exp ';'
+        { $$ = VARdef'{ id = $1, ty = $3, init_exp = $5 }; }
+|   datatype_decl
+        { $$ = TYPEdef($1); }
+|   type_decl
+        { $$ = TYPEdef($1); }
+|   compound_def
+        { $$ = $1; }
+;
+
+compound_def(Def):
+	function_def    { $$ = $1; }
+|   module_def      { $$ = $1; }
+|   signature_def   { $$ = $1; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Function/procedure definition
+//
+///////////////////////////////////////////////////////////////////////////////
+
+function_def(Def):
+    "function" cons_or_string '(' fun_args ')' "return" ty "is"
+    defs "begin" stmt_list "end" ';'
+        {
+          $$ = FUNCTIONdef'
+                {
+                  id         = $2,
+                  args       = $4,
+                  return_ty  = $7,
+                  local_defs = $9,
+                  body       = $11
+                };
+        }
+
+|   "procedure" cons_or_string '(' fun_args ')' "is"
+    defs "begin" stmt_list "end" ';'
+        {
+          $$ = FUNCTIONdef'
+                {
+                  id         = $2,
+                  args       = $4,
+                  return_ty  = void_ty,
+                  local_defs = $7,
+                  body       = $9
+                };
+        }
+;
+
+fun_args LabTys:    { $$ = #[]; }
+|       fun_args1   { $$ = $1; }
+;
+
+fun_args1 LabTys:
+	fun_arg                 { $$ = #[$1]; }
+|   fun_arg ',' fun_args    { $$ = #[$1 ... $3]; }
+;
+
+fun_arg(LabTy):
+        id ':' ty   { $$.label = $1; $$.ty = $3; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Module definition
+//
+///////////////////////////////////////////////////////////////////////////////
+
+module_def(Def):
+	"module" cons_or_string module_args module_sig "is"
+	"begin" defs "end" ';'
+        {
+          $$ = MODULEdef'
+                {
+                  id   = $2,
+                  args = $3,
+                  sig  = $4,
+                  body = $7
+                };
+        }
+;
+
+module_args(LabSigs):           { $$ = #[]; }
+|       '(' labeled_sigs ')'    { $$ = $2; }
+;
+
+labeled_sigs(LabSigs):
+	    labeled_sig                     { $$ = #[$1]; }
+|       labeled_sig ',' labeled_sigs    { $$ = #[$1 ... $3]; }
+;
+
+labeled_sig(LabSig):
+        id ':' sig { $$.id = $1; $$.sig = $3; }
+;
+
+module_sig(Sig):    { $$ = NOsig; }
+|       ':' sig     { $$ = $2; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Signature definition
+//
+///////////////////////////////////////////////////////////////////////////////
+
+signature_def(Def):
+	"signature" cons_or_string module_args "is" sig ';'
+        { $$ = SIGNATUREdef'{ id = $2, args = $3, sig  = $5}; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Signature expression
+//
+///////////////////////////////////////////////////////////////////////////////
+
+sig(Sig):
+        id                  { $$ = IDsig($1); }
+|       sig '(' sigs ')'    { $$ = APPsig($1,$3); }
+|       sig '.' id          { $$ = DOTsig($1,$3); }
+|       "begin" defs "end"  { $$ = DEFsig($2); }
+;
+
+sigs(Sigs):
+	    sig             { $$ = #[$1]; }
+|       sig ',' sigs    { $$ = #[$1 ... $3]; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Definition lists
+//
+///////////////////////////////////////////////////////////////////////////////
+defs(Defs):         { $$ = #[]; }
+|       def defs    { $$ = #[$1 ... $2]; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Statements
+//
+///////////////////////////////////////////////////////////////////////////////
+
+stmt(Stmt):
+ 	exp ":=" exp ';'
+        { $$ = ASSIGNstmt($1,$3); }
+|   "while" exp "loop" stmt_list "end" "loop" ';'
+        { $$ = WHILEstmt($2,BLOCKstmt(#[],$4)); }
+|   "if" exp "then" stmt_list else_clause ';'
+        { $$ = IFstmt($2,BLOCKstmt(#[],$4),$5); }
+|   "forall" generator_list "loop" stmt_list "end" "loop" ';'
+        { $$ = FORALLstmt($2,BLOCKstmt(#[],$4)); }
+|   "return" exp ';'
+        { $$ = RETURNstmt($2); }
+|   match_decl
+        { $$ = MATCHstmt($1); }
+|   rewriting_decl
+        { $$ = REWRITEstmt($1); }
+|   replacement_decl ';'
+        { $$ = REPLACEMENTstmt($1); }
+|   compound_stmt
+        { $$ = $1; }
+;
+
+else_clause(Stmt):
+ 	"end" "if"
+        { $$ = NOstmt; }
+|   "else" stmt_list "end" "if"
+        { $$ = BLOCKstmt(#[],$2); }
+|   "elsif" exp "then" stmt_list else_clause
+        { $$ = IFstmt($2,BLOCKstmt(#[],$4),$5); }
+;
+
+stmt_list(Stmts):
+    stmt            { $$ = #[$1]; }
+|   stmt stmt_list  { $$ = #[$1 ... $2]; }
+;
+
+compound_stmt(Stmt):
+    "begin" stmt_list "end"	';'
+        { $$ = BLOCKstmt( #[], $2); }
+|   "declare" defs "begin" stmt_list "end" ';'
+        { $$ = BLOCKstmt( $2, $4); }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Generators
+//
+///////////////////////////////////////////////////////////////////////////////
+
+generator_list(Generators):
+    generator                       { $$ = #[$1]; }
+|   generator ',' generator_list    { $$ = #[$1 ... $3]; }
+;
+
+generator(Generator):
+	pat guard_exp "<-" exp
+        { $$ = GENERATOR'{ pat = $1, guard = $2, exp = $4 }; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  SETL-style collection types
+//
+///////////////////////////////////////////////////////////////////////////////
+
+setl_ty(Ty):
+	"listof" '<' ty '>'             { $$ = mklistty($3); }
+|   "tupleof" '<' ty_list2 '>'      { $$ = mktuplety($3); }
+|   "setof" '<' ty '>'              { $$ = mksetty($3); }
+|   "bagof" '<' ty '>'              { $$ = mkbagty($3); }
+|   "mapof" '<' ty ',' ty '>'       { $$ = mkmapty($3,$5); }
+|   "multimapof" '<' ty ',' ty '>'  { $$ = mkmultimapty($3,$5); }
+|   "queueof" '<' ty '>'            { $$ = mkqueuety($3); }
+|   "priqueueof" '<' ty '>'         { $$ = mkpriqueuety($3); }
+|   "dequeof" '<' ty '>'            { $$ = mkdequety($3); }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  SETL-like expressions:
+//
+///////////////////////////////////////////////////////////////////////////////
+
+setl_exp(Exp):
+    "arb" exp           { $$ = SETLexp( ARBop, #[$2]); }
+|   "dom" exp           { $$ = SETLexp( DOMop, #[$2]); }
+|   "ran" exp           { $$ = SETLexp( RANop, #[$2]); }
+|   exp "with" exp      { $$ = SETLexp( WITHop, #[$1,$3]); }
+|   exp "less" exp      { $$ = SETLexp( LESSop, #[$1,$3]); }
+|   exp "with" ":=" exp { $$ = SETLexp( WITHASSIGNop, #[$1,$4]); }
+|   exp "less" ":=" exp { $$ = SETLexp( LESSASSIGNop, #[$1,$4]); }
+|   set_comprehension   { $$ = $1; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Set comprehension expression
+//
+///////////////////////////////////////////////////////////////////////////////
+
+set_comprehension Exp:
+    "setof" '{' exp ':' generator_list guard_exp3 '}'
+        { $$ = NOexp; }
+;
+
+guard_exp3 Exp:         { $$ = NOexp; }
+|       "where" exp     { $$ = $2; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Complexity
+//
+///////////////////////////////////////////////////////////////////////////////
+
+complexity(Complexity):
+    id_or_cons                  { $$ = Var($1); }
+|   '(' complexity ')'          { $$ = $2; }
+|   complexity '+' complexity   { $$ = Add($1,$3); }
+|   complexity '*' complexity   { $$ = Mul($1,$3); }
+|   complexity '/' complexity   { $$ = Div($1,$3); }
+|   complexity '^' complexity   { $$ = Power($1,$3); }
+|   integer                     { $$ = Const($1); }
+|   real                        { $$ = Const($1); }
+|   id_or_cons complexity
+        {
+          match ($1)
+          { "O":     { $$ = BigOh($2); }
+          | "o":     { $$ = LittleOh($2); }
+          | "Omega": { $$ = Omega($2); }
+          | "log":   { $$ = Log($2); }
+          | _:
+                {
+                  error("%LUnknown complexity operator: %s\n",$1);
+                  $$ = BigOh($2);
+                }
+          }
+        }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constraint specifications
+//
+///////////////////////////////////////////////////////////////////////////////
+
+/*
+ *  Ignore for now
+ *
+constraint_decl(Decl):
+    "constraint" id '=' "begin" constraint_defs "end" "constraint" ';'
+        { $$ = CONSTRAINTdecl($2,CONSTRAINTset($5)); }
+|   "constraint" id '{' constraint_defs '}' ';'
+        { $$ = CONSTRAINTdecl($2,CONSTRAINTset($4)); }
+;
+
+constraint_defs(ConstraintDefs):
+    constraint_def                  { $$ = #[$1]; }
+|   constraint_def constraint_defs  { $$ = #[$1 ... $2]; }
+;
+
+constraint_def(ConstraintDef):
+    constraint_rule                 { $$ = CONSTRAINTruledef( $1); }
+|   id '=' pat ';'                  { $$ = CONSTRAINTinstness( $1, $3); }
+|   id ':' long_ty ';'              { $$ = CONSTRAINTtype( $1, $3); }
+|   id "::" pat_list "is" deter ';' { $$ = CONSTRAINTdet( $1, $3, $5); }
+;
+
+deter(Determinism):
+    id
+        {
+          match ($1)
+          {
+            "det":      { $$ = DET; }
+          | "semidet":  { $$ = SEMI_DET; }
+          | "multidet": { $$ = MULTI_DET; }
+          | "nondet":   { $$ = NON_DET; }
+          | "fail":     { $$ = FAIL_DET; }
+          | "error":    { $$ = ERROR_DET; }
+          | _:          {
+                          error ("%Ldeterminism %s not recognized",$1);
+                          $$ = VAR_DET(UNKNOWN_DET);
+                        }
+          }
+       }
+;
+
+constraint_rule(ConstraintRule):
+    id
+        {  me_stack[++me_top] = #[]; }
+ 	top_pat
+        {
+          pv_env.new_scope(false); // allow non-linear patterns.
+          decor(me_stack[me_top],$3,pv_env,constraint_rule);
+        }
+    constraint_rule_body ';'
+        {
+          pv_env.old_scope();
+          me_top--;
+          $$ = CONSTRAINTrule'{ id = $1, pat = $3, body = $5 };
+        }
+;
+
+constraint_rule_body(ConstraintBody):   { $$ = CONSTRAINTnone; }
+|       ":-" constraint_body            { $$ = $2; }
+;
+
+constraint_body(ConstraintBody):
+    constraint_body ',' constraint_body
+        { $$ = CONSTRAINTand($1,$3); }
+|   "if" constraint_body "then" constraint_body
+    "else" constraint_body "end" "if"
+        { $$ = CONSTRAINTif($2,$4,$6); }
+|   exp
+        { $$ = CONSTRAINTcall($1); }
+|   compound_stmt
+        { $$ = CONSTRAINTbody(#[mark(SETLSTMTdecl($1))]); }
+|   '!'
+        { $$ = CONSTRAINTcut; }
+// |   brace_body 	{ $$ = CONSTRAINTbody($1); }
+;
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Graph class specifications
+//
+///////////////////////////////////////////////////////////////////////////////
+
+graph_class_decl Decl:
+    "graphtype" id inherit_list_opt qualifiers_opt '('
+        {
+          Used::graph_type = true;
+          graphtype_def = new GraphTypeDef( $2, $3, $4);
+        }
+    node_spec
+        { graphtype_def->set_nodes($7); }
+    edge_spec
+    ')'
+    brace_body ';'
+        {
+          graphtype_def->set_edges($9);
+          graphtype_def->set_body($11);
+          $$ = CLASSDEFdecl( graphtype_def);
+        }
+;
+
+node_spec NodeDefs:     { $$ = #[]; }
+|   "nodes:" node_defs  { $$ = $2; }
+;
+
+node_defs NodeDefs:
+        node_def                    { $$ = #[$1]; }
+|       node_def "and" node_defs    { $$ = #[$1 ... $3]; }
+|       node_def '|' node_defs      { $$ = #[$1 ... $3]; }
+;
+
+node_def NodeDef *:
+        id
+            { $$ = new NodeDef( graphtype_def, $1); }
+|       id opt_of ty hashfun eqfun
+            { $$ = new NodeDef( graphtype_def, $1, $3, $4, $5); }
+
+;
+
+hashfun Id:         { $$ = 0; }
+|       "hash:" id  { $$ = $2; }
+;
+
+eqfun Id:               { $$ = 0; }
+|       "equality:" id  { $$ = $2; }
+;
+
+edge_spec EdgeDefs:         { $$ = #[]; }
+|       "edges:" edge_defs  { $$ = $2; }
+;
+
+edge_defs EdgeDefs:
+    edge_def                    { $$ = #[$1]; }
+|   edge_def "and" edge_defs    { $$ = #[$1 ... $3]; }
+|   edge_def '|' edge_defs      { $$ = #[$1 ... $3]; }
+;
+
+edge_def EdgeDef *:
+    id opt_of node "->"  node indexing
+        { $$ = new MapEdge( graphtype_def, $1, $3, $5, $6); }
+|   id opt_of node "<->" node indexing
+        { $$ = new BijectionEdge( graphtype_def, $1, $3, $5, $6); }
+|   id opt_of node "<=>" node indexing
+        { $$ = new MultiMapEdge( graphtype_def, $1, $3, $5, $6); }
+|   id opt_of node "<=>" '*' node indexing
+        { $$ = new EquivRelationEdge( graphtype_def, $1, $3, $6, $7); }
+;
+
+node NodeDef *:	id  { $$ = graphtype_def->lookup_node($1); }
+;
+
+indexing GraphIndexing:     { $$ = NOindex; }
+|   "index:" index_types    { $$ = $2; }
+;
+
+index_types GraphIndexing:
+    index_type                  { $$ = $1; }
+|   index_type index_types      { $$ = $1 | $2; }
+|   index_type ',' index_types  { $$ = $1 | $3; }
+;
+
+index_type GraphIndexing:
+    "dom"               { $$ = DOMindex; }
+|   "ran"               { $$ = RANindex; }
+|   "dom" "->" "ran"    { $$ = FORWARDindex; }
+|   "dom" "<-" "ran"    { $$ = INVERSEindex; }
+|   "ran" "->" "dom"    { $$ = INVERSEindex; }
+|   "dom" "<->" "ran"   { $$ = FORWARDindex | INVERSEindex; }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Graph rewrite system declarations
+//
+///////////////////////////////////////////////////////////////////////////////
+
+graph_rewrite_decl Decl:
+    "graphrewrite" id '(' fun_args ')' '{' grs_sections '}'
+        { $$ = GRAPHREWRITEdecl'{ name = $2, args = $4, rules = $7 }; }
+|   "graphrewrite" id '(' fun_args ')' '='
+    "begin" grs_sections "end" "graphrewrite" ';'
+        { $$ = GRAPHREWRITEdecl'{ name = $2, args = $4, rules = $8 }; }
+;
+
+grs_sections GraphRewritingRules:
+    grs_data_declarations
+    grs_index_declarations
+    grs_strata
+    {  $$ = $3; }
+;
+
+grs_data_declarations:
+;
+
+grs_index_declarations:
+;
+
+grs_strata GraphRewritingRules:
+       grs_stratum  { $$ = $1; }
+;
+
+grs_stratum GraphRewritingRules:
+        grs_rules   { $$ = $1; }
+
+;
+
+grs_rules GraphRewritingRules:  { $$ = #[]; }
+|       grs_rule grs_rules      { $$ = #[$1 ... $2]; }
+;
+
+grs_rule GraphRewritingRule:
+    grs_pat implies grs_conclusions ';'
+        { $$ = GRSrule'{ lhs = $1, rhs = $3 }; }
+;
+
+grs_pat GRSPat:
+ 	grs_simple_pat                  { $$ = $1; }
+|   "if" '(' exp ')'                { $$ = GUARDgpat($3); }
+|   "forall" id '.' grs_simple_pat  { $$ = FORALLgpat($2,$4); }
+|   grs_pat ',' grs_pat             { $$ = ANDgpat($1,$3); }
+|   grs_pat "and" grs_pat           { $$ = ANDgpat($1,$3); }
+|   grs_pat "||" grs_pat            { $$ = ORgpat($1,$3); }
+|   '(' grs_pat ')'                 { $$ = $2; }
+;
+
+grs_simple_pat GRSPat:
+    id_or_cons '(' pat_list1 ')'        { $$ = EDGEgpat($1,$3); }
+|   negate id_or_cons '(' pat_list1 ')' { $$ = NOTgpat(EDGEgpat($2,$4)); }
+;
+
+grs_conclusions GRSConclusions:
+    grs_conclusion                          { $$ = #[$1]; }
+|   grs_conclusion "and" grs_conclusions    { $$ = #[$1 ... $3]; }
+|   grs_conclusion ',' grs_conclusions      { $$ = #[$1 ... $3]; }
+;
+
+grs_conclusion GRSConclusion:
+ 	id_or_cons '(' exp_list ')'         { $$ = ADDEDGEaction($1,$3); }
+| 	negate id_or_cons '(' exp_list ')'  { $$ = DELETEEDGEaction($2,$4); }
+|   '+' exp                             { $$ = ADDNODEaction($2); }
+|   '-' exp                             { $$ = DELETENODEaction($2); }
+|   brace_body                          { $$ = ::EMBEDDEDaction($1); }
+//|   compound_stmt                     { $$ = EMBEDDEDaction($1); }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Dataflow class declarations
+//
+///////////////////////////////////////////////////////////////////////////////
+/*
+dataflow_class_decl Decl:
+    "dataflow" "class" id inherit_list_opt qualifiers_opt brace_body ';'
+    {  $$ = CLASSDEFdecl( new DataflowClass( $3, $4, $5, $6)); }
+;
+
+dataflow_decl Decl:
+    "dataflow" id '{' '}' ';'
+    {  $$ = DATAFLOWdecl'{ name = $2 }; }
+;
+*/
+};

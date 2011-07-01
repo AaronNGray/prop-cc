@@ -1,0 +1,31 @@
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "prop cc", "prop\prop.vcxproj", "{EC1B02C4-8BB1-4A73-B63D-89C7CAA59C74}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ADLib", "ADLib\ADLib.vcxproj", "{3374CCBC-71A2-41A8-942A-0F5841BE6061}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "prop pcc", "prop pcc\prop pcc.vcxproj", "{F3E080B1-BCB9-41DC-9845-6EAD3869AF55}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EC1B02C4-8BB1-4A73-B63D-89C7CAA59C74}.Debug|Win32.ActiveCfg = Debug|Win32
+		{EC1B02C4-8BB1-4A73-B63D-89C7CAA59C74}.Debug|Win32.Build.0 = Debug|Win32
+		{EC1B02C4-8BB1-4A73-B63D-89C7CAA59C74}.Release|Win32.ActiveCfg = Release|Win32
+		{EC1B02C4-8BB1-4A73-B63D-89C7CAA59C74}.Release|Win32.Build.0 = Release|Win32
+		{3374CCBC-71A2-41A8-942A-0F5841BE6061}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3374CCBC-71A2-41A8-942A-0F5841BE6061}.Debug|Win32.Build.0 = Debug|Win32
+		{3374CCBC-71A2-41A8-942A-0F5841BE6061}.Release|Win32.ActiveCfg = Release|Win32
+		{3374CCBC-71A2-41A8-942A-0F5841BE6061}.Release|Win32.Build.0 = Release|Win32
+		{F3E080B1-BCB9-41DC-9845-6EAD3869AF55}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F3E080B1-BCB9-41DC-9845-6EAD3869AF55}.Debug|Win32.Build.0 = Debug|Win32
+		{F3E080B1-BCB9-41DC-9845-6EAD3869AF55}.Release|Win32.ActiveCfg = Release|Win32
+		{F3E080B1-BCB9-41DC-9845-6EAD3869AF55}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,41 @@
+///////////////////////////////////////////////////////////////////////////
+//  
+//  Demo of polymorphic datatypes 
+//
+///////////////////////////////////////////////////////////////////////////
+
+#include <stdio.h>
+datatype Tree<T> = empty 
+                 | leaf (T)
+                 | node (Tree<T>, T, Tree<T>)
+and      List<T> = nil 
+                 | cons (T, List<T>)
+                 ;
+
+
+instantiate datatype Tree<int>, Tree<const char *>, List<int>;
+
+template <class T>
+  int length(List<T> l) 
+  {  match (l) {
+        case nil:       return 0;
+        case cons(_,t): return 1 + length(t);
+     }
+  }
+
+int sum(Tree<int> t)
+{  match (t) {
+      case empty:       return 0;
+      case leaf(i):     return i;
+      case node(a,i,b): return sum(a) + i + sum(b);
+   }
+}
+
+int main()
+{  List<int> l = cons(1,cons(2,cons(3,nil)));
+   int n = length(l);
+   Tree<int> t = node(leaf(1), 2, node(empty, 3, empty));
+   int m = sum(t);
+   printf("length(l) = %d  sum(t) = %d\n",m,n);
+   return 0;
+}

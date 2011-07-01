@@ -1,0 +1,10 @@
+This is makeindex, portable version 2.12 [26-May-1993].
+Scanning style file bbind.ist.....
+** Input style error (file = bbind.ist, line = 37):
+   -- Unknown specifier \endinput.
+done (5 attributes redefined, 1 ignored).
+Scanning input file refman.idx....done (206 entries accepted, 0 rejected).
+Sorting entries.....done (1680 comparisons).
+Generating output file refman.ind....done (175 lines written, 0 warnings).
+Output written in refman.ind.
+Transcript written in refman.ilg.

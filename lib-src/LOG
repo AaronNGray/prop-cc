@@ -1,0 +1,11 @@
+for dir in algebra automata combinat compress contain csp database datetime encrypt gc generic graphics graph graphtype hash io memory numeric objc object objstore persist pipes pretty prettypr process prop resource rete rewrite shell stl strings symbolic trees tries vlsi backend-tools visualize; do \
+   if [ -d $dir ]; then \
+      cd $dir; \
+	make -f Makefile CC="g++" COPTS="-O6 -fexternal-templates " \
+	CINCLUDE="-I../../include" PROP="../../bin/prop" \
+	PROP_OPTS="-strict -report -I../../include" || exit 1; \
+	cd ..; \
+   fi; \
+done
+make[1]: Entering directory `/u1/allen/src/Prop-2.3/prop-2.3.3/lib-src/automata'
+g++ -c -O6 -I../../include treeauto.cc

@@ -1,0 +1,11 @@
+datatype T :: rewrite = f(T,T) | a | b;
+
+T foo(T e)
+{
+   rewrite (e) type (T)
+   {  f(a,b): b
+   |  f(b,X): X
+   |  f(a,a): f(f(b,b),f(a,b))
+   |  f(X,a): f(b,a)
+   }
+}

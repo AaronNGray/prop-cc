@@ -1,0 +1,15 @@
+#include "calculus.ph"
+
+
+Term simplify(Term t) 
+{  match (t) {
+      case (Int(i) + Int(j)):  Int(i+j)
+      case (Int(i) - Int(j)):  Int(i-j)
+      case (Int(i) * Int(j)):  Int(i*j)
+      case (Int(i) / Int(j)):  Int(i/j)
+      case (Int(i) ^ Int(j)):  Int(power(i,j))
+      case (e ^ Int(0)):       Int(1)
+      case (e ^ Int(1)):       e
+      case _: 
+   }
+}

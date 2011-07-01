@@ -1,0 +1,10 @@
+//
+// Test the generation of datatypes with array arguments
+//
+
+#include <AD/strings/string.h>
+
+datatype BTree = empty
+               | leaf (class String)
+               | node (int, int, BTree[10])
+               ;

@@ -1,0 +1,32 @@
+#include <iostream.h>
+#include <AD/strings/string.h>
+
+//
+//  A simple datatype to test the `class' keyword in datatype declaration.
+//  The keyword is necessary since the constructor for node() must
+//  have type
+//
+//      Tree node (Tree, const String&, Tree);   
+//
+//                     NOT
+//
+//      Tree node (Tree, String, Tree);
+//
+datatype Tree = empty 
+              | leaf (const int) 
+              | node (Tree, class String, Tree)
+              ;
+
+ostream& operator << (ostream& out, Tree t)
+{  match (t) {
+      case empty:       return out << "X";
+      case leaf(i):     return out << '[' << i << ']';
+      case node(a,s,b): return out << s << '(' << a << ',' << b << ')';
+   }
+}
+
+int main()
+{
+   Tree t = node(leaf(1), "Weasel", node(leaf(2), "Skunk", empty));
+   cout << t << endl;
+}

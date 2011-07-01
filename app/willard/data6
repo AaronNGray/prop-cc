@@ -1,0 +1,4 @@
+{[a,b,c,d,e] : [a,b,c,d,e] in [X,Y,Z,W,U] | 
+  (not (a and b and c and d and e and a and b and c and d and e
+	and (true or false) and (a and b) and (a or b)))
+}

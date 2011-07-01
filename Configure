@@ -1,0 +1,115 @@
+#!/bin/sh
+
+export PATH 
+PATH="/bin:/usr/bin:/usr/local/bin"
+modules="lib-src prop-src tests"
+
+CC=$1
+
+iostream_lib=""
+if [ "none$CC" = "none" ]; then
+   echo "No compiler specified, assuming g++";
+   CC="g++";
+fi
+
+case `uname -s` in
+   HP-UX) ARCH=hpux 
+          ;;
+   Linux) ARCH=linux 
+	  iostream_lib="s/\\\$(gcc-iostream-lib)/-liostream/"
+          ;;
+   SunOS)
+      case `uname -r` in
+	 4.1.*) ARCH=sunos ;;
+	 5.*.*) ARCH=solaris ;;
+      esac
+      ;;
+   *) ARCH=default ;;
+esac
+
+case $CC in
+   g++) LDOPTS="-lg++";
+	COPTS="-O6";
+        ;;
+   CC*) LDOPTS="";
+	COPTS="-O6";
+	;;
+   *)   LDOPTS="";
+	COPTS="-O6";
+	;;
+esac
+
+echo "Using the $CC compiler"
+
+echo "$CC -S configure-dir/testbool.C -o /dev/null 2> /dev/null"
+$CC -S configure-dir/testbool.C -o /dev/null 2> /dev/null
+if [ $? = 0 ]; then
+   echo "Good, your $CC compiler has the type bool.";
+   bool=yes;
+else
+   echo "Seems like you don't have the type bool.";
+   echo "I'll define it as int.";
+   bool=no;
+fi
+
+$CC -S configure-dir/testexplicit.C -o /dev/null 2> /dev/null
+if [ $? = 0 ]; then
+   echo "Good, your $CC compiler has the keyword explicit.";
+   explicit=yes;
+else
+   echo "Seems like you don't have the keyword explicit.";
+   echo "I'll define it as the empty string.";
+   explicit=no;
+fi
+
+$CC configure-dir/testgetrusage.C -o configure-dir/testgetrusage 2> /dev/null
+if [ $? = 0 ]; then
+   echo "Good, getrusage() is working"
+   getrusage=yes;
+   rm configure-dir/testgetrusage
+else
+   echo "Seems like getrusage is not working"
+   echo "I'll comment out all usage of getrusage()"
+   getrusage=no;
+fi
+
+$CC configure-dir/testtimes.C -o configure-dir/testtimes 2> /dev/null
+if [ $? = 0 ]; then
+   echo "Good, times() is working"
+   times=yes;
+   rm configure-dir/testtimes
+else
+   echo "Seems like times is not working"
+   echo "I'll comment out all usage of times()"
+   times=no;
+fi
+
+>include/AD/config/config.h
+echo "#ifndef prop_library_configuration_h" >>include/AD/config/config.h
+echo "#define prop_library_configuration_h" >>include/AD/config/config.h
+if [ $bool = yes ]; then
+   echo "#define PROP_BOOL_IS_DEFINED" >>include/AD/config/config.h;
+fi
+if [ $explicit = yes ]; then
+   echo "#define PROP_EXPLICIT_IS_DEFINED" >>include/AD/config/config.h;
+fi
+if [ $getrusage = yes ]; then
+   echo "#define PROP_HAS_GETRUSAGE" >>include/AD/config/config.h;
+fi
+if [ $times = yes ]; then
+   echo "#define PROP_HAS_TIMES" >>include/AD/config/config.h;
+fi
+echo "#endif" >>include/AD/config/config.h
+echo "include/AD/config/config.h created"
+
+
+replace="$iostream_lib"
+#echo "$replace"
+
+echo "Using the $ARCH configuration"
+for module in $modules ;
+do
+   module_name=`echo $module | sed -e 's/\//:/g'`
+   echo "sed -e $replace < configure-dir/Makefile.$module_name > $module/Makefile"
+   sed -e "$replace" < configure-dir/Makefile.$module_name > $module/Makefile
+done

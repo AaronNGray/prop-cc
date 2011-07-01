@@ -1,0 +1,5 @@
+*.vcxproj		eol=crlf
+*.vcxproj.filters	eol=crlf
+*.vcxproj.users		eol=crlf
+*.sln			eol=crlf
+

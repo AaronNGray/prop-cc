@@ -1,0 +1,86 @@
+//
+//  Simple example to garbage collection.
+//
+
+#include <new.h>
+#include <iostream.h>
+
+//
+//  Define an algebraic datatype.
+//
+datatype EXP :: collectable = om
+                            | num (int)
+                            | var (char)
+                            | add (EXP, EXP)
+                            | sub (EXP, EXP)
+                            | mul (EXP, EXP)
+                            | div (EXP, EXP)
+                            ;
+
+instantiate datatype EXP;
+
+//
+//  Define a method that prints an expression.  This is simple
+//  inductive definition
+//
+ostream& operator << (ostream& f, EXP e)
+{  match (e) {
+      om:       { return f << "om"; }
+   |  num i:    { return f << i; }
+   |  var v:    { return f << v; }
+   |  add(a,b): { return f << '(' << a << " + " << b << ')'; }
+   |  sub(a,b): { return f << '(' << a << " - " << b << ')'; }
+   |  mul(a,b): { return f << '(' << a << " * " << b << ')'; }
+   |  div(a,b): { return f << '(' << a << " / " << b << ')'; }
+   }
+}
+
+//
+//  Change all occurance of var(...) to t
+//
+void change (EXP& e, EXP t)
+{  match (e) {
+      om:       
+   |  num i:    { e = add(e,add(e,e)); }
+   |  var v:    { e = t; }
+   |  add(a,b): { change(a,t); change(b,t); }
+   |  sub(a,b): { change(a,t); change(b,t); }
+   |  mul(a,b): { change(a,t); change(b,t); }
+   |  div(a,b): { change(a,t); change(b,t); }
+   }
+}
+
+//
+//  Do a bunch of stuff that cons a lot
+//
+void do_something()
+{
+   //
+   // (0 + x * 2) / (1 * 5 + 1 * 3) / (0 / y);
+   //
+   EXP t1   = div(div(add(num(0), mul(var('x'),num(2))), 
+                      add(mul(num(1), num(5)),mul(num(1),num(3)))),
+                  div(num(0),var('y')));
+   EXP t2   = add(t1,t1);
+   EXP term = div(mul(t2,t2),t2);
+   t2       = om;
+
+   cout << "[1] " << term << '\n';
+
+   change(term,num(-2));
+   cout << "[2] " << term << '\n';
+
+   term = t1; t1 = num(-1);
+   cout << "[3] " << term << '\n';
+
+   term = om; t1 = om;
+   cout << "[4] " << term << '\n';
+}
+  
+int main()
+{
+   do_something();
+   // start a collection.
+   GC::garbage_collect();
+   return 0;
+}

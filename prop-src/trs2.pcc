@@ -1,0 +1,401 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This is the main partial evaluation routines.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include <string.h>
+#include <stdlib.h>
+#include "trs.ph"
+#include "ir.ph"
+#include "ast.ph"
+#include "type.h"
+#include "list.h"
+#include "matchcom.h"
+#include "funmap.h"
+#include "rwgen.h"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Type definitions
+//
+///////////////////////////////////////////////////////////////////////////////
+
+typedef TreeAutomaton::Functor Functor;
+typedef TreeAutomaton::State   State;
+typedef TreeAutomaton::Rule    Rule;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method for partial evaluating the trs
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void TRS::mix()
+{
+  for (Rule r = 0; r < number_of_rules; r++)
+    mix(r);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method for partial evaluating one rule
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void TRS::mix( Rule r)
+{
+  mix_0(r);
+  mix_1(r);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method for partial evaluting one rule, using 0-strategy.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void TRS::mix_0( Rule r)
+{
+  int arity = num_var_map[r];
+  for (int i = 0; i < arity; i++)
+    states[i] = 0;
+  // msg("0-Partial evaluating %r ", rule_map[r]) << rhs_map[r] << '\n';
+  Term rhs = copy( rhs_map[r]);
+  int reductions = 0;
+  State new_state = normalize( rhs, reductions);
+  if (reductions > 0)
+  {
+    print_residue( r, rhs);
+    make_rhs( r, optimized_map[r] = make_exp(rhs));
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method for partial evaluting one rule, using 1-strategy.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void TRS::mix_1( Rule r)
+{
+  int arity            = num_var_map[r];
+  int number_of_states = treeauto.number_of_states();
+  // msg("1-Partial evaluating %r ", rule_map[r]) << rhs_map[r] << '\n';
+  for (int i = 0; i < arity; i++)
+  {
+    // If the variable does not have an index we can't do anything with it.
+
+    if ( !compiler.has_index( var_pat_map[r][i]->ty))
+      continue;
+    for (int j = 0; j < arity; j++)
+      states[j] = 0;
+    for (State s = 1; s < number_of_states; s++)
+    {  // skip accept states
+       states[i] = s;
+       if (treeauto.is_accept_state(s))
+         continue;
+       if (! is_relevant(r))
+         continue;
+       int reductions = 0;
+       Term rhs = copy(rhs_map[r]);
+       State new_state = normalize(rhs,reductions);
+       if (reductions > 0)
+	      generate_residue(r,i,s,rhs);
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to check that a particular specialization is relevant
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool TRS::is_relevant( Rule r)
+{
+  int redex_count = 0;
+  count_redex = true;
+  State s = normalize(lhs_map[r],redex_count);
+  count_redex = false;
+  // std::cerr << lhs_map[r] << " has " << redex_count << " redexes\n";
+  if (redex_count > 1)
+    return false;
+  if (treeauto.accept1_rule(s) != r)
+    return false;
+  return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to normalize a rule
+//
+///////////////////////////////////////////////////////////////////////////////
+
+TRS::State TRS::normalize( Term& term, int& reductions)
+{
+  Bool changed;
+  State new_state;
+  do
+  {
+    changed = false;
+    match (term)
+    {
+      CONSterm( f, _, n, args):
+      {
+        int mu[MAX_VARS];
+
+        for (int i = 0; i < n; i++)
+        {
+          State s = normalize( args[i], reductions);
+          mu[i]   = treeauto.index_map( f, i, s);
+        }
+        new_state = treeauto.get_delta( f, mu);
+        // Check for redex
+        if (treeauto.is_accept_state( new_state))
+        {
+          if (count_redex)
+          {
+		    reductions++;
+		    return new_state;
+          }
+	      term = reduce( term, new_state, reductions, changed);
+        }
+      }
+    | VARterm(v,_,_): { return states[v]; }
+    | _:              { return 0; }
+    }
+  } while (changed);
+  return new_state;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to reduce a rule during accepting
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Term TRS::reduce( Term term, State state, int& reductions, Bool& changed)
+{
+  // Test for conditional rules
+  // For each rule that can accept, check the guard associated
+  // with the rule.  Evaluate the guard if possible.
+  // We'll not reduce if we are not guaranteed that the reduction
+  // can be performed.
+
+  const BitSet& accept = treeauto.accept_rules(state);
+  for (Rule r = 0; r <= number_of_rules; r++)
+  {
+    if (accept[r])
+    {
+      Exp guard = guard_map[r];
+      EvalResult result = SUCCESS;
+      if (guard == NOexp)
+        result = SUCCESS;
+      else
+        result = eval_guard(guard);
+      switch (result)
+      {
+      case SUCCESS:
+        {
+          Term rule_rhs = rhs_map[r];
+          Bool ok = true;
+          Term new_rhs = subst(rule_rhs,term,ok);
+          if (! ok)
+            return term; // no reduction
+          reductions++;
+          changed = true;
+          return new_rhs;
+        }
+      case UNKNOWN: return term; // no reduction
+      case FAILURE:  break; // try next rule
+      }
+    }
+  }
+  return term;  // no reduction
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Apply a rule
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Term TRS::subst( Term rhs, Term redex, Bool& ok)
+{
+  match (rhs)
+  {
+  CONSterm( f, c, n, args):
+    {  return CONSterm( f, c, n, subst( n, args, redex, ok)); }
+  | VARterm( v, _, exp):
+    {  return proj( exp, redex, ok); }
+  | CODEterm exp:
+    {  return proj( exp, redex, ok); }
+  | _:  { bug("TRS::subst"); return redex; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Apply a rule
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Term * TRS::subst( int n, Term * rhs, Term redex, Bool& ok)
+{
+  Term * args = (Term*)mem_pool.m_alloc(sizeof(Term) * n);
+  for (int i = 0; i < n; i++)
+    args[i] = subst( rhs[i], redex, ok);
+  return args;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Perform projection a rule
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Term TRS::proj( Exp exp, Term redex, Bool& ok)
+{
+  int nth;
+  match (exp) and (redex)
+  {
+    IDexp "redex", redex:  { return redex; }
+  | DOTexp( SELECTORexp( e, c1, ty), ith), redex:
+    {
+      match (proj( e, redex, ok))
+      {
+        CONSterm( _, c2, n, args) |
+            c1 == c2 && ((nth = atol(ith+1)-1), nth < n):
+          {  return args[nth]; }
+      | CODEterm(e):
+        { return CODEterm( DOTexp( SELECTORexp( e, c1, ty), ith)); }
+      | VARterm( _, _, e):
+	    { return CODEterm( DOTexp( SELECTORexp( e, c1, ty), ith)); }
+      | redex as CONSterm(_,c2,n,args):
+        {  // msg("1 Can't project %e %i %i", exp,nth,n);
+	      // print(msg(""),redex); msg("\n");
+	      ok = false;
+          return redex;
+        }
+      | exp:
+        {  // msg("1 Can't project %e", exp);
+	      // print(msg(""),redex); msg("\n");
+	      ok = false;
+          return redex;
+	    }
+      }
+    }
+  | SELECTORexp( e, c1, ty), redex:
+    {
+      match (proj( e, redex, ok))
+      {
+      CONSterm( _, c2, n, args) | c1 == c2:
+        {  return args[0]; }
+      | CODEterm(e): { return CODEterm(SELECTORexp(e,c1,ty)); }
+      | VARterm(_,_,e): { return CODEterm(SELECTORexp(e,c1,ty)); }
+      | redex:
+        {  // msg("2 Can't project %e ", exp);
+	    // print(msg(""),redex); msg("\n");
+	      ok = false;
+          return redex;
+        }
+      }
+    }
+  | _, _:
+    {  // msg("3 Can't project %e ", exp);
+	  // print(msg(""),redex); msg("\n");
+	  ok = false;
+      return CODEterm(NOexp);
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Compose two projection expression
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exp TRS::proj( Exp e1, Exp e2, Bool& ok)
+{
+  match (e1)
+  {
+    IDexp "redex":          { return e2; }
+  | SELECTORexp( e, c, ty): { return SELECTORexp(proj( e, e2, ok), c, ty); }
+  | DOTexp( e, id):         { return DOTexp(proj( e, e2, ok), id); }
+  | _: { msg("Can't project %e %e\n", e1, e2);  return NOexp; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Copying the rhs
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Term TRS::copy( Term rhs)
+{
+  match (rhs)
+  {
+  CONSterm(f,c,n,args):
+    { return CONSterm( f, c, n, copy( n, args)); }
+  | _: { return rhs; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Copying the rhs
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Term * TRS::copy( int n, Term rhs [])
+{
+  Term * args = (Term*)mem_pool.m_alloc( sizeof( Term) * n);
+  for (int i = 0; i < n; i++)
+    args[i] = copy( rhs[i]);
+  return args;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to evaluate a guard expression
+//
+///////////////////////////////////////////////////////////////////////////////
+
+TRS::EvalResult TRS::eval_guard(Exp exp)
+{
+  return UNKNOWN;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print out the residue.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void TRS::print_residue( Rule r, Term rhs_residue) const
+{
+  std::ostream& log = open_logfile();
+  MatchRule rule = rule_map[r];
+
+  log << "line " << rule->begin_line << ": "
+      << rule_map[r] << ' ';
+
+  print(log, rhs_map[r]); log << '\n';
+
+  for (int i = 0; i < num_var_map[r]; i++)
+  {
+    if (states[i] != 0)
+    {
+      log << "\twhen " << var_pat_map[r][i] << " is in state:\n";
+      treeauto.print_state( log, states[i]);
+    }
+  }
+  log << "\toptimize rhs to ";
+  print( log, rhs_residue);
+  log << "\n\n";
+}

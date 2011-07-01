@@ -1,0 +1,15 @@
+//
+// This demonstrates the use of polymorphic datatypes parametrized
+// by more than one type parameters
+//
+
+datatype Tree<a,b> = empty
+                   | leaf(a)
+                   | node(Tree<a,b>, b, Tree<a,b>)
+                   ;
+
+instantiate datatype Tree<int,const char *>, Tree<int,int>;
+
+typedef Tree<int,const char *> MyTree;
+
+MyTree t = node(leaf(1), "abcde", empty);

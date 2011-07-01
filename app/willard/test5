@@ -1,0 +1,76 @@
+Input:
+{x:[x,y,z] in [A,B,C]}
+{x:[x,y,z] in [A,B,C]}
+
+[Renaming phase]
+
+{x:[x,y,z] in [A,B,C]}
+
+[DNF construction and simplification phase]
+
+{x:[x,y,z] in [A,B,C]}
+
+[Constructing the query graph]
+
+[Query Graph]
+{x:[x,y,z] in [A,B,C]}
+
+[Quantifier elimination phase]
+
+{x:[x,y,z] in [A,B,C]}
+
+[Disjunction removal phase]
+
+{x:[x,y,z] in [A,B,C]}
+
+[Conjunctive query decomposition phase]
+
+[Query Graph]
+{x:[x,y,z] in [A,B,C]}
+
+[Projection recognition phase]
+
+{x: x in A |  (exists z in C. (exists y in B. true))}
+
+[Simple find/count query decomposition phase]
+
+{x: x in A |  (exists z in C. (exists y in B. true))}
+
+[Reiterating the transformation]
+
+{x: x in A |  (exists z in C. (exists y in B. true))}
+
+[Renaming phase]
+
+{x: x in A |  (exists z in C. (exists y in B. true))}
+
+[DNF construction and simplification phase]
+
+{x: x in A |  (exists z in C.(nonempty B))}
+
+[Constructing the query graph]
+
+[Query Graph]
+{x: x in A |  (exists z in C.(nonempty B))}
+
+[Quantifier elimination phase]
+
+if((nonempty C) and(nonempty B)) then A else {}
+
+[Disjunction removal phase]
+
+if((nonempty C) and(nonempty B)) then A else {}
+
+[Conjunctive query decomposition phase]
+
+[Query Graph]
+if((nonempty C) and(nonempty B)) then A else {}
+
+[Projection recognition phase]
+
+if((nonempty C) and(nonempty B)) then A else {}
+
+[Simple find/count query decomposition phase]
+
+Output:
+if((nonempty C) and(nonempty B)) then A else {}

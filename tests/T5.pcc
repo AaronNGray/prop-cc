@@ -1,0 +1,12 @@
+datatype T = f(T,T) | g(T,T) | a | b | c;
+
+T foo(T e)
+{
+   rewrite (e) type (T)
+   {  
+   topdown:
+      f(a,b): b
+   |  f(a,c): c
+   |  g(X,Y): f(X,Y)
+   }
+}

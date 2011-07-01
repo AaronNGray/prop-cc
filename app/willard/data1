@@ -1,0 +1,5 @@
+let F =
+  { x : x in S | (forall y in U. y > x or x = x) and x /= 0 }
+in 
+  F
+end

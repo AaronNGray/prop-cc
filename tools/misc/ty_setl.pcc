@@ -1,0 +1,59 @@
+//////////////////////////////////////////////////////////////////////////////
+// NOTICE:
+//
+// ADLib, Prop and their related set of tools and documentation are in the 
+// public domain.   The author(s) of this software reserve no copyrights on 
+// the source code and any code generated using the tools.  You are encouraged
+// to use ADLib and Prop to develop software, in both academic and commercial
+// settings, and are welcomed to incorporate any part of ADLib and Prop into
+// your programs.
+//
+// Although you are under no obligation to do so, we strongly recommend that 
+// you give away all software developed using our tools.
+//
+// We also ask that credit be given to us when ADLib and/or Prop are used in 
+// your programs, and that this notice be preserved intact in all the source 
+// code.
+//
+// This software is still under development and we welcome(read crave for)
+// any suggestions and help from the users.
+//
+// Allen Leung 
+// 1994
+//////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////
+//  This file implements the type analysis methods for the SETL sublanguage.
+//  Type analysis is used to:
+//     (a) Check for valid typing of the soruce program.
+//     (b) Select implementations of the set-theoretic data structures.
+//
+//  For details, see Paige, Schwartz, Cai, et al.
+//////////////////////////////////////////////////////////////////////////////
+
+#include "irdef.ph"  //  intermediate representations
+#include "setl.ph"   //  SETL abstract syntax
+
+//////////////////////////////////////////////////////////////////////////////
+// Method to infer the type a SETL expression when given an expression
+// and an type binding environment.
+//////////////////////////////////////////////////////////////////////////////
+TY InferSETL::infer(EXPR e, Map<ID,TY>& env)
+{  match (e) {
+      case om_exp:               return var_ty(no_ty);
+      case typed_exp    (e, ty):
+      case ident_exp    id:      return env[id];
+      case int_exp      _:       return Infer::integer_ty;
+      case real_exp     _:       return Infer::real_ty;
+      case string_exp   _:       return Infer::string_ty;
+      case char_exp     _:       return Infer::character_ty;
+      case app_exp      (e1,e2):  
+      case set_exp      es:      return set_ty(infer(es,env));
+      case multiset_exp es:      return multiset_ty(infer(es,env));
+      case tuple_exp    es:      return tuple_ty(infer(es,env));
+      case map_exp      es:      return map_ty(infer(es,env));
+      case multimap_exp es:      return multimap_ty(infer(es,env));
+      case record_exp   es:      return record_ty(infer(es,env));
+      case c_exp        _:       return var_ty(no_ty);
+   }
+}

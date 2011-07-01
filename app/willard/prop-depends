@@ -1,0 +1,30 @@
+willard-ast.h:	willard-ast.ph 
+paige.h:	paige.ph willard-ast.ph 
+parser.h:	parser.ph willard-ast.ph 
+rename.h:	rename.ph paige.ph willard-ast.ph 
+querygraph.h:	querygraph.ph willard-ast.ph paige.ph 
+smap.h:	smap.ph 
+phase1.h:	phase1.ph willard-ast.ph paige.ph 
+phase2.h:	phase2.ph willard-ast.ph paige.ph 
+phase3.h:	phase3.ph willard-ast.ph paige.ph 
+phase4.h:	phase4.ph willard-ast.ph paige.ph 
+phase5.h:	phase5.ph willard-ast.ph paige.ph 
+proj.h:	proj.ph willard-ast.ph paige.ph 
+willard.h:	willard.ph phase5.ph phase4.ph phase3.ph phase2.ph phase1.ph \
+	proj.ph querygraph.ph rename.ph willard-ast.ph paige.ph 
+list.h:	list.ph willard-ast.ph 
+willard-ast.cc:	willard-ast.pcc willard-ast.ph 
+paige.cc:	paige.pcc willard-ast.ph paige.ph 
+paige-aux.cc:	paige-aux.pcc willard-ast.ph paige.ph 
+rename.cc:	rename.pcc paige.ph willard-ast.ph rename.ph 
+querygraph.cc:	querygraph.pcc willard-ast.ph paige.ph querygraph.ph 
+phase1.cc:	phase1.pcc willard-ast.ph paige.ph phase1.ph 
+phase2.cc:	phase2.pcc willard-ast.ph paige.ph phase2.ph 
+phase3.cc:	phase3.pcc list.ph willard-ast.ph paige.ph phase3.ph 
+phase4.cc:	phase4.pcc paige.ph phase4.ph willard-ast.ph list.ph 
+phase5.cc:	phase5.pcc willard-ast.ph paige.ph phase5.ph 
+proj.cc:	proj.pcc list.ph willard-ast.ph paige.ph proj.ph 
+parser.cc:	parser.pcc paige.ph parser.ph willard-ast.ph 
+willard.cc:	willard.pcc phase5.ph phase4.ph phase3.ph phase2.ph \
+	phase1.ph proj.ph querygraph.ph rename.ph paige.ph willard.ph \
+	parser.ph willard-ast.ph 

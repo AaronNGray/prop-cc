@@ -1,0 +1,231 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This is the implementation of the Prop lexical scanner.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <new>
+#include <stdlib.h>
+#include <string.h>
+#include <iostream>
+#include <strstream>
+#include <ctype.h>
+#include <AD/strings/quark.h>
+#include "basics.ph"
+#include "keywords.ph"
+#include "parser.ph"
+#include "type.h"
+
+
+//
+// int PropParser::get_token()
+// {  int c = get_token2();
+//    if (verbosity > 3)
+//    {  if (c < 256) std::cerr << "[" << (char)c << "]";
+//       else std::cerr << "[" << (PropToken)c << c << "]";
+//    }
+//    return c;
+// }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  The definition of the lexical scanner.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+int PropParser::get_token()
+{
+  for (;;)
+  {
+    matchscan[LexicalContext] while (lexbuf)
+    {
+      <<C,PROP>> lexeme class MainKeywords:
+      {
+        if (lexbuf.context() == C)
+          start_sc(PROP);
+        return ?lexeme;
+      }
+    | <<C>> /\(/:   { start_quote('(',')'); emit(); }
+    | <<C>> /\[/:   { start_quote('[',']'); emit(); }
+    | <<C>> /\{/:   { start_quote('{','}'); emit(); }
+    | <<C>> /\(\|/: { start_quote('(',')'); start_sc(PROP); return ."(|"; }
+    | <<C>> /\[\|/: { start_quote('[',']'); start_sc(PROP); return ."[|"; }
+    | <<C>> /\{\|/: { start_quote('{','}'); start_sc(PROP); return ."{|"; }
+    | <<C>> /\.\(/: { start_quote('(',')'); start_sc(PROP); return .".("; }
+    | <<C>> /\.\[/: { start_quote('[',']'); start_sc(PROP); return .".["; }
+    | <<C>> /\.#{integer}/: { emit("._"); emit(lexbuf.text()+2); }
+    | <<C>> /\-\>#{integer}/: { emit("->_"); emit(lexbuf.text()+3); }
+    | <<C>> /#[\(\{\[]/:
+      { lexbuf.push_back(1); start_sc(PROP); return '#'; }
+    | <<C>> /[\)\}\]]/:
+      {
+        char c = end_quote(lexbuf[0]);
+        if (levels[levels_top-1] > quote_top)
+        {
+          end_sc();
+          return c;
+        }
+        else
+          emit();
+      }
+    | <<C>> lexeme class SepKeywords:
+      {
+        if (levels[levels_top-1] >= quote_top)
+        {
+          end_sc();
+          return ?lexeme;
+        }
+        else
+          emit();
+      }
+    | <<C>> /\.{string}/: { emit_cons(lexbuf.text()+1); }
+    | <<C>> QUARK_TOK:   { start_sc(PROP); return QUARK_TOK; }
+    | <<C>> BIGINT_TOK:  { start_sc(PROP); return BIGINT_TOK; }
+    | <<C,PROP>> lexeme class Symbols:
+      {
+        if (lexbuf.context() == C)
+          emit();
+        else
+          return ?lexeme;
+      }
+    | <<C,PROP>> lexeme class Literals:
+      {  if (lexbuf.context() == C) emit(); else return ?lexeme; }
+    | <<C>> ID_TOK:
+      {
+        Quark id(lexbuf.text());
+        Bool  is_from_current_scope;
+        my_exp = pv_env.lookup(id,&is_from_current_scope);
+        if (my_exp != NOexp)
+          emit(my_exp);
+        else
+        {
+          if (lexbuf.lookahead() == '<' && is_poly_datatype( lookup_ty( id)))
+          {
+            start_sc(PROP);
+            return POLY_DATATYPE;
+          }
+          else
+          {
+            if (lexbuf[lexbuf.length()-1] == '\'')
+            {
+              int i;
+              for (i = lexbuf.length()-1; i >= 0; i--)
+                if (lexbuf[i] != '\'')
+                  break;
+              lexbuf[i+1] = '\0';
+              if (my_cons = find_cons(lexbuf.text()))
+              {
+                start_sc(PROP);
+                return CONS_EXP;
+              }
+              lexbuf[i+1] = '\'';
+            }
+            if (lexbuf[0] == '?' || lexbuf[0] == '$' ||
+                lexbuf[0] == '#' && in_rewrite ||
+                lexbuf[lexbuf.length()-1] == '\''
+                )
+              error("%Lpattern variable '%s' has no binding at this point\n",
+                     lexbuf.text());
+            emit();
+          }
+        }
+      }
+    | <<C>> PUNCTUATIONS:
+      { emit(); }
+    | <<C>> /^#[ \t]*include[ \t]*(\"|\<)[^\"\>\n]*\.[pP][^\\\/\n]*(\"|\>).*/:
+      {
+        char name_buffer[256], * q;
+        const char * p;
+        // locate < or "
+        for (p = lexbuf.text(); *p != '<' && *p != '"'; p++);
+        // copy the filename to the buffer
+        for (p++, q = name_buffer; *p != '"' && *p != '>'; p++, q++) *q = *p;
+        *q = '\0';
+        Quark file_name(name_buffer);
+        // emit the filename sans [pP]
+        for ( ;*p != '.'; p--);
+        emit (lexbuf.text(), p - lexbuf.text() + 1);
+        emit (p+2);
+        open_include_file(file_name);
+      }
+    | <<C>> /[ \t\\\014]/: { emit(); }
+    | <<C>> /(\/\/.*)?\n/: { emit(); line++; }
+    | <<C,PROP>> /^##.*\n/:{ emit_header(); line++; }
+    | <<C>> /^#.*/:        { emit(); }
+    | <<C,PROP>> /`/:      { start_quote('`','`'); start_sc(QUOTE); }
+    | <<PROP>> /[#_]/:     { return lexbuf[0]; }
+    | <<PROP>> /\(/:       { start_quote('(',')'); return '('; }
+    | <<PROP>> /\{/:       { start_quote('{','}'); return '{'; }
+    | <<PROP>> /\[/:       { start_quote('[',']'); return '['; }
+    | <<PROP>> /\(\|/:     { start_quote('(',')'); return ."(|"; }
+    | <<PROP>> /\{\|/:     { start_quote('{','}'); return ."{|"; }
+    | <<PROP>> /\[\|/:     { start_quote('[',']'); return ."[|"; }
+    | <<PROP>> /\.\(/:     { start_quote('(',')'); return .".("; }
+    | <<PROP>> /\.\[/:     { start_quote('[',']'); return .".["; }
+    | <<PROP>> /[\)\}\]]/: { return end_quote(lexbuf[0]); }
+    | <<PROP>> /\|\)/:     { end_quote(')'); return ."|)"; }
+    | <<PROP>> /\|\}/:     { end_quote('}'); return ."|}"; }
+    | <<PROP>> /\|\]/:     { end_quote(']'); return ."|]"; }
+    | <<PROP>> lexeme class Keywords:    { return ?lexeme; }
+    | <<PROP>> lexeme class SepKeywords: { return ?lexeme; }
+    | <<PROP>> /\.{string}/:
+      {
+        my_cons = lookup_cons(lexbuf.text()+1);
+        return CONS_TOK;
+      }
+    | <<PROP>> ID_TOK:
+      {
+        if ((my_cons = find_cons(lexbuf.text())) != NOcons)
+            return CONS_TOK;
+        if (lexbuf[lexbuf.length()-1] == '\'')
+        {
+          int i;
+          for (i = lexbuf.length()-1; i >= 0; i--)
+            if (lexbuf[i] != '\'')
+              break;
+          lexbuf[i+1] = '\0';
+          if (my_cons = find_cons(lexbuf.text()))
+            return CONS_EXP;
+          lexbuf[i+1] = '\'';
+        }
+        return ID_TOK;
+      }
+    | <<PROP>> QUARK_TOK:             { return QUARK_TOK; }
+    | <<PROP>> BIGINT_TOK:            { return BIGINT_TOK; }
+    | <<PROP>> REGEXP_TOK:            { return REGEXP_TOK; }
+    | <<PROP>> PUNCTUATIONS:          { return lexbuf[0]; }
+    | <<PROP>> /[ \t\014]/:           { /* skip */ }
+    | <<PROP>> /(\/\/.*)?\n/:         { line++; }
+    | /\/\*/:                         { emit(); start_sc(COMMENT); }
+    | <<COMMENT>> /\*\//:             { emit(); end_sc(); }
+    | <<COMMENT>> /\n/:               { emit(); line++; }
+    | <<COMMENT>> /./:                { emit(); }
+    | /^#[ \t]*(line[ \t]+)?{digits}[ \t]*{string}\n/:
+      {
+        char buffer[1024];
+        const char * p;
+        char * q;
+        for (p = lexbuf.text(); ! isdigit(*p); p++);
+        line = atol(p);
+        for ( ; *p != '"'; p++);
+        for (p++, q = buffer; (*q = *p) != '"'; p++, q++);
+        *q = '\0';
+        file = Quark( buffer);
+        debug_msg("[%s, %i]", file, line);
+        emit();
+      }
+    | <<QUOTE>>/`/:   { meta.emit('\0'); end_quote('`'); end_sc();
+		   return META_QUOTE;
+		 }
+    | <<QUOTE>>/./:   { meta.emit(lexbuf[0]); }
+    | <<QUOTE>>/\n/:  { line++; meta.emit(lexbuf[0]); }
+    | /^%%.*\n/:      { line++; emit_doc(); }
+    | /\x0D/:		 {}
+    | /./: { error("%Lillegal character %c\n", lexbuf[0]); }
+    }
+    if (includes_top != 0)
+      close_include_file();
+    else
+      return EOF;
+  }
+}

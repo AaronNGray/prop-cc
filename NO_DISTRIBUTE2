@@ -1,0 +1,23 @@
+#
+#  These are the files that will not be put into a distribution tar file.
+#  We're using egrep patterns.
+#
+.*\.o
+.*\.report
+.*\.info
+.*/lib-src/Makefile
+.*/prop-src/Makefile
+.*/tools/pretty/niceprop
+.*/develop/.*
+
+#
+#  Keep distributing these binaries for now
+#
+# .*/lib-src/libprop.a
+# .*/prop-src/prop
+# .*/app/willard/willard
+# .*/demos/exp
+# .*/demos/prog
+# .*/demos/persistent
+# .*/demos/logic
+# .*/demos/inference

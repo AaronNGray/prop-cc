@@ -1,0 +1,200 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the type checker for the SETL-like sublanguage.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include "ir.ph"
+#include "ast.ph"
+#include "setl-ast.ph"
+#include "setlgen.h"
+#include "type.h"
+#include "env.h"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to elaborate a definition.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Env type_of( Def def, const Env& E)
+{
+  return E;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to elaborate a definition list.
+//
+///////////////////////////////////////////////////////////////////////////////
+Env type_of( Defs defs, const Env& E)
+{
+  return E;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to unify two expressions type.
+//
+///////////////////////////////////////////////////////////////////////////////
+Bool unify( Exp exp, Ty a, Ty b)
+{
+  if (! unify(a,b))
+  {
+    error( "%Ltype mismatch in expression: %f\n"
+           "%Lexpecting '%T' but found '%T'\n", exp, a, b);
+    return false;
+  }
+  else
+    return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to infer the type of an expression.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Ty type_of( Exp exp, const Env& E)
+{
+  Ty ty = NOty;
+  match (exp) of
+    NOexp:                   { ty = NOty; }
+  | LITERALexp l:            { ty = type_of(l); }
+  | IDexp id:                { ty = mkvar(); }
+  | MARKEDexp(l, e):         { l.set_loc(); ty = type_of(e,E); }
+  | CONSexp(ONEcons { cons_ty ... }, _, NOexp):
+    {  ty = inst(cons_ty); }
+  | CONSexp(ONEcons { cons_ty ... }, _, e):
+    {  Ty fun_ty   = inst(cons_ty);
+	ty = mkvar();
+	unify(exp,fun_ty,mkfunty(type_of(e,E),ty));
+    }
+  | RELexp     i:            { ty = mkvar(); }
+  | DOTexp     (e, id):      { ty = component_ty(type_of(e,E),id); }
+  | SELECTORexp(e, cons,t):  { ty = component_ty(type_of(e,E),cons); }
+  | DEREFexp   (e):          { ty = mkvar(); }
+  | ARROWexp   (e, id):      { ty = mkvar(); }
+  | INDEXexp   (e, i):       { ty = mkvar(); }
+  | BINOPexp   (id, a, b):   { ty = mkvar(); }
+  | PREFIXexp  (id, e):      { ty = mkvar(); }
+  | POSTFIXexp (id, e):      { ty = mkvar(); }
+  | APPexp     (f, a):       { ty = mkvar(); }
+  | ASSIGNexp  (a, b):       { ty = mkvar(); }
+  | IFexp      (c, yes, no): { ty = mkvar(); }
+  | TUPLEexp   (es):         { return mktuplety(type_of(es,E)); }
+  | EXTUPLEexp (es):         { return extuplety(type_of(es,E)); }
+  | RECORDexp  (es):
+    {
+      .[Ids, Tys] t = type_of( es, E);
+      return mkrecordty( t.#1, t.#2, false);
+    }
+  | SENDexp    (id, es):     { return mkvar(); }
+  | LISTexp    (ONEcons { cons_ty = cons_ty ... }, _, hd, tl):
+    {
+      Tys head_tys = type_of( hd, E);
+	  Ty  tail_ty  = type_of( tl, E);
+	  Ty  arg_ty   = mkvar();
+	  for_each (Ty, one_ty, head_tys)
+	    unify( exp, one_ty, arg_ty);
+      Ty fun_ty = inst( cons_ty);
+	  ty = mkvar();
+	  unify( exp, fun_ty, mkfunty( mktuplety( #[arg_ty, mkvar()]), ty));
+      if (tl != NOexp)
+        unify( exp, tail_ty, ty);
+    }
+  | VECTORexp  (c, es):      { return mkvar(); }
+  | CASTexp    (ty,e):       { type_of(e,E); return ty; }
+  | QUALexp    (ty,id):      { return mkvar(); }
+  | EQexp      (ty, a, b):   { return bool_ty; }
+  | UNIFYexp   (ty, a, b):   { return NOty; }
+  | LTexp      (ty, a, b):   { return bool_ty; }
+  | HASHexp    (ty, e):      { return integer_ty; }
+  | THISCOSTexp _:           { return integer_ty; }
+  | COSTexp    (childno):    { return integer_ty; }
+  | THISSYNexp (ruleno,ty,_):          { return ty; }
+  | SYNexp     (childno, ruleno,ty,_): { return ty; }
+  | SETLexp    (op,es):      { ty = NOty; }
+  | LISTCOMPexp{ ... }:      { ty = NOty; }
+  | FORALLexp  (id,exp):     { ty = NOty; }
+  | EXISTSexp  (id,exp):     { ty = NOty; }
+  | _:                       { ty = NOty; }
+  end match;
+
+  ty = deref(ty);
+  if (boxed(exp))
+    exp->ty = ty;
+  return ty;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to infer the type of an expression list.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Tys type_of( Exps es, const Env& E)
+{
+  match (es) of
+    #[]:         return #[];
+  | #[h ... t]:  return #[type_of(h,E) ... type_of(t,E)];
+  end match;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to infer the type of an labeled expression list.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+.[Ids, Tys] type_of( LabExps es, const Env& E)
+{  Ids labels = #[];
+   Tys tys    = #[];
+   match while (es)
+   {
+   #[{ label, exp } ... t]:
+     {
+       labels = #[ label ... labels ];
+	   tys = #[ type_of( exp, E) ... tys ];
+	   es = t;
+     }
+   }
+   return .( labels, tys);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to infer the type of a statement.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void type_of (Stmt s, const Env& E)
+{
+  match (s)
+  {
+     NOstmt:
+  |  ASSIGNstmt  (a, b):
+  |  BLOCKstmt   (_,stmts):
+  |  WHILEstmt   (e, s):
+  |  IFstmt      (e, yes, no):
+  |  FORALLstmt  (bindings, s):
+  |  RETURNstmt e:
+  |  MATCHstmt  d:
+  |  REWRITEstmt d:
+  |  REPLACEMENTstmt d:
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to infer the type of a list of statements.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void type_of( Stmts ss, const Env& E)
+{
+  match while (ss)
+  {
+  #[h ... t]:  { type_of( h, E); ss = t; }
+  }
+}

@@ -1,0 +1,135 @@
+persistgen.o: persistgen.cc ir.h basics.h ast.h datagen.h codegen.h \
+ labelgen.h hashtab.h type.h options.h datatype.h classdef.h
+gcgen.o: gcgen.cc ir.h basics.h datatype.h classdef.h codegen.h ast.h \
+ hashtab.h type.h
+printgen.o: printgen.cc ir.h basics.h ast.h datatype.h classdef.h \
+ codegen.h hashtab.h type.h matchcom.h patenv.h labelgen.h list.h
+matchcom.o: matchcom.cc ir.h basics.h ast.h matchcom.h patenv.h \
+ hashtab.h labelgen.h codegen.h config.h type.h options.h list.h
+matchgen.o: matchgen.cc ir.h basics.h ast.h matchcom.h patenv.h \
+ hashtab.h labelgen.h codegen.h type.h config.h options.h list.h
+infgen.o: infgen.cc ir.h basics.h ast.h type.h hashtab.h config.h \
+ infgen.h rwgen.h matchcom.h patenv.h labelgen.h codegen.h classdef.h \
+ datagen.h datatype.h list.h
+type.o: type.cc hashtab.h ir.h basics.h ast.h collection.h type.h \
+ datatype.h classdef.h codegen.h list.h options.h
+printing.o: printing.cc ir.h basics.h ast.h matchcom.h patenv.h \
+ hashtab.h labelgen.h codegen.h type.h options.h list.h graphtype.h \
+ classdef.h
+datagen.o: datagen.cc ir.h basics.h ast.h type.h hashtab.h datagen.h \
+ codegen.h labelgen.h options.h datatype.h classdef.h list.h
+codegen.o: codegen.cc codegen.h basics.h ir.h ast.h type.h hashtab.h \
+ matchcom.h patenv.h labelgen.h options.h
+compiler.o: compiler.cc ir.h basics.h ast.h type.h hashtab.h \
+ compiler.h matchcom.h patenv.h labelgen.h codegen.h rwgen.h \
+ classdef.h datagen.h infgen.h parsegen.h setlgen.h setl-ast.h env.h \
+ metasyntax.h grsgen.h aggen.h rwmix.h textbuf.h options.h
+indexing.o: indexing.cc ir.h basics.h ast.h matchcom.h patenv.h \
+ hashtab.h labelgen.h codegen.h
+ast.o: ast.cc basics.h ast.h ir.h
+constr.o: constr.cc ir.h basics.h ast.h matchcom.h patenv.h hashtab.h \
+ labelgen.h codegen.h
+parsegen.o: parsegen.cc ir.h basics.h ast.h parsegen.h codegen.h \
+ classdef.h hashtab.h datagen.h labelgen.h type.h list.h options.h
+lexeme.o: lexeme.cc ir.h basics.h ast.h hashtab.h type.h matchcom.h \
+ patenv.h labelgen.h codegen.h
+lexer.o: lexer.cc basics.h keywords.h parser.h ir.h ast.h patenv.h \
+ textbuf.h type.h hashtab.h
+trs.o: trs.cc trs.h basics.h ir.h ast.h type.h hashtab.h list.h \
+ matchcom.h patenv.h labelgen.h codegen.h datagen.h rwgen.h classdef.h \
+ funmap.h functortab.h setlgen.h setl-ast.h env.h
+trs2.o: trs2.cc trs.h basics.h ir.h ast.h type.h hashtab.h list.h \
+ matchcom.h patenv.h labelgen.h codegen.h funmap.h functortab.h \
+ rwgen.h classdef.h
+trs3.o: trs3.cc trs.h basics.h ir.h ast.h type.h hashtab.h
+rwgen.o: rwgen.cc funmap.h ir.h basics.h ast.h type.h hashtab.h \
+ functortab.h matchcom.h patenv.h labelgen.h codegen.h datagen.h \
+ config.h rwgen.h classdef.h options.h trs.h
+rwgen2.o: rwgen2.cc ir.h basics.h ast.h type.h hashtab.h rwgen.h \
+ matchcom.h patenv.h labelgen.h codegen.h classdef.h options.h
+rwgen3.o: rwgen3.cc funmap.h ir.h basics.h ast.h type.h hashtab.h \
+ functortab.h matchcom.h patenv.h labelgen.h codegen.h rwgen.h \
+ classdef.h list.h options.h
+rwgen4.o: rwgen4.cc funmap.h ir.h basics.h ast.h type.h hashtab.h \
+ functortab.h matchcom.h patenv.h labelgen.h codegen.h list.h rwgen.h \
+ classdef.h
+rwgen5.o: rwgen5.cc basics.h hashtab.h rwgen.h matchcom.h ir.h ast.h \
+ patenv.h labelgen.h codegen.h classdef.h funmap.h type.h functortab.h \
+ options.h
+lawgen.o: lawgen.cc ir.h basics.h ast.h datagen.h codegen.h labelgen.h \
+ hashtab.h type.h list.h
+parser-util.o: parser-util.cc ir.h basics.h ast.h parser.h patenv.h \
+ textbuf.h type.h hashtab.h matchcom.h labelgen.h codegen.h keywords.h \
+ config.h list.h compiler.h rwgen.h classdef.h datagen.h infgen.h \
+ parsegen.h setlgen.h setl-ast.h env.h metasyntax.h grsgen.h aggen.h \
+ rwmix.h options.h
+parser.o: parser.cc options.h basics.h ir.h ast.h parser.h patenv.h \
+ textbuf.h parsegen.h codegen.h classdef.h hashtab.h setl-ast.h \
+ keywords.h timespace.h type.h compiler.h matchcom.h labelgen.h \
+ rwgen.h datagen.h infgen.h setlgen.h env.h metasyntax.h grsgen.h \
+ aggen.h rwmix.h list.h graphtype.h graphedges.h
+setl-ast.o: setl-ast.cc ir.h basics.h ast.h setl-ast.h
+documentation.o: documentation.cc parser.h ir.h basics.h ast.h \
+ patenv.h textbuf.h
+collection.o: collection.cc collection.h basics.h type.h ir.h ast.h \
+ hashtab.h
+setlgen.o: setlgen.cc ir.h basics.h ast.h setl-ast.h setlgen.h \
+ matchcom.h patenv.h hashtab.h labelgen.h codegen.h env.h type.h
+setltype.o: setltype.cc ir.h basics.h ast.h setl-ast.h setlgen.h \
+ matchcom.h patenv.h hashtab.h labelgen.h codegen.h env.h type.h
+timespace.o: timespace.cc basics.h timespace.h
+env.o: env.cc env.h basics.h ir.h hashtab.h
+funmap.o: funmap.cc funmap.h ir.h basics.h ast.h type.h hashtab.h \
+ functortab.h matchcom.h patenv.h labelgen.h codegen.h datagen.h \
+ config.h rwgen.h classdef.h options.h list.h
+metasyntax.o: metasyntax.cc metasyntax.h parsegen.h basics.h ir.h \
+ codegen.h classdef.h ast.h hashtab.h options.h
+pat.o: pat.cc ir.h basics.h matchcom.h ast.h patenv.h hashtab.h \
+ labelgen.h codegen.h pat.h
+grsgen.o: grsgen.cc ir.h basics.h ast.h type.h hashtab.h grsgen.h \
+ codegen.h matchcom.h patenv.h labelgen.h
+selector.o: selector.cc ir.h basics.h ast.h matchcom.h patenv.h \
+ hashtab.h labelgen.h codegen.h type.h options.h
+graphtype.o: graphtype.cc ast.h basics.h ir.h graphtype.h codegen.h \
+ classdef.h hashtab.h type.h
+graphrep.o: graphrep.cc graphedges.h graphtype.h basics.h ir.h ast.h \
+ codegen.h classdef.h hashtab.h
+graphops.o: graphops.cc graphtype.h basics.h ir.h ast.h codegen.h \
+ classdef.h hashtab.h graphedges.h
+graphreport.o: graphreport.cc graphtype.h basics.h ir.h ast.h \
+ codegen.h classdef.h hashtab.h graphedges.h
+classdef.o: classdef.cc ir.h basics.h ast.h classdef.h codegen.h \
+ hashtab.h type.h list.h datatype.h
+prop-main.o: prop-main.cc basics.h config.h author.h options.h
+aggen.o: aggen.cc basics.h ir.h codegen.h classdef.h ast.h hashtab.h \
+ aggen.h parsegen.h
+datatype.o: datatype.cc datatype.h classdef.h codegen.h basics.h ir.h \
+ ast.h hashtab.h type.h options.h list.h datagen.h labelgen.h
+instance.o: instance.cc datatype.h classdef.h codegen.h basics.h ir.h \
+ ast.h hashtab.h type.h datagen.h labelgen.h options.h
+list.o: list.cc basics.h listimpl.h ast.h ir.h parsegen.h codegen.h \
+ classdef.h hashtab.h
+visualize.o: visualize.cc options.h compiler.h matchcom.h ir.h \
+ basics.h ast.h patenv.h hashtab.h labelgen.h codegen.h rwgen.h \
+ classdef.h datagen.h infgen.h parsegen.h setlgen.h setl-ast.h env.h \
+ metasyntax.h grsgen.h aggen.h rwmix.h textbuf.h visualize.h
+visual2.o: visual2.cc ir.h basics.h type.h ast.h hashtab.h classdef.h \
+ codegen.h datatype.h visualize.h
+rwmix.o: rwmix.cc ast.h basics.h ir.h rwmix.h rwgen.h matchcom.h \
+ patenv.h hashtab.h labelgen.h codegen.h classdef.h type.h funmap.h \
+ functortab.h options.h trs.h
+automake.o: automake.cc basics.h
+frontend.o: frontend.cc basics.h parser.h ir.h ast.h patenv.h \
+ textbuf.h
+functortab.o: functortab.cc functortab.h hashtab.h
+hashtab.o: hashtab.cc hashtab.h
+labelgen.o: labelgen.cc labelgen.h
+options.o: options.cc basics.h config.h options.h
+patchlev.o: patchlev.cc
+patenv.o: patenv.cc patenv.h ir.h basics.h ast.h type.h hashtab.h \
+ options.h
+process.o: process.cc config.h compiler.h matchcom.h ir.h basics.h \
+ ast.h patenv.h hashtab.h labelgen.h codegen.h rwgen.h classdef.h \
+ datagen.h infgen.h parsegen.h setlgen.h setl-ast.h env.h metasyntax.h \
+ grsgen.h aggen.h rwmix.h textbuf.h type.h author.h options.h
+textbuf.o: textbuf.cc textbuf.h

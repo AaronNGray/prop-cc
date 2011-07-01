@@ -1,0 +1,83 @@
+persistgen.cc:	persistgen.pcc datatype.ph ast.ph basics.ph ir.ph 
+gcgen.cc:	gcgen.pcc ast.ph datatype.ph basics.ph ir.ph 
+printgen.cc:	printgen.pcc datatype.ph ast.ph basics.ph ir.ph 
+matchcom.cc:	matchcom.pcc matchcom.ph ast.ph basics.ph ir.ph 
+matchgen.cc:	matchgen.pcc matchcom.ph ast.ph basics.ph ir.ph 
+infgen.cc:	infgen.pcc ast.ph basics.ph ir.ph 
+type.cc:	type.pcc datatype.ph collection.ph ast.ph basics.ph ir.ph 
+printing.cc:	printing.pcc matchcom.ph ast.ph basics.ph ir.ph 
+datagen.cc:	datagen.pcc datatype.ph ast.ph basics.ph ir.ph 
+codegen.cc:	codegen.pcc ast.ph basics.ph ir.ph 
+compiler.cc:	compiler.pcc ast.ph basics.ph ir.ph 
+indexing.cc:	indexing.pcc matchcom.ph ast.ph basics.ph ir.ph 
+ast.cc:	ast.pcc ast.ph basics.ph 
+constr.cc:	constr.pcc matchcom.ph ast.ph basics.ph ir.ph 
+parsegen.cc:	parsegen.pcc parsegen.ph ast.ph basics.ph ir.ph 
+lexeme.cc:	lexeme.pcc ast.ph basics.ph ir.ph 
+lexer.cc:	lexer.pcc parser.ph keywords.ph basics.ph 
+trs.cc:	trs.pcc ast.ph ir.ph basics.ph trs.ph 
+trs2.cc:	trs2.pcc ast.ph ir.ph basics.ph trs.ph 
+trs3.cc:	trs3.pcc ast.ph ir.ph basics.ph trs.ph 
+rwgen.cc:	rwgen.pcc matchcom.ph ast.ph basics.ph ir.ph funmap.ph \
+	../include/AD/automata/treegram.ph 
+rwgen2.cc:	rwgen2.pcc ast.ph basics.ph ir.ph 
+rwgen3.cc:	rwgen3.pcc matchcom.ph ast.ph basics.ph ir.ph funmap.ph 
+rwgen4.cc:	rwgen4.pcc matchcom.ph ast.ph basics.ph ir.ph funmap.ph 
+rwgen5.cc:	rwgen5.pcc basics.ph 
+lawgen.cc:	lawgen.pcc ast.ph basics.ph ir.ph 
+parser-util.cc:	parser-util.pcc keywords.ph parser.ph ast.ph basics.ph \
+	ir.ph 
+parser.cc:	parser.pcc aggen.ph matchcom.ph grsgen.ph graphedges.ph \
+	graphtype.ph timespace.ph keywords.ph setl-ast.ph parsegen.ph \
+	parser.ph ast.ph basics.ph ir.ph 
+setl-ast.cc:	setl-ast.pcc ir.ph setl-ast.ph basics.ph ast.ph 
+documentation.cc:	documentation.pcc parser.ph 
+collection.cc:	collection.pcc basics.ph collection.ph 
+setlgen.cc:	setlgen.pcc setl-ast.ph ast.ph basics.ph ir.ph 
+setltype.cc:	setltype.pcc setl-ast.ph ast.ph basics.ph ir.ph 
+timespace.cc:	timespace.pcc timespace.ph basics.ph 
+env.cc:	env.pcc 
+funmap.cc:	funmap.pcc matchcom.ph ast.ph basics.ph ir.ph funmap.ph \
+	../include/AD/automata/treegram.ph 
+metasyntax.cc:	metasyntax.pcc ast.ph ir.ph basics.ph parsegen.ph \
+	metasyntax.ph 
+pat.cc:	pat.pcc ast.ph pat.ph matchcom.ph basics.ph ir.ph 
+grsgen.cc:	grsgen.pcc matchcom.ph grsgen.ph ast.ph basics.ph ir.ph 
+selector.cc:	selector.pcc matchcom.ph ast.ph basics.ph ir.ph 
+graphtype.cc:	graphtype.pcc graphtype.ph basics.ph ast.ph 
+graphrep.cc:	graphrep.pcc basics.ph graphtype.ph graphedges.ph 
+graphops.cc:	graphops.pcc graphedges.ph basics.ph graphtype.ph 
+graphreport.cc:	graphreport.pcc graphedges.ph basics.ph graphtype.ph 
+classdef.cc:	classdef.pcc ast.ph basics.ph ir.ph 
+prop-main.cc:	prop-main.pcc 
+aggen.cc:	aggen.pcc ir.ph basics.ph 
+datatype.cc:	datatype.pcc ir.ph basics.ph ast.ph datatype.ph 
+instance.cc:	instance.pcc ir.ph basics.ph ast.ph datatype.ph 
+list.cc:	list.pcc basics.ph 
+visualize.cc:	visualize.pcc 
+visual2.cc:	visual2.pcc basics.ph ir.ph 
+rwmix.cc:	rwmix.pcc rwmix.ph ir.ph basics.ph ast.ph 
+ir.h:	ir.ph basics.ph 
+ast.h:	ast.ph basics.ph 
+basics.h:	basics.ph 
+parsegen.h:	parsegen.ph ir.ph basics.ph 
+keywords.h:	keywords.ph 
+parser.h:	parser.ph 
+collection.h:	collection.ph basics.ph 
+setl-ast.h:	setl-ast.ph ir.ph basics.ph 
+setlgen.h:	setlgen.ph 
+matchcom.h:	matchcom.ph 
+trs.h:	trs.ph basics.ph 
+timespace.h:	timespace.ph basics.ph 
+env.h:	env.ph 
+funmap.h:	funmap.ph 
+metasyntax.h:	metasyntax.ph ir.ph basics.ph parsegen.ph 
+pat.h:	pat.ph matchcom.ph ast.ph basics.ph ir.ph 
+list.h:	list.ph basics.ph 
+grsgen.h:	grsgen.ph matchcom.ph basics.ph 
+graphtype.h:	graphtype.ph basics.ph 
+graphedges.h:	graphedges.ph basics.ph graphtype.ph 
+aggen.h:	aggen.ph ir.ph basics.ph 
+datatype.h:	datatype.ph basics.ph ast.ph 
+listimpl.h:	listimpl.ph basics.ph 
+rwmix.h:	rwmix.ph 

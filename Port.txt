@@ -1,0 +1,96 @@
+Prop 2.3.7 (Spitfire) port modifications
+----------------------------------------
+
+Prop has been ported to :-
+
+    - Cygwin GCC 3.4.3
+    - Linux GCC 4.0
+    - Microsoft Visual Studio 2005 Express.
+
+I could not be ported to Visual Studio 2003 as it had a bug that made
+porting rather alkward.
+
+Microsoft Visual Studio 2005 Express is availiable from :-
+
+    http://lab.msdn.microsoft.com/express/visualc/default.aspx
+
+Porting done by Aaron Gray (angray@beeb.net)
+
+Modifications
+-------------
+
+modified config.h, enabled BOOL and explicit.
+
+Modern STL headers. Changed all old STL '.h' headers to modern headers.
+"using namespace std;" has been includeed in all source files.
+<strstream> is still used though, I have included '-Wno-deprecated' flag to
+disable warnings.
+
+ADLib 'iolexerbuf.cc' has been modified to use 'getline()'.
+'lexer.pcc' has been modified to ignore CR's.
+
+'typename' has been added in dlist.h, hashmap.h, dchash.h.
+
+Linux uses strcasecmp() rather than stricmp() in 'strings/quark.cc'.
+
+list.cc is no longer needed.
+
+rwgen3.pcc has been modified on line 466 to include a dummy lvalue that
+replaces the old lvalue that gets translated in to a rvalue that causes
+a bug when it is used on the left hand side of an equals expression.
+
+ADlib backend-tools, vlsi, and persist have been missed out of the build as
+they cause errors that have not been fixed yet. So have pretty printings
+pristream and priostream been excluded in the make file for now.
+
+matchgen next variable is initialized. so is parsegen's syn__ initialized.
+
+renamed 'pair' as 'makepair' in basics.h as pair already defined.
+
+The implemntation of enumberation types has been modified as GCC was
+complaining of non constant casting in case statements. TUPLEtycon and
+friends have been modified not to be TyCons anymore.
+
+vararray.h has special mods for MS builds.
+
+piostream.h has special Cygwin mod. ???
+
+Modified va_arg calls in gencode.pcc to use int's then cast to appropriate
+types to avoid segment faults on GCC.
+
+Modified makefiles. Removed -save_space and -O14 as they both caused compile
+errors. Linked prop makefile dependancy to ADlib library.
+
+In codegen.pcc line 178 #line directives are generated in comment space on
+Windows for debugging purposes for now. Need moding backslashes to double
+backslashes for Windows paths to avoid string space meta escape char
+generation.
+
+Had to comment out line in visualize.cc line 57 as seekpos() is protected :-
+    //   label_text.rdbuf()->seekpos(0);
+This introduces a bug in the version to be fixed in next, needs alternate
+coding.
+
+modified setl-ast.pcc 'sstream' renamed to 'ostream'.
+
+Garbage collection has sbrk commented out for Cygwin and Linux :-
+    //extern "C" void * sbrk(int);
+
+GCC build has 'backend-tools' disabled, as it can cause segment faults.
+
+Windows build has GC, persist and lots of other parts of ADlib not used
+directly by Prop disabled.
+
+Conclutions
+-----------
+
+I think that is everything I have modified.
+
+Prop builds on Cygwin with no warnings. ADlib has warnings.
+Lots of warnings on Windows.
+
+This release needs proper fixes before the version 2.3.8 release.
+ - Finish porting the unused bits of ADLib in MSVC++ build.
+ - #line directive support on Windows.
+ - Need to normalize tabs into spaces and maybe use tabs of 2 rather than 3.
+ - clean up loose ends and unused files.

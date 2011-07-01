@@ -1,0 +1,109 @@
+#include "willard-ast.ph"
+#include <AD/pretty/postream.h>
+
+instantiate datatype Exp, List<Exp>, List<Id>, List<.[Ids,Exps]>, Literal; 
+;
+
+int ConsCounter::count = 0;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Auxiliary method to pretty print set comprehensions.
+//
+///////////////////////////////////////////////////////////////////////////////
+static PrettyOStream& print_set_comp(PrettyOStream& S, Exp exp)
+{  Exp root = exp;
+   Bool has_guard = false;
+   Exp guard;
+
+   // print the root expression first
+   match while (root) of
+     GENERATOR(_,_,e): { root = e; }
+   | GUARD(g,e):       { guard = g; has_guard = true; root = e; }
+   end match;
+   S << root << ':';
+   char comma = '\0';
+
+   // print the generators
+   match while (exp) of
+      GENERATOR(#[x],#[A],B): { if (comma) S << comma << space;
+			        S << x << "in" << A; 
+                                comma = ','; exp = B; 
+			      } 
+   |  GENERATOR(xs,As,B):     { if (comma) S << comma << space;
+			        S << '[' << xs << ']' << "in" << space
+				  << '[' << As << ']'; 
+                                comma = ','; exp = B; 
+			      } 
+   end match;
+
+   // print guard
+   if (has_guard) S << space << '|' << space << guard; 
+   return S;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// 
+//  Auxiliary method to pretty print let expressions.  
+// 
+///////////////////////////////////////////////////////////////////////////////
+static PrettyOStream& print_let(PrettyOStream& S, Exp e)
+{  S << tab << "let" << newline << indent;
+   match while (e) of
+      LET(x,e1,e2):
+      { S << tab << x << '=' << e1 << newline; e = e2; }
+   end match;
+   return S << unindent << tab << "in" << newline << indent
+            << tab << e << newline << unindent
+            << tab << "end" << newline;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Main method to pretty print an expression.
+//
+///////////////////////////////////////////////////////////////////////////////
+PrettyOStream& operator << (PrettyOStream& S, Exp e)
+{  match (e) of
+      OP(op, #[e1,e2]): { return S << '(' << e1 << op << e2 << ')'; }
+   |  OP(op, #[e]):	{ return S << '(' << op << e << ')'; }
+   |  OP(op, es):       { return S << op << '(' << es << ')'; }
+   |  APP(f, es):       { return S << f << '(' << es << ')'; }
+   |  LIT l:	        { return S << l; }
+   |  ID id:	        { return S << id; }
+   |  TUPLE es:         { return S << '[' << es << ']'; }
+   |  FORALL(x, a, b):  { return S << "(forall"<<x<<"in"<<a<<'.'<<b<<')'; }
+   |  EXISTS(x, a, b):  { return S << "(exists"<<x<<"in"<<a<<'.'<<b<<')'; }
+   |  GENERATOR(#[],_,_): { return S << "{}"; }
+   |  GENERATOR _:      { S << '{'; print_set_comp(S,e); return S << '}'; } 
+   |  LET _:            { return print_let(S,e); }
+   |  GUARD (a,b):      { return S << "if" << a << "then" << b 
+				   << "else" << "{}"; }
+   //|  _:                { return S << "???"; }
+   end match;
+}
+
+PrettyOStream& operator << (PrettyOStream& S, Exps es)
+{  match while (es) of
+      #[e]:        { return S << e; }
+   |  #[h ... t]:  { S << h << ','; es = t; }
+   end match;
+   return S;
+} 
+
+PrettyOStream& operator << (PrettyOStream& S, Literal l)
+{  match (l) of
+      INT i:      { return S << i; }
+   |  STRING s:   { return S << s; }
+   |  BOOL b:     { return S << (b ? "true" : "false"); }
+   end match;
+}
+
+PrettyOStream& operator << (PrettyOStream& S, Ids ids)
+{  match while (ids) of
+      #[id]:       { return S << id; }
+   |  #[h ... t]:  { S << h << ','; ids = t; }
+   end match;
+   return S;
+} 

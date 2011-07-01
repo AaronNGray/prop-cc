@@ -1,0 +1,40 @@
+//  Test -lno-implicit-template instantiation of polymorphic types
+//  This is the same as prop3.pcc except that it is generated with
+//  the options save_space and -O15.
+
+#include <iostream.h>
+
+datatype List<T> :: collectable printable rewrite 
+   = #[] | #[ T ... List<T> ]
+   ;
+
+datatype Tree<T> :: collectable printable rewrite
+   = Empty | Leaf of T | Node of (Tree<T>, Tree<T>)
+   ;
+
+datatype Foo :: collectable printable rewrite = FOO() | BAR();
+
+instantiate extern datatype List<int>, Tree<List<int> >, Tree<int>, Foo;
+
+Tree<int> flip(Tree<int> t)
+{  match (t)
+   {  Node(a,b): { return Node(flip(b),flip(a)); }
+   |  t:         { return t; }
+   }
+}
+
+#define PROP_EXPLICIT_TEMPLATE_INSTANTIATION
+instantiate datatype List<int>, Tree<List<int> >, Tree<int>, Foo;
+
+int main()
+{  List<int> a = #[1,2,3];
+   Tree<List<int> > empty = Empty; // fake it for now
+   Tree<List<int> > b = Node(Leaf(#[4]),Node(Leaf(#[5,6]),empty));
+   Tree<int> c = Node(Leaf(4),Node(Leaf(5),Leaf(6)));
+   for (int i = 0; i < 10000; i++)
+   {  Foo l = FOO(); }
+   cout << "a = " << a << endl;
+   cout << "b = " << b << endl;
+   cout << "c = " << c << endl;
+   return 0;
+}

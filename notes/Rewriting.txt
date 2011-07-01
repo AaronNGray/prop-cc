@@ -1,0 +1,33 @@
+Some notes on rewriting:
+
+The bottom up tree matching algorithm is basically from Todd Proesting's 
+PhD thesis.  The index map compression scheme is due to a 1987 paper
+by David Chase.   In fast mode (-f) this is essentially what's generated.  
+In the default slow mode, however, the index maps(mu) are actually compressed
+for a second time using the usual sparse 2-D array -> 1-D array compression
+algorithm (due to Tarjan and Yao, I think.)
+
+This second compression makes the tables a lot smaller without any asymtotic
+degradation in time so it is the default.   If the secondary compression 
+actually make it use _more_ storage than the uncompressed method, then
+the indices will be not compressed automatically.  You can explicitly
+disable this optimization using the -f option (for fast). 
+
+Rewriting in Prop actually encompasses the following different things:
+  (1)  Perform some side effect upon matching each pattern.
+       This is very similar to the behavior of `match', except that
+       the action is performed on all matching subtrees, not just 
+       from the root, i.e. implicitly the entire tree is traversed.
+  (2)  Translation, i.e. some other data value is synthesized in a bottom up
+       manner from the traversal, and 
+  (3)  In place replacement, i.e. the subject tree is altered in place
+       and matching is performed using the altered tree. 
+
+All three types of actions can be performed at the same time.  Furthermore,
+features such as cost minimization functions and pattern guards are also 
+applicable to the pattern set, making rewriting a very general and powerful
+tool (and also making it quite difficult to implement ;-)
+
+The actual source code for implement the algorithm is in the files
+src/automata/tree*  and src/rewrite/burs_*.   
+

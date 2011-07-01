@@ -1,0 +1,162 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the garbage collection interface generation
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include "ir.ph"
+#include "datatype.ph"
+#include "type.h"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This method generates the interface method declarations
+//  for the garbage collector.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::generate_gc_interface( CodeGen& C)
+{
+  C.pr(
+        "%^%/"
+        "%^//"
+        "%^// Method for garbage collection tracing"
+        "%^//"
+        "%^%/"
+        "%-%^protected:%+"
+        "%^virtual void trace(GC *);"
+        "%-%^public:%+"
+      );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This method generates an implementation for the trace method
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::generate_gc_implementation( CodeGen& C, Tys tys, DefKind k)
+{
+  // Unit constructors do not need gc methods
+
+  if (root->arg_constructors == 0)
+    return;
+
+  if (k == INTERFACE_DEFINITION)
+  {
+    C.pr( "%^extern void %s%P::trace(GC *);", class_name, tys);
+    return;
+  }
+
+  C.pr( "%^void %s%P::trace(GC * gc__)" "%^{%+", class_name, tys);
+
+  // Invoke base class tracing methods
+
+  gen_super_class_tracing_methods(C,tys,k);
+
+  // Invoke tracing functions for each collectable fields.
+
+  if (cons != NOcons)
+  {
+    Ty arg_ty = cons_arg_ty;
+    if (is_array)
+      arg_ty = mkarrayty( arg_ty, IDexp( "len_"));
+    gen_field_tracing_methods( C, DEREFexp( IDexp( #"this")),
+                               arg_ty, tys, k, true);
+  }
+
+  C.pr( "%-%^}\n\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This method generates a tracing method for each base class
+//  that is collectable.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::gen_super_class_tracing_methods
+   (CodeGen& C, Tys tys, DefKind k)
+{
+  // Generate a call to the superclass
+  if (this != root)
+  {
+    if (root->use_gc_base)
+      C.pr( "%^%s%P::trace(gc__);", root->class_name, tys);
+    else
+      C.pr( "%^// call to method %s%P::trace() has been optimized out",
+            root->class_name, tys);
+  }
+
+  for_each ( Inherit, inh, inherited_classes)
+  {
+    if((inh->qualifiers & QUALcollectable) || is_gc_ty(inh->super_class))
+    {
+      C.pr("%^%t::trace(gc__);",
+      apply_ty( mkpolyty( inh->super_class,parameters), tys), "");
+      if (this == root)
+        root->use_gc_base = true;
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This method generates a tracing method for each field
+//  that is collectable.
+//
+///////////////////////////////////////////////////////////////////////////////
+void DatatypeClass::gen_field_tracing_methods
+   (CodeGen& C, Exp exp, Ty ty, Tys tys, DefKind k, Bool toplevel)
+{
+  match (deref_all(ty))
+  {
+    TUPLEty types:
+    {
+      int i = 1;
+      for_each ( Ty, ty, types)
+        gen_field_tracing_methods( C, DOTexp( exp, index_of(i++)), ty, tys, k);
+    }
+  | EXTUPLEty types:
+    {
+      int i = 1;
+      for_each ( Ty, ty, types)
+        gen_field_tracing_methods( C, DOTexp( exp, index_of(i++)), ty, tys, k);
+    }
+  | RECORDty( labels, _, types):
+    {
+    Ids ls;
+    Tys ts;
+    for( ls = labels, ts = types; ls && ts; ls = ls->#2, ts = ts->#2)
+      gen_field_tracing_methods( C, DOTexp( exp, ls->#1), ts->#1, tys,k);
+    }
+  | ARRAYty( ty, bound):
+    {
+      C.pr(
+            "%^{%+"
+            "%^for (int i__ = 0; i__ < %e; i__++)"
+            "%^{%+",
+            bound
+          );
+     gen_field_tracing_methods( C, INDEXexp( exp, IDexp( #"i__")), ty, tys, k);
+     C.pr(
+           "%-%^}"
+           "%-%^}"
+         );
+    }
+  | _:
+     {
+     if (is_gc_ty(ty))
+     {
+       if (toplevel)
+         exp = DOTexp( exp, mangle( cons->name));
+       if (is_pointer_ty(ty))
+         C.pr( "%^%e = (%t)gc__->trace(%e);", exp, ty, "", exp);
+       else
+         C.pr( "%^gc__->trace(%e);",exp);
+       C.pr( " // %T", ty);
+     }
+     else
+       C.pr( "%^// omitted %T", ty); }
+  }
+}

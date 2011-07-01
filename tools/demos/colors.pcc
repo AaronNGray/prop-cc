@@ -1,0 +1,29 @@
+#include <stdio.h>
+datatype Color = red | green | yellow | blue | brown 
+               | black | white | grey | purple | orange;
+
+int f(Color c)
+{  match (c) {
+      case black || white: return 0;
+      case grey:           return 1;
+      case ! yellow:       return 2;
+      case _:              return 3;
+   }
+}
+
+void g(Color c)
+{  matchall (c) {
+      case black || white: printf("Black or white\n");
+      case grey:           printf("Grey\n");
+      case ! yellow:       printf("Not yellow\n");
+      case _:
+   }
+}
+
+
+int not_yellow_red(Color c)
+{   match (c) {
+       case ! red && ! yellow: return 1;
+       case _:   return 0;
+    }
+}

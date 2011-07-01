@@ -1,0 +1,8 @@
+  
+  
+  (not (a and b and c and d and e and a and b and c and d and e
+	and (true or false) and (a and b) and (a or b)))
+  and
+  (not (a and b and c))
+  and
+  true

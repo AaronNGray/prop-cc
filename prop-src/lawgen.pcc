@@ -1,0 +1,347 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Module to generate law abbreviations.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include "ir.ph"
+#include "ast.ph"
+#include "datagen.h"
+#include "type.h"
+#include "hashtab.h"
+#include "list.h"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Law environment.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+HashTable DatatypeCompiler::law_env( string_hash, string_equal);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to lookup a pattern law.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Pat DatatypeCompiler::lookup_pat( Id id)
+{
+  HashTable::Entry * e = law_env.lookup(id);
+  return e ? (Pat)e->v : NOpat;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to enter a new pattern
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void DatatypeCompiler::add_law( LawDef law_def)
+{
+  match (law_def)
+  {
+  LAWdef { id, args, pat, guard, invert ... }:
+    {
+      if (lookup_pat(id) != NOpat)
+      {
+           error ("%Lduplicated definition of pattern constructor '%s'\n",id);
+      }
+      else
+      {
+        // type check pattern
+        Pat p = guard != NOexp ? GUARDpat( p, guard) : pat;
+        law_env.insert( id, POLYpat( id, length( args), args, p, guard, invert));
+      }
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Function 'invertible' checks whether a pattern is invertible into
+//  a pseudo constructor.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+fun invertible NOpat || IDpat _ || LITERALpat _ || INDpat _
+            || CONSpat _ : Bool:       { return true; }
+  | invertible WILDpat _ || APPENDpat _ || LOGICALpat _ || ARRAYpat _:
+                                       { return false; }
+  | invertible APPpat(CONSpat _,p):    { return invertible(p); }
+  | invertible TYPEDpat(p,_):          { return invertible(p); }
+  | invertible ASpat(_,p,_,_):         { return invertible(p); }
+  | invertible CONTEXTpat(_,p):        { return invertible(p); }
+  | invertible TUPLEpat ps:            { return invertible(ps); }
+  | invertible EXTUPLEpat ps:          { return invertible(ps); }
+  | invertible RECORDpat(ps,flex):     { return ! flex && invertible(ps); }
+  | invertible GUARDpat(p,_):          { return invertible(p); }
+  | invertible MARKEDpat(_,p):         { return invertible(p); }
+  | invertible LISTpat { head, tail ... }:
+     { return invertible(head) && invertible(tail); }
+  | invertible VECTORpat { len, array, elements, head_flex, tail_flex ... }:
+     { return ! head_flex && ! tail_flex &&
+                invertible(len) && invertible(array) && invertible(elements);
+     }
+  | invertible p: { bug("invertible: %p", p); return false; }
+
+and invertible (#[] : Pats): Bool: { return true; }
+  | invertible #[a ... b]:         { return invertible(a) && invertible(b); }
+
+and invertible (#[] : LabPats): Bool: { return true; }
+  | invertible #[a ... b]:   { return invertible(a.pat) && invertible(b); }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Function to convert a pattern into a variable creation expression.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exp mkvariable( Pat p)
+{
+  match (deref_all(p->ty))
+  {
+  DATATYPEty({ qualifiers, terms, unit ... },_) | qualifiers & QUALunifiable:
+    {  return APPexp( IDexp( terms[unit]->name), TUPLEexp(#[])); }
+  | _:
+    {
+      error( "%L%p with type %T is not unifiable\n", p, p->ty);
+      return NOexp;
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Function 'pat2exp' converts an invertible pattern into a
+//  constructor expression.  Also extracts the bound variable bindings
+//  at the same time.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+static List<.[Id,Ty]> boundvars = #[];
+static Exps           actual_args = #[];
+static Bool           application_error = false;
+Bool   write_mode = false;
+
+fun pat2exp NOpat: Exp:
+      { return NOexp; }
+  | pat2exp p as IDpat(id,_,_):
+      { return write_mode ? mkvariable(p) : IDexp(id); }
+  | pat2exp INDpat(id,i,_) | actual_args != #[]:
+      {
+        int k = 0;
+        for_each(Exp, e, actual_args)
+        {  if (k == i) return e;
+           k++;
+        }
+	    error("%LMissing argument %i in law variable %s\n",i,id);
+          application_error = true;
+          return NOexp;
+      }
+  | pat2exp INDpat(id,_,ty):
+      {
+        boundvars = #[.(id,ty) ... boundvars];
+        return IDexp(id);
+      }
+  | pat2exp LITERALpat l:        { return LITERALexp(l); }
+  | pat2exp TYPEDpat(p,_):       { return pat2exp(p); }
+  | pat2exp ASpat(_,p,_,_):      { return pat2exp(p); }
+  | pat2exp CONTEXTpat(_,p):     { return pat2exp(p); }
+  | pat2exp TUPLEpat ps:         { return TUPLEexp(pat2exp(ps)); }
+  | pat2exp EXTUPLEpat ps:       { return EXTUPLEexp(pat2exp(ps)); }
+  | pat2exp RECORDpat(ps,_):     { return RECORDexp(pat2exp(ps)); }
+  | pat2exp GUARDpat(p,e):       { return pat2exp(p); }
+  | pat2exp MARKEDpat(_,p):      { return pat2exp(p); }
+  | pat2exp CONSpat(ONEcons{name...}): { return IDexp(name); }
+  | pat2exp APPpat(CONSpat c,e): { return CONSexp(c,#[],pat2exp(e)); }
+  | pat2exp LISTpat { cons, nil, head, tail ... }:
+      { return LISTexp(cons,nil,pat2exp(head),pat2exp(tail)); }
+  | pat2exp VECTORpat { cons, elements ... }:
+      { return VECTORexp(cons,pat2exp(elements)); }
+  | pat2exp p as WILDpat _ | write_mode:
+      { return mkvariable(p); }
+  | pat2exp p: { bug("pat2exp: %p", p); return NOexp; }
+
+and pat2exp( #[]: Pats): Exps: { return #[]; }
+  | pat2exp #[a ... b]:        { return #[pat2exp(a) ... pat2exp(b)]; }
+
+and pat2exp (#[] : LabPats): LabExps: { return #[]; }
+  | pat2exp #[a ... b]:
+      {
+        LabExp labexp;
+        labexp.label = a.label;
+        labexp.exp   = pat2exp(a.pat);
+        return #[ labexp ... pat2exp(b) ];
+      }
+
+and pat2constructor( p : Pat) : Exp:
+    {
+      Bool mode_save = write_mode;
+      write_mode = false;
+      Exp  e = pat2exp(p);
+      write_mode = mode_save;
+      return e;
+    }
+
+and pat2unifier( p : Pat) : Exp:
+    {
+      Bool mode_save = write_mode;
+      write_mode = true;
+      Exp  e = pat2exp(p);
+      write_mode = mode_save;
+      return e;
+    }
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to lookup a pattern law.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Exp DatatypeCompiler::lookup_law( Id id, Exps args)
+{
+  Pat pat = lookup_pat(id);
+  match (pat)
+  {
+  POLYpat(id,arity,_,pat,guard,invert) | invert == true:
+    {
+      if (invertible(pat) && guard == NOexp)
+      {
+        actual_args = args;
+        application_error = false;
+        if (arity != length(args))
+        {
+          error( "%Larity mismatch between law %p and arguments %f\n",
+	            pat, TUPLEexp(args));
+          return NOexp;
+        }
+        Exp exp = pat2exp(pat);
+        actual_args = #[];
+        if (application_error)
+          error( "%Lcannot apply law %p with arguments %f\n",
+                pat, TUPLEexp(args));
+        return exp;
+      }
+      else
+      {
+        error( "%Llaw %s(...) = %p is not invertible\n",id,pat);
+      }
+    }
+  |  _: // skip
+  }
+  return NOexp;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate pattern law definitions
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void DatatypeCompiler::gen_law_defs (LawDefs law_defs)
+{
+  for_each (LawDef, l, law_defs)
+  {
+    match (l)
+      {
+      LAWdef{id,args,guard,pat,ty,invert}:
+        {
+          l->set_loc();
+
+          // infer the type of the pattern.
+          ty = type_of(pat);
+
+          // If the law is invertible, generate
+          // code for the laws
+          if (invert)
+          {  if (invertible(pat) && guard == NOexp)
+            {
+              boundvars = #[];
+              gen_law_inverse(l->loc(),id,args,pat2constructor(pat),ty);
+              boundvars = #[];
+            }
+            else
+              error( "%Llaw %s(...) = %p is not invertible\n",id,pat);
+          }
+        }
+      }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Check if type can be a C++ parameter
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool is_parameter_type (Ty ty)
+{
+  match (deref ty)
+  {
+  TYCONty(RECORDtycon _ || TUPLEtycon || ARRAYtycon _,_): return false;
+  |  _: return true;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate an inverse for a law definition
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void DatatypeCompiler::gen_law_inverse
+   (const Loc * location, Id id, Ids args, Exp exp, Ty ty)
+{ // Generate the header name
+
+  pr(
+      "%^%/"
+      "%^// Definition of law %s"
+      "%^%/"
+      "%#"
+      "%^inline %t(",
+      id, location->begin_line, location->file_name, ty, id
+    );
+
+  // Generate the parameters
+  Bool comma = false;
+  match while (args)
+  {
+  #[ arg ... rest ]:
+    {
+      if (comma) pr(", ");
+      List<.[Id,Ty]> bvs = boundvars;
+      Bool found = false;
+      Bool mode_save = write_mode;
+      write_mode = false;
+      match while (bvs)
+      {
+      #[.(v,ty) ... others]:
+        {
+          if (v == arg)
+          {
+            if (! is_parameter_type(ty))
+            { error( "%Llaw '%s': type %T cannot be used in parameter %s\n",
+                    id, ty,v);
+            }
+            found = true; pr("%t",ty,v);
+            bvs = #[];
+          }
+          else
+            bvs = others;
+        }
+      }
+      if (! found)
+        error( "%Llaw '%s': bound variable '%s' is absent in body %e\n",
+               id, arg, exp);
+      args  = rest;
+      comma = true;
+      write_mode = mode_save;
+    }
+  }
+
+  // Generate the body
+  pr(")%^{ return %e; }\n\n", exp);
+}

@@ -1,0 +1,1529 @@
+/////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the type analysis and type inference module
+//  in the Prop -> C++ translator.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+#include <AD/strings/quark.h>
+#include "hashtab.h"
+#include "ir.ph"
+#include "ast.ph"
+#include "collection.ph"
+#include "type.h"
+#include "datatype.ph"
+#include "list.h"
+#include "options.h"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Types for literals
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Ty  string_ty    = NOty,
+    character_ty = NOty,
+    integer_ty   = NOty,
+    real_ty      = NOty,
+    bool_ty      = NOty,
+    void_ty      = NOty,
+    quark_ty     = NOty,
+    bigint_ty    = NOty;
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Initialize the types
+//
+/////////////////////////////////////////////////////////////////////////////
+
+void initialize_types()
+{
+  character_ty = mkidty( #"char", #[]);
+  string_ty    = mkptrty( QUALty( QUALconst, character_ty));
+  integer_ty   = mkidty( #"int", #[]);
+  real_ty      = mkidty( #"double", #[]);
+  bool_ty      = mkidty( #"bool", #[]);
+  void_ty      = mkidty( #"void", #[]);
+  quark_ty     = mkidty( #"Quark", #[]);
+  bigint_ty    = mkidty( #"BigInt", #[]);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Make a type variable
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Ty mkvar() { return VARty(NOty); }
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Constructors for some common types
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Ty mkptrty( Ty ty)                   { return TYCONty( POINTERtycon, #[ty]); }
+Ty mkrefty( Ty ty)                   { return TYCONty( (TyCon)REFtycon, #[ty]); }
+Ty mkfunty( Ty a, Ty b)              { return TYCONty( (TyCon)FUNtycon, #[a,b]); }
+Ty mkarrayty( Ty a, Exp e)           { return TYCONty( ARRAYtycon(e), #[a]); }
+Ty mkidty( Id id, Tys args)          { return TYCONty( IDtycon(id), args); }
+Ty mkidvarty( Id id, TyVars args)    { return TYCONty( IDtycon(id), tyvars_to_tys(args)); }
+Ty mktuplety( Tys tys)               { return TYCONty( (TyCon)TUPLEtycon, tys); }
+Ty mkrecordty( Ids l, Tys t, Bool f) { return TYCONty( RECORDtycon(l,f), t); }
+Ty mktypety()                        { return TYCONty( (TyCon)TYPEtycon,#[]); }
+Tys tyvars_to_tys ( TyVars a)
+{
+  match (a)
+  {
+  #[]:
+    { return #[]; }
+  |  #[h ... t]:
+    { return #[mkidty(h,#[]) ... tyvars_to_tys(t)]; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Return the representation tag of a constructor
+//
+/////////////////////////////////////////////////////////////////////////////
+
+int tag_of( Cons cons)
+{
+  match (cons) of
+    ONEcons { alg_ty = DATATYPEty({ qualifiers ... },_), tag ... }:
+      {  return tag + ((qualifiers & QUALlexeme) ? 256 : 0); }
+  | _:
+      { return 0; }
+  end match;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//  Convert type variables to a type list
+/////////////////////////////////////////////////////////////////////////////
+
+Tys tyvars_to_type_list(int i, TyVars tyvars)
+{
+  match (tyvars)
+  {
+  #[]:
+      { return #[]; }
+  | #[a ... b]:
+      { return #[ INDty(a,i) ... tyvars_to_type_list(i+1,b) ]; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Make a universally quantified type
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Ty mkpolyty( Ty ty, TyVars tyvars)
+{
+  int arity = length(tyvars);
+  if (arity == 0) return ty;
+  Id * bound_vars = (Id *)mem_pool[arity * sizeof(Id)];
+  int i = 0;
+  for_each ( TyVar, tv, tyvars)
+     bound_vars[i++] = tv;
+  return POLYty( deref(ty), arity, bound_vars);
+/*
+  match (deref(ty))
+  {
+  TYCONty(tycon,_):
+    {
+      return POLYty
+        (TYCONty( tycon, tyvars_to_type_list( 0, tyvars)), arity, bound_vars);
+    }
+  |  _:
+    { bug("mkpolyty()"); }
+  }
+*/
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Dereference a type expression
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Ty deref_all( Ty ty)
+{
+  match while (ty)
+  {
+    VARty (t as ! NOty):  { ty = t; }
+  | QUALty(_,t):          { ty = t; }
+  | DEFVALty(t,_):        { ty = t; }
+  | IDty (id, #[]):
+    {  Ty t = lookup_ty(id); if (t != NOty) ty = t; else return ty; }
+  | IDty (id, a):
+    {
+      match (lookup_ty(id))
+      {
+        TYCONty(tycon,x):
+          { return TYCONty(tycon,a); }
+      |  _:
+          { return ty; }
+      }
+    }
+  | _:
+      { return ty; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Dereference a type expression.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Ty deref( Ty ty)
+{
+  match while (ty) { VARty (t as !NOty): { ty = t; } }
+  return ty;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Get the default value of a type (if any)
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Exp default_val( Ty ty)
+{
+  match (deref(ty))
+  {
+  DEFVALty (_,v):
+      { return v; }
+  | _:
+      { return NOexp; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Test for qualifiers in a type
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Bool has_qual( TyQual q, Ty ty)
+{
+  match while (ty)
+  {
+    VARty t:         { ty = t; }
+  | NESTEDty(_,t):   { ty = t; }
+  | DEFVALty(t,_):   { ty = t; }
+  | DATATYPEty({ qualifiers ... },_): { return qualifiers & q; }
+  | QUALty(qual,t):  { if (q & qual) return true; ty = t; }
+  }
+  return false;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Test if a type is grounded (i.e. contains no type variables.)
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Bool is_ground( Ty ty)
+{
+  match while (ty)
+  {
+    VARty t:         { ty = t; }
+  | QUALty(_,t):     { ty = t; }
+  | DEFVALty(t,_):   { ty = t; }
+  | NESTEDty(a,b):   { if (! is_ground(a)) return false; ty = b; }
+  | TYCONty(_, tys): { return is_ground(tys); }
+  | _:               { return false; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Test if a type list is grounded
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Bool is_ground( Tys tys)
+{
+  for_each (Ty, t, tys)
+    if (! is_ground(t))
+      return false;
+  return true;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Test if a type is an array
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Bool is_array_ty( Ty ty)
+{
+  match (deref_all(ty))
+  {
+    ARRAYty(_,! NOexp): { return true; }
+  | NESTEDty(_,ty):     { return is_array_ty(ty); }
+  | _:                  { return false; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Test if a type is a polymorphic datatype
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Bool is_poly_datatype( Ty ty)
+{
+  match (deref_all(ty))
+  {
+    DATATYPEty({ tyvars ... },_): { return tyvars != #[]; }
+  | _:                            { return false; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Test if a type is a datatype.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Bool is_datatype( Ty ty)
+{
+  match (deref_all(ty))
+  {
+    DATATYPEty(_,_): { return true; }
+  | _:               { return false; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Add a new class to an inheritance list
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Inherits add_inherit( Id id, TyVars p, Inherits i, Scope s, TyQual t)
+{
+  Inherit inh = INHERIT'
+      {
+        qualifiers  = t,
+        scope       = s,
+        super_class = mkidty( id, tyvars_to_tys(p))
+      };
+  return #[ inh ... i ];
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Test if a type is garbage collectable.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Bool is_gc_ty( Ty ty)
+{
+  match while (ty)
+  {
+    DATATYPEty({ qualifiers, arg ... }, _):
+      { return (qualifiers & QUALcollectable) && (arg > 0); }
+  | REFty t:        { ty = t; }
+  | POINTERty t:    { ty = t; }
+  | DEFVALty(t,_):  { ty = t; }
+  | NESTEDty(_,t):  { ty = t; }
+  | VARty t:        { ty = t; }
+  | QUALty(q,t):    { if (q & QUALcollectable) return true; ty = t; }
+  | IDty (_,_):
+    {
+      Ty t = deref_all(ty);
+      if (t == ty) return false;
+      ty = t;
+    }
+  | _:
+    { return false; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Test if type is a pointer.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Bool is_pointer_ty( Ty ty)
+{
+  match ( deref_all( ty))
+  {
+  TYCONty( DATATYPEtycon _ || POINTERtycon, _):
+      { return true; }
+  | _:
+      { return false; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Test if type is embeddable into 1 word
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Bool is_embeddable_ty( Ty ty)
+{
+  match ( deref_all( ty))
+  {
+    TYCONty(DATATYPEtycon { arg = 0 ... },_):     { return true; }
+  | TYCONty(DATATYPEtycon { opt ... },_)
+      | (opt & OPTtaggedpointer) == 0:            { return true; }
+  | POINTERty t | t != character_ty:              { return true; }
+  | t | ty_equal(t,integer_ty) ||
+        ty_equal(t,character_ty) ||
+        ty_equal(t,bool_ty):                      { return true; }
+  | _:                                            { return false; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Test if constructor is an array-style constructor
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Bool is_array_constructor( Id id) { return id[1] == '|'; }
+
+Bool is_list_constructor( Id id)
+    {
+      return id[0] == '#' &&
+          (id[1] == '[' ||
+          id[1] == '(' ||
+          id[1] == '{');
+    }
+
+Bool is_list_constructor( Cons cons)
+    { return cons != NOcons && is_list_constructor(cons->name); }
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Returns the number of boxed variants.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+int boxed_variants( Ty ty)
+{
+  match ( deref_all( ty))
+  {
+    DATATYPEty ({ arg ... }, _): { return arg; }
+  | _:                           { return 0; }
+  }
+}
+
+int unboxed_variants( Ty ty)
+{
+  match ( deref_all( ty))
+  {
+    DATATYPEty ({ unit ... }, _): { return unit; }
+  | _:                            { return 0; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Returns the arity of a type
+//
+/////////////////////////////////////////////////////////////////////////////
+
+int arity_of( Ty ty)
+{
+  match (deref_all(ty))
+  {
+    NOty:                                      { return 0; }
+  | TYCONty(TUPLEtycon || RECORDtycon _,tys):  { return length(tys); }
+  | NESTEDty(_,t):                             { return arity_of(t); }
+  | _:                                         { return 1; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Instantiate a polymorphic type scheme
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Ty inst( Ty ty, int n, Id bound_vars[], Ty subst[])
+{
+  match (deref(ty))
+  {
+    NOty || VARty _: { return ty; }
+  | INDty(_,i):
+    { return subst[i] != NOty ? subst[i] : (subst[i] = mkvar()); }
+  | QUALty(q,t):     { return QUALty(q,inst(t,n,bound_vars,subst)); }
+  | DEFVALty(t,e):   { return DEFVALty(inst(t,n,bound_vars,subst),e); }
+  | NESTEDty(a,b):   { return NESTEDty(inst(a,n,bound_vars,subst),
+                                       inst(b,n,bound_vars,subst));
+                     }
+  | TYCONty(tycon,   tys):
+    {  return TYCONty(tycon, inst(tys,n,bound_vars,subst)); }
+  | POLYty _: { bug("inst()"); return NOty; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Instantiate a type list
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Tys inst( Tys tys, int n, Id bound_vars[], Ty subst[])
+{
+  match (tys)
+  {
+    #[]:        { return #[]; }
+  | #[a ... b]:
+    {
+      return #[ inst(a, n, bound_vars, subst) ...
+                inst(b, n, bound_vars, subst) ];
+    }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Instantiate a polymorphic type scheme
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Ty inst( Ty polyty)
+{
+  match ( polyty)
+  {
+  POLYty( ty, n, bound_vars):
+    {
+       Ty subst[256];
+       for (int i = n - 1; i >= 0; i--) subst[i] = NOty;
+       return inst(ty, n, bound_vars, subst);
+    }
+  | _:  { return polyty; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Construct component types
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Ty component_ty( Ty datatype_ty, Cons cons)
+{
+  match (deref_all datatype_ty) and (cons)
+  {
+    DATATYPEty(_, tys as ! #[]), ONEcons { cons_ty, ty = ! NOty ... }:
+      {  return apply_ty(cons_ty,tys); }
+  | _, ONEcons { ty ... }: { return ty; }
+  | _, _:                  { return NOty; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Extract record type component
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Ty component_ty( Ty record_ty, Id label)
+{
+  match (deref_all record_ty)
+  {
+    RECORDty(labels,_,tys):
+    {
+      Ids ls; Tys ts;
+      for (ls = labels, ts = tys; ls && ts; ls = ls->#2, ts = ts->#2)
+        if (ls->#1 == label)
+          return ts->#1;
+    }
+  | ty as TUPLEty _ | label[0] == '_':
+    {
+      int i = atol( label + 1);
+      if (i > 0)
+        return component_ty(ty,i);
+    }
+  | _: // skip
+  }
+  error( "%Ltype %T does not have component %s\n", record_ty, label);
+  return NOty;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Extract tuple type component
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Ty component_ty( Ty tuple_ty, int n)
+{
+  match ( deref_all tuple_ty)
+  {
+    TUPLEty tys:
+    {
+      int i; Tys ts;
+      for (i = 1, ts = tys; ts; ts = ts->#2, i++)
+        if (i == n) return ts->#1;
+    }
+  | _: // skip
+  }
+  error( "%Ltype %T does not have component #%i\n",tuple_ty,n);
+  return NOty;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Apply type arguments to a ty_scheme.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Ty apply_ty( Ty cons_ty, Tys tys)
+{
+  match ( cons_ty)
+  {
+    POLYty( ty, n, bound_vars):
+    {
+      Ty subst[256]; int i; Tys ts;
+
+      for (i = 0, ts = tys; i < n && ts; i++, ts = ts->#2)
+         subst[i] = ts->#1;
+
+      if (ts != #[])
+      {
+        error( "%Ltoo many arguments %P in instantiation of type scheme %T\n",
+             tys, cons_ty);
+        return NOty;
+      }
+      if (i != n)
+      {
+        error( "%Ltoo few arguments %P in instantiation of type scheme %T\n",
+             tys, cons_ty);
+        return NOty;
+      }
+      Ty t = inst( ty, n, bound_vars, subst);
+
+      match ( deref(t))
+      {
+        FUNty(a,_):      { return a; }
+	  | a as TYCONty _:  { return a; }
+      | _:
+        {
+          error ("%Lbad constructor type %T\n",cons_ty);
+                        return NOty;
+        }
+      }
+    }
+  | TYCONty( FUNtycon, #[ a ... _ ]): { return a; }
+  | ty: { return ty; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Unify two type constructors
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Bool unify( TyCon a, TyCon b)
+{
+  match (a) and (b)
+  {
+    POINTERtycon || ARRAYtycon _,
+    POINTERtycon || ARRAYtycon _:     { return true; }
+  | REFtycon,        REFtycon:        { return true; }
+  | IDtycon u,       IDtycon v:       { return u == v; }
+  | TUPLEtycon,      TUPLEtycon:      { return true; }
+  | EXTUPLEtycon,    EXTUPLEtycon:    { return true; }
+  | TYPEtycon,       TYPEtycon:       { return true; }
+  | FUNtycon,        FUNtycon:        { return true; }
+  | DATATYPEtycon _, DATATYPEtycon _: { return a == b; }
+  | COLtycon COLdesc{ name = a ... },
+    COLtycon COLdesc{ name = b ... }: { return a == b; }
+  | BITFIELDtycon { width = w1, is_signed = s1 },
+    BITFIELDtycon { width = w2, is_signed = s2 }:
+                                      { return w1 == w2 && s1 == s2; }
+  | _,               _:               { return false; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Unify two record types
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Bool unify_record
+   (Ty u, Ids& x, Tys& a, Bool& f,
+    Ty v, Ids& y, Tys& b, Bool& g, Bool again = true)
+{
+  Ids i, j;
+  Tys p, q;
+  Bool ok = true;
+
+  for (i = x, p = a; i; i = i->#2, p = p->#2)
+  {
+    Bool b_found = false;
+    for (j = y, q = b; j; j = j->#2, q = q->#2)
+    {
+      if (i->#1 == j->#1)
+      {
+        if (b_found)
+        {
+           error( "%Lduplicated label '%s' in type %T\n", i->#1, v);
+           ok = false;
+        }
+        b_found = true;
+        if (! unify(p->#1, q->#1)) ok = false;
+      }
+    }
+    if (! b_found && ! g)
+    {
+      error( "%L%s label '%s' in type %T\n",
+             (again ? "missing" : "extra"), i->#1, v);
+      ok = false;
+    }
+  }
+
+  // unify in the other direction if not flexible
+  if (again && ! f)
+    unify_record( v, y, b, g, u, x, a, f, false);
+
+  if (! f && g) { y = x; b = a; }
+  if (! g && f) { x = y; a = b; }
+
+  if (! f) g = false;
+  if (! g) f = false;
+
+  return ok;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Occurs check
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Bool occurs( Ty ty, Ty tyvar)
+{
+  match (deref_all(ty))
+  {
+    a as VARty _ | tyvar == a: { return true; }
+  | TYCONty(_,tys):
+    {
+      for_each(Ty, t, tys)
+        if (occurs(t,tyvar))
+          return true;
+      return false;
+    }
+  | _: { return false; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Unify two types.  Returns true iff unification succeeds.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Bool unify( Ty t1, Ty t2)
+{
+  match ( deref( t1)) and ( deref( t2))
+  {
+    (NOty, _) || (_, NOty):       { return false; }
+  | a,             b  | a == b:   { return true; }
+  | a,             v as VARty b:
+    {
+      if (occurs(a,v))
+      {
+          error( "%Lunification fails occurs check with %T and %T\n",t1,t2);
+          return false;
+      }
+      else
+      {
+        b = a;
+        return true;
+      }
+    }
+  | v as VARty a,  b:
+    {
+      if (occurs(b,v))
+      {
+          error( "%Lunification fails occurs check with %T and %T\n",t1,t2);
+          return false;
+      }
+      else
+      {
+        a = b;
+        return true;
+      }
+    }
+  | _,  _:
+    {
+      match (deref_all(t1)) and (deref_all(t2))
+      {
+        a,             b  | a == b:   { return true; }
+      | RECORDty( x, f, a), RECORDty( y, g, b):
+           { return unify_record( t1, x, a, f, t2, y, b, g); }
+      | TYCONty(x,a),  TYCONty(y,b): { return unify(x,y) && unify(a,b); }
+      | NESTEDty(a,b), NESTEDty(c,d):{ return unify(a,c) && unify(b,d); }
+      | _,             _:            { return false; }
+      }
+    }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Unify two type lists.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Bool unify( Tys xs, Tys ys)
+{
+  Bool ok = true;
+  match while (xs) and (ys)
+  {
+    #[a ... b], #[c ... d]:
+      {
+        if (! unify(a, c))
+          ok = false;
+        xs = b;
+        ys = d;
+      }
+  }
+  return ok && xs == #[] && ys == #[];
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Unify two types and print error message if fails.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Bool unify( Pat p, Ty a, Ty b)
+{
+  if (! unify(a,b))
+  {
+    error ("%Ltype mismatch in pattern: %p\n"
+            "%Lexpecting '%T' but found '%T'\n", p, a, b);
+    return false;
+  }
+  return true;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Infer the type of literals
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Ty type_of( Literal l)
+{
+  match (l)
+  {
+    INTlit  _:   { return integer_ty; }
+  | CHARlit _:   { return character_ty; }
+  | BOOLlit _:   { return bool_ty; }
+  | REALlit _:   { return real_ty; }
+  | QUARKlit _:  { return quark_ty; }
+  | BIGINTlit _: { return bigint_ty; }
+  | STRINGlit _ || REGEXPlit _: { return string_ty; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Additional pattern variable type map.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+HashTable * patvar_typemap = 0;
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Infer the type of a pattern.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Ty type_of( Pat pat)
+{
+  Ty t = NOty;
+  match (pat)
+  {
+    NOpat:               { t = NOty; }
+  | WILDpat _:           { t = mkvar(); }
+  | INDpat( _, _, v):    { t = v; }
+  | IDpat( id, ty, _):
+    {
+      t = ty;
+      // If we have a pattern variable type map
+      // also use it.
+      if (patvar_typemap)
+      {
+        HashTable::Entry * e = patvar_typemap->lookup(id);
+        if (e)
+        {
+          Ty nonterm_ty = Ty(e->v);
+          if ( !unify( nonterm_ty, ty))
+          {
+            error( "%Lexpecting non-terminal %s to have type %T but found %T\n",
+                  id, nonterm_ty, ty);
+          }
+        }
+      }
+    }
+  | ASpat( _, p, ty ,_): { t = type_of( p); unify( pat, ty, t); }
+  | UNIFYpat( p, _):     { t = type_of( p); }
+  | LITERALpat l:        { t = type_of( l); }
+  | LEXEMEpat _:         { t = string_ty; }
+  | TUPLEpat ps:         { t = mktuplety( type_of( ps)); }
+  | EXTUPLEpat ps:       { t = TYCONty( (TyCon)EXTUPLEtycon, type_of( ps)); }
+  | GUARDpat( p, _):     { t = type_of( p); }
+  | CONTEXTpat( _, p):   { t = type_of( p); }
+  | RECORDpat( ps, flex):
+    {
+      t = mkrecordty( labels_of( ps), type_of( ps), flex);
+    }
+  | APPENDpat( p1, p2, ty):
+    {
+      Ty t1 = type_of( p1);
+      Ty t2 = type_of( p2);
+      t = ty = t1;
+      unify( pat, t1, t2);
+    }
+  | ARRAYpat( ps, _):
+    {
+      Ty ty = mkvar();
+      for_each( Pat, p, ps)
+        unify( pat, ty, type_of( p));
+      t = mkptrty( QUALty( QUALconst, ty));
+    }
+  | VECTORpat { cons, elements, len, array ...}:
+    {
+      Ty arg_ty = mkvar();
+      for_each( Pat, p, elements)
+        unify( pat, arg_ty, type_of( p));
+      Ty vec_ty = type_of( CONSpat( cons));
+      Ty range_ty = mkvar();
+      if (len != NOpat)
+         unify( pat, integer_ty, type_of( len));
+      if (array != NOpat)
+         unify( pat, mkptrty( arg_ty), type_of( array));
+      unify( pat, vec_ty, mkfunty( arg_ty, range_ty));
+      t = deref( range_ty);
+    }
+  | LOGICALpat( NOTpat, p, _): { t = type_of( p); }
+  | LOGICALpat( _, p1, p2):
+    {
+      Ty ty1 = type_of( p1);
+      Ty ty2 = type_of( p2);
+      unify( pat, ty1, ty2);
+      t = ty1;
+    }
+  | TYPEDpat( p, expected_ty):
+    {
+      t = type_of( p);
+      unify( p, expected_ty, t);
+    }
+  | MARKEDpat( _, p):         { t = type_of( p); }
+  | CONSpat( ONEcons { cons_ty ... }): {  t = inst( cons_ty); }
+  | CONSpat( NOcons):                  {  errors++; t = mkvar(); }
+  | APPpat( a, b):
+    {
+      Ty fun_ty = type_of( a);
+      Ty range  = mkvar();
+      unify( pat, fun_ty, mkfunty( type_of( b), range));
+      t = deref( range);
+    }
+  | LISTpat{ nil, head = #[], tail = NOpat ...}:
+    {  t = type_of( CONSpat( nil)); }
+  | LISTpat{ head = #[], tail ...}:
+    {  t = type_of( tail); }
+  | LISTpat{ cons, nil, head = ps, tail = p}:
+    {  t = type_of( APPpat( CONSpat( cons),
+             TUPLEpat( #[ ps->#1, LISTpat( cons, nil, ps->#2, p) ])));
+    }
+  | _:  { bug( "type_of(Pat)"); }
+  }
+  if ( boxed( pat)) pat->ty = t;
+  return t;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Infer the type of a pattern list.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Tys type_of( Pats ps)
+{
+  match (ps)
+  {
+    #[]:        { return #[]; }
+  | #[a ... b]: { return #[ type_of(a) ... type_of(b) ]; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Infer the type of a labeled pattern list.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Tys type_of( LabPats ps)
+{
+  match (ps)
+  {
+    #[]:        { return #[]; }
+  | #[a ... b]: { return #[ type_of(a.pat) ... type_of(b) ]; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Get the list of labels from a labeled pattern list.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Ids labels_of( LabPats ps)
+{
+  match (ps)
+  {
+    #[]:        { return #[]; }
+  | #[a ... b]: { return #[ a.label ... labels_of(b) ]; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Infer the type of a set of pattern rules.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Ty type_match_rules( MatchRules rules)
+{
+  Bool ok = true;
+  MEM::use_global_pools();
+  Ty ty = mkvar();
+  for_each( MatchRule, r, rules)
+  {
+    match (r)
+    {
+    MATCHrule(_, pat, guard_exp, _, _):
+      {
+        r->set_loc();
+        Ty this_ty = type_of(pat);
+        if (this_ty == NOty)
+        {
+          error ("%!type error in pattern %p: %T\n",
+                  r->loc(), pat, this_ty);
+          ok = false;
+        }
+        else if ( !unify( pat, ty, this_ty))
+          ok = false;
+      }
+    }
+  }
+  MEM::use_local_pools();
+  return ok ? ty : NOty;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  The type and constructor environments (both are flat for now.)
+//
+/////////////////////////////////////////////////////////////////////////////
+
+HashTable ty_env( string_hash, string_equal, 91);
+HashTable cons_env( string_hash, string_equal, 129);
+HashTable token_env( string_hash, string_equal, 129);
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Lookup the type from its name.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Ty lookup_ty( Id id)
+{
+  HashTable::Entry * i = ty_env.lookup( id);
+  return i ? inst( value_of( Ty, ty_env, i)) : NOty;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Lookup the constructor from its name.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Cons lookup_cons( Id id)
+{
+  Cons c = find_cons(id);
+  if (c == NOcons)
+  {
+    error( "%Lconstructor '%s' is undefined\n", id);
+  }
+  return c;
+}
+
+Cons lookup_token (Id id)
+{
+  Cons c = NOcons;
+  HashTable::Entry * i = token_env.lookup(id);
+  if (i) return (Cons)i->v;
+  c = find_cons(id);
+  if (c == NOcons)
+  {
+    if (id[0] == '"')
+      error( "%Llexeme %s is undefined\n", id);
+    else
+      error( "%Lconstructor '%s' is undefined\n", id);
+  }
+  return c;
+}
+
+Cons find_cons(Id id)
+{
+  HashTable::Entry * i = cons_env.lookup(id);
+  return i ? value_of( Cons, cons_env, i) : NOcons;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Add a new type to the environment.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+void add_type( Id id, TyVars tyvars, Ty ty)
+{
+  HashTable::Entry * i = ty_env.lookup( id);
+
+  if ( i)
+  {
+    error( "%Ltype %s has already been defined as %T\n",
+          id, value_of(Ty,ty_env,i));
+  }
+  else
+  {
+    match ( deref_all(ty))
+    {
+      IDty ( old_name, _) | old_name == id:
+      {
+        error( "%Lcyclic type definition in type %s%V = %T\n",id,tyvars,ty);
+      }
+    | _: { ty_env.insert(id,mkpolyty(ty,tyvars)); }
+    }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Method to add a new datatype to the environment.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+void add_datatype
+      (
+        const Loc *     location,
+        Id              id,
+        TyVars          tyvars,
+        Inherits        inherit,
+        TyQual          qual,
+        Exp             view_match,
+        TermDefs        terms,
+        Decls           body
+      )
+{
+  HashTable::Entry * i = ty_env.lookup(id);
+  if (i)
+  {
+    Ty ty = (Ty)ty_env.value(i);
+    match (deref_all(ty))
+    {
+      DATATYPEty ({ location = old_loc ... }, _):
+      {
+        error( "%Lredefinition of datatype %s\n"
+               "%!this is where datatype %s was previously defined\n",
+               id, old_loc, id);
+      }
+    | ty:
+      { error( "%Lredefinition of datatype %s\n", id); }
+    }
+  }
+  else
+  {
+    TyCon  tycon      = DATATYPEtycon'
+                          {
+                            id         = id,
+                            arg        = 0,
+                            unit       = 0,
+                            terms      = 0,
+                            tyvars     = tyvars,
+                            polyty     = NOty,
+                            inherit    = inherit,
+                            qualifiers = qual,
+                            opt        = 0,
+                            body       = body,
+                            location   = location,
+                            view_match = view_match
+                          };
+    Ty    this_ty       = TYCONty(tycon, tyvars_to_type_list(0,tyvars));
+    int   variants      = length(terms);
+    int   arg_count     = 0;
+    int   unit_count    = 0;
+    Cons *all_conses    = (Cons *)mem_pool[variants * sizeof(Cons)];
+    int   units         = 0;
+    int   args          = 0;
+    int   optimizations = 0;
+    int   arity         = length(tyvars);
+    Id   *bound_vars    = (Id *)mem_pool[arity * sizeof(Id)];
+    {
+      int i = 0;
+      for_each (TyVar, tv, tyvars)
+        bound_vars[i++] = tv;
+    }
+
+    {
+      for_each(TermDef, t, terms)
+        match (t)
+        {
+          TERMdef { ty = NOty ... }: { units++; }
+        | _:                         { args++; }
+        }
+    }
+
+    Ty poly = mkpolyty( this_ty, tyvars);
+
+    // compute optimizations.
+    if (args == 1)
+      optimizations |= OPTsubclassless | OPTtagless;
+    if (args > 1 && args <= options.max_embedded_tags
+        && (qual & QUALvirtual) == 0
+        && (options.tagged_pointer || (qual & QUALtaggedpointer)))
+      optimizations |= OPTtaggedpointer | OPTtagless;
+    else if (args <= 1)
+      optimizations |= OPTtagless;
+
+    int actual_boxed = 0;
+    for_each(TermDef, t, terms)
+    {
+      match (t)
+      {
+        TERMdef {id = cons_name ...} | cons_name == 0:
+        {  qual |= QUALextensible; }
+      | TERMdef
+        { id = cons_name, inherits = local_inherits,
+          ty, decls = local_decls, pat = lex_pat,
+          qual = this_qual ...}:
+        {
+          int tag;
+          Pat lexeme_pat =
+             (qual & QUALlexeme) && cons_name[0] == '"'
+              ? LITERALpat(STRINGlit(cons_name)) : lex_pat;
+          Cons last_cons = find_cons(cons_name);
+          if (last_cons != NOcons)
+          {
+            error ("%!redefinition of constructor '%s'\n"
+                    "%!this is where '%s' was last defined.\n",
+                    t->loc(), cons_name, last_cons->location, cons_name);
+          }
+          if (ty == NOty)
+            tag = unit_count++;
+          else
+            tag = arg_count++;
+
+          if (t->print_formats != #[])
+            qual |= QUALprintable;
+
+          Ty cons_ty = ty == NOty
+              ? poly
+              : POLYty(mkfunty(ty, this_ty), arity, bound_vars);
+
+          // Use unboxed optimization
+          // only if we are also using the tagged pointer rep.
+          // Make sure (1) the type is embeddable into 1 word.
+          //           (2) We are monomorphic.
+          //           (3) We are not using any inheritance.
+
+          int this_opt = OPTnone;
+
+          if ((optimizations & OPTtaggedpointer) &&
+              tyvars == #[]                      &&
+              local_inherits == #[]              &&
+              t->opt == OPTunboxed               &&
+              (qual & (QUALrewritable | QUALcollectable |
+                        QUALrelation | QUALpersistent))
+                  == 0 &&
+               is_embeddable_ty(ty))
+             this_opt = OPTunboxed;
+
+          Exp * view_selectors =
+            (qual & QUALview) ?
+                (Exp*)mem_pool.c_alloc(arity_of(ty) * sizeof(Exp)) : 0;
+
+          Cons cons = ONEcons'
+                          {
+                            name           = cons_name,
+                            alg_ty         = this_ty,
+                            ty             = ty,
+                            tag            = tag,
+                            print_formats  = t->print_formats,
+                            cons_ty        = cons_ty,
+                            location       = t->loc(),
+                            inherit        = local_inherits,
+                            body           = local_decls,
+                            view_selectors = view_selectors,
+                            view_predicate = t->view_predicate,
+                            opt            = this_opt,
+                            qual           = this_qual,
+                            lexeme_pattern = lexeme_pat
+                          };
+
+          all_conses[ty == NOty ? tag : tag + units] = cons;
+
+          if (ty != NOty && (this_opt & OPTunboxed) == 0)
+             actual_boxed++;
+
+          // update the constructor environment
+          cons_env.insert(cons_name, cons);
+
+          // update the token environment
+          match (lexeme_pat)
+          {
+            STRINGpat s: { token_env.insert(s, cons); }
+          | _: // skip
+          }
+        }
+      }
+    }
+
+    if (actual_boxed <= 1) optimizations |= OPTsubclassless | OPTtagless;
+
+    if (tyvars && unit_count > 1)
+       error("%Lmultiple unit constructors in polymorphic type %s%V"
+	       " is not supported\n",
+             id, tyvars);
+
+    match (tycon)
+    {
+    DATATYPEtycon{ unit, arg, terms, polyty, opt, qualifiers ... }:
+      {
+        unit = unit_count; arg = arg_count; terms = all_conses;
+        polyty = poly; opt = optimizations; qualifiers = qual;
+      }
+    | _: {}
+    }
+
+    ty_env.insert( id, poly);
+    if (qual & QUALlexeme)
+      update_lexeme_class( id, terms);
+
+    // Create new type hierarchy
+    new DatatypeHierarchy( id, tyvars, inherit, qual, terms, body);
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Method to refine the implementation of a datatype.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+void update_datatype( Id id, TyVars tyvars, Inherits superclasses,
+                      TyQual qual, Decls decls)
+{
+  match ( lookup_ty( id))
+  {
+    DATATYPEty ({ hierarchy, qualifiers = q ... }, _) | hierarchy != 0:
+    {
+      if (superclasses)
+	    hierarchy->inherited_classes =
+	      append( hierarchy->inherited_classes, superclasses);
+      hierarchy->qualifiers |= qual;
+      q |= qual;
+	  if (decls)
+        hierarchy->class_body = append( hierarchy->class_body, decls);
+    }
+  | NOty: { /* skip */ }
+  | ty:   { error ("%Ltype %s = %T is not a datatype\n",id, ty); }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Method to refine the implementation of a datatype constructor.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+void update_constructor
+   (Id id, Tys ty_args, Inherits inh, PrintFormats pf, Decls decls)
+{
+  match (lookup_cons(id))
+  {
+    ONEcons
+        {
+        print_formats,
+        alg_ty = DATATYPEty({ qualifiers ... },_),
+	    class_def ...
+	    }:
+    {
+      if (pf)
+      {
+        if (print_formats)
+          error("%Lconstructor %s already has print formats\n",id);
+        else
+          print_formats = pf;
+        qualifiers |= QUALprintable;
+      }
+	  if (decls)
+        class_def->class_body = append( class_def->class_body, decls);
+	  if (inh)
+	    class_def->inherited_classes = append( class_def->inherited_classes, inh);
+    }
+  | _:      { /* skip */ }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Hashing function on types
+//
+/////////////////////////////////////////////////////////////////////////////
+
+unsigned int ty_hash( HashTable::Key k)
+{
+  Ty ty = (Ty)k;
+  match (deref_all(ty))
+  {
+    NOty:               { return 0; }
+  | ty as VARty _:      { return (unsigned int)ty; }
+  | TYCONty(tycon,tys):
+    {
+      unsigned int h;
+      match (tycon)
+      {
+        POINTERtycon:                  { h = 37; }
+      | REFtycon:                      { h = 47; }
+      | FUNtycon:                      { h = 79; }
+      | RECORDtycon _:                 { h = 129; }
+      | TUPLEtycon:                    { h = 173; }
+      | EXTUPLEtycon:                  { h = 467; }
+      | ARRAYtycon _:                  { h = 569; }
+      | IDtycon id:                    { h = string_hash(id) + 89; }
+      | DATATYPEtycon { id ... }:      { h = string_hash(id) + 431; }
+      | BITFIELDtycon { width ... }:   { h = 733 + width; }
+      | TYPEtycon:                     { h = 1235; }
+      | COLtycon(COLdesc{ name ... }): { h = string_hash(name) + 1345; }
+      | GRAPHtycon G:                  { h = (int)G; }
+      | NODEtycon n:                   { h = (int)n; }
+      | EDGEtycon e:                   { h = (int)e; }
+      }
+      return h + tys_hash(tys);
+    }
+  | NESTEDty( a, b):    { return ty_hash( a) + ty_hash( b); }
+  | _:                  { return 0; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Hashing function on type list
+//
+/////////////////////////////////////////////////////////////////////////////
+
+unsigned int tys_hash( HashTable::Key k)
+{
+  Tys tys = (Tys)k;
+  unsigned int h = 0;
+  for_each (Ty, t, tys)
+    h += ty_hash(t);
+  return h;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Equality function on types
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Bool ty_equal( HashTable::Key a, HashTable::Key b)
+{
+  Ty u = (Ty) a, v = (Ty) b;
+
+  match (deref_all u) and (deref_all v)
+  {
+    a,               b | a == b:    { return true; }
+  | a as VARty _,    b as VARty _:  { return a == b; }
+  | GRAPHty a,       GRAPHty b:     { return a == b; }
+  | NODEty a,        NODEty b:      { return a == b; }
+  | EDGEty a,        EDGEty b:      { return a == b; }
+  | RECORDty(a,_,x), RECORDty(b,_,y):
+    {
+      Ids i, j; Tys t, u;
+      if (length(x) != length(y)) return false;
+      for (i = a, t = x; i; i = i->#2, t = t->#2)
+      {
+        Bool found = false;
+        for (j = b, u = y; j; j = j->#2, u = u->#2)
+        {
+          if (i->#1 == j->#1)
+          {
+            if ( !ty_equal(t->#1, u->#2))
+              return false;
+            found = true;
+            break;
+          }
+        }
+        if ( !found) return false;
+      }
+      return true;
+    }
+  | TYCONty(x,a), TYCONty(y,b):
+    {
+      if (! unify(x,y))
+        return false;
+      return tys_equal(a,b);
+    }
+  | NESTEDty(a,b), NESTEDty(c,d):
+    { return ty_equal(a,c) && ty_equal(b,d); }
+  | _,             _:    { return false; }
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Equality function on type lists
+//
+/////////////////////////////////////////////////////////////////////////////
+
+Bool tys_equal( HashTable::Key a, HashTable::Key b)
+{
+  Tys u = (Tys)a, v = (Tys)b;
+  match while (u) and (v)
+  {
+    #[m ... n], #[o ... p]:
+    {
+      if ( !ty_equal(m,o))
+        return false;
+      u = n; v = p;
+    }
+  }
+  return u == #[] && v == #[];
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//
+//  Equality on qualified identifiers.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+fun qualid_equal SIMPLEid a,     SIMPLEid b: Bool:
+    { return a == b; }
+|   qualid_equal NESTEDid(t1,a), NESTEDid(t2,b):
+    { return ty_equal(t1,t2) && qualid_equal(a,b); }
+|   qualid_equal _,              _:
+    { return false; }
+;

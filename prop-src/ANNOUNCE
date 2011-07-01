@@ -1,0 +1,9 @@
+A Pattern Matching Tool for C++
+-------------------------------
+
+[1] What is Prop?
+
+    Prop is the C++ language extended with algebraic datatypes, pattern 
+matching, rewriting, and inference.  
+
+[2] Features:

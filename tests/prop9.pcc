@@ -1,0 +1,56 @@
+#include <iostream.h>
+
+struct IA { void hasIA() {} };
+struct IB { void hasIB() {} };
+struct IC { void hasIC() {} };
+struct ID { void hasID() {} };
+struct IE { void hasIE() {} };
+struct I1 { void hasI1() {} };
+struct I2 { void hasI2() {} };
+struct I3 { void hasI3() {} };
+
+
+datatype T = A() : IA with { void get_A(); }
+	   | B() : IB with { void get_B(); }
+	   | C() : IC with { void get_C(); }
+	   | D() : ID with { void get_D(); }
+public:
+{
+   void test_T() {}
+};
+
+datatype T2 : IE = E() with { void get_E(); } 
+public:
+{
+   void test_T2() {}
+}
+;
+
+refine T : I1 :: collectable { virtual ostream& print(ostream&) = 0; }
+and    A, B, C, D : I2 { ostream& print(ostream&); }
+and    T2 : I3 :: collectable { virtual ostream& print(ostream&); }
+;
+
+instantiate datatype T, T2;
+
+void classof A::get_A() { hasIA(); hasI1(); hasI2(); }
+void classof B::get_B() { hasIB(); hasI1(); hasI2(); }
+void classof C::get_C() { hasIC(); hasI1(); hasI2(); }
+void classof D::get_D() { hasID(); hasI1(); hasI2(); }
+void classof E::get_E() { hasIE(); hasI3(); }
+
+ostream& classof A::print(ostream& s) { return s << "A"; }
+ostream& classof B::print(ostream& s) { return s << "B"; }
+ostream& classof C::print(ostream& s) { return s << "C"; }
+ostream& classof D::print(ostream& s) { return s << "D"; }
+ostream& classof E::print(ostream& s) { return s << "E"; }
+
+int main()
+{  T x = A();
+   x->test_T();
+   x->print(cout) << '\n';
+   T2 y = E();
+   y->test_T2();
+   y->print(cout) << '\n';
+   return 0;
+}

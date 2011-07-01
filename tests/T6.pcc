@@ -1,0 +1,13 @@
+datatype T = a | b | c | d | f(T,T) | g(T);
+
+int main()
+{  T e;
+   rewrite (e) type (T)
+   {  a:      b
+   |  f(b,X): a
+   |  f(c,X): X
+   |  g(X):   f(c,X)
+   |  g(X):   f(a,X) 
+   |  f(_,f(X,c)): f(d,g(X))
+   }
+}

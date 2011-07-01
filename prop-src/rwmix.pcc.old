@@ -1,0 +1,322 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the rewriting partial evaluator/supercompiler.
+//  This is used to optimize Prop's rewriting systems. 
+//
+///////////////////////////////////////////////////////////////////////////////
+#include "ast.ph"
+#include "ir.ph"
+#include "rwmix.ph"
+#include "patenv.h"
+#include "type.h"
+#include "funmap.h"
+#include "options.h"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Type definitions
+//
+///////////////////////////////////////////////////////////////////////////////
+typedef RewriteMix::Result Result;
+type sharing Bool = bool;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  The constructors and destructors 
+//
+///////////////////////////////////////////////////////////////////////////////
+RewriteMix::RewriteMix() { reduction_limit = 10; }
+RewriteMix::~RewriteMix() {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to optimize a set of rewrite rules
+//
+///////////////////////////////////////////////////////////////////////////////
+MatchRules RewriteMix::optimize_rewrite (Id id, MatchRules rules)
+{  if (options.optimize_rewrite) 
+   {  msg ("%Lpartial evaluating rewrite class %s\n", id);
+      rules = mix(rules); 
+      msg ("%Lfinished partial evaluating rewrite class %s\n", id);
+   }
+   return rules;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to partially evaluate a set of rules
+//
+///////////////////////////////////////////////////////////////////////////////
+MatchRules RewriteMix::mix (MatchRules rules)
+{  
+   for_each (MatchRule, rule, rules)
+   {  match (rule)
+      {  MATCHrule(_,_,_,_,act as #[MARKEDdecl(l,REPLACEMENTdecl(rhs,mode))]):
+	 {  if (rhs != NOexp)
+	    {  debug_msg("PE [partial evaluating %r]\n", rule);
+	       Exp new_rhs = subst(rhs,0);
+	       new_rhs = simplify(new_rhs,IDexp(#"(redex)"));
+	       Bool reduced = false;
+	       Exp reduced_rhs = normalize(new_rhs,rules,reduced);
+	       if (reduced)
+	       {  rewrite (reduced_rhs) type (Exp, Exps)
+	          {  IDexp("(redex)"):  IDexp(#"redex")
+	          }
+	          msg("%!optimizing rhs of rule %r --> %e\n",
+		      rule->loc(),rule,reduced_rhs);
+                  rhs = reduced_rhs;
+               }
+	    }
+         }
+      |  _: // skip
+      }
+   }
+   return rules;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to normalizes an expression with respect to a set
+//  of rewrite rules.
+//
+///////////////////////////////////////////////////////////////////////////////
+Exp RewriteMix::normalize (Exp exp, MatchRules rules, Bool& reduced)
+{  Exp redex = exp;
+   Bool changed;
+   int limit = reduction_limit;
+   do
+   {  changed = false;
+      match (redex)
+      {  APPexp(_,TUPLEexp es):
+	 {  for(Exps exps = es; exps; exps=exps->#2) 
+	    {  Exp ne = normalize(exps->#1,rules,reduced); 
+	       if (ne != exps->#1) { exps->#1 = ne; changed = true; }
+	    }
+	 }
+      |  APPexp(_,RECORDexp es):
+	 {  for(LabExps exps = es; exps; exps=exps->#2) 
+	    {  Exp ne = normalize(exps->#1.exp,rules,reduced); 
+	       if (ne != exps->#1.exp) 
+	       { exps->#1.exp = ne; changed = true; }
+            }
+	 }
+      |  APPexp(_,e):  
+	 {  Exp ne = normalize(e,rules,reduced); 
+	    if (ne != e) { e = ne; changed = true; }
+	 }
+      |  _: // skip
+      }
+      Exp replacement = NOexp;
+      Result r = reduce(redex, rules, replacement);
+      if (r == SUCCESS) {
+         changed = true;
+         redex = replacement;
+      }
+      if (changed) reduced = true;
+   } while (changed && --limit >= 0);
+   debug_msg("PE [%e normalizes to %e]\n",exp,redex);
+   return redex;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to match an expression against a set of rules.
+//
+///////////////////////////////////////////////////////////////////////////////
+Result RewriteMix::reduce (Exp redex, MatchRules rules, Exp& replacement)
+{
+   for_each (MatchRule, rule, rules)
+   {  match (rule)
+      {  MATCHrule(_,pat,guard,_,action):
+	 {  Result r = pmatch(pat,redex);
+	    if (r == UNKNOWN) 
+	    {  debug_msg("PE [%e is unknown at %r]\n",redex,rule); 
+	       return UNKNOWN;
+	    }
+	    if (r == FAILURE) goto try_next;
+	    if (guard != NOexp) 
+	    {  Exp guard_exp = subst(guard,0);
+	       match (simplify(guard_exp))
+	       {  LITERALexp(BOOLlit true):  { r = SUCCESS; }
+	       |  LITERALexp(BOOLlit false): { goto try_next; }
+	       |  _:                         
+	          {  debug_msg("PE [%e fails guard at %r]\n",redex,rule); 
+		     return UNKNOWN;
+                  }
+               }
+	    }
+	    // success
+	    Decl decl = NOdecl;
+	    match (action)
+	    {  #[d : Decl]: { decl = d; }
+	    |  _:    
+	       {  debug_msg("PE [%e has unknown action at %r]\n",redex,rule); 
+		  return UNKNOWN;
+               }
+	    }
+	    // extract rhs;
+	    Exp rhs = NOexp; 
+	    match while (decl)
+	    {  REPLACEMENTdecl(exp2,_): { rhs = exp2; goto found; }
+	    |  MARKEDdecl(_,d):         { decl = d; }
+	    |  _:                       
+	       {  debug_msg("PE [%e has unknown action at %r]\n",redex,rule); 
+		  return UNKNOWN;
+               }
+	    }
+
+	    found:
+	    rhs = subst(rhs,0);
+	    replacement = simplify(rhs,redex);
+	    debug_msg("PE [%e => %e via %r]\n",redex,replacement,rule);
+	    return SUCCESS;
+	 }
+      }
+      try_next: ;
+   }
+   debug_msg("PE [%e fails all rules]\n",redex); 
+   return FAILURE;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Class to simplify an expression 
+//
+///////////////////////////////////////////////////////////////////////////////
+rewrite class RedexSimplifier (Exp, Exps, Cons, Literal) 
+{  Exp current_redex;
+   Exp TRUE, FALSE;
+public:
+   RedexSimplifier(Exp r) 
+      : current_redex(r), 
+	TRUE(LITERALexp(BOOLlit(true))),
+        FALSE(LITERALexp(BOOLlit(false))) {}
+};
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Redex simplifier
+//
+///////////////////////////////////////////////////////////////////////////////
+datatype law TRUE  = LITERALexp(BOOLlit true)
+           | FALSE = LITERALexp(BOOLlit false)
+	   | AND(a,b) = BINOPexp("&&",a,b)
+	   | OR(a,b)  = BINOPexp("||",a,b)
+	   | NOT a    = PREFIXexp("!",a)
+	   ;
+
+rewrite RedexSimplifier 
+{  MARKEDexp(_,e): e 
+|  DOTexp(TUPLEexp es, id):   component_exp(es,id)
+|  DOTexp(RECORDexp les, id): component_exp(les,id)
+|  SELECTORexp(APPexp(IDexp id,e),ONEcons { name ...},_) | name == id: e
+|  EQexp(_,a,b) | equal(a,b): TRUE
+|  IDexp "redex": current_redex
+|  AND(TRUE,X):  X
+|  AND(X,TRUE):  X
+|  AND(FALSE,X): FALSE
+|  AND(X,FALSE): FALSE
+|  OR(TRUE,X):   TRUE
+|  OR(X,TRUE):   TRUE
+|  OR(FALSE,X):  X
+|  OR(X,FALSE):  X
+|  NOT(TRUE):    FALSE
+|  NOT(FALSE):   TRUE
+|  NOT(NOT X):   X
+};
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to simplify an expression 
+//
+///////////////////////////////////////////////////////////////////////////////
+Exp RewriteMix::simplify (Exp exp, Exp redex)
+{  RedexSimplifier S(redex);
+   debug_msg("PE [simplifying %e [redex = %e] => ", exp, redex);
+   S(exp);
+   debug_msg("%e]\n", exp);
+   return exp;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This is the main method for matching an expression against a pattern.
+//  If sucessful, the bindings for the pattern variables are returned
+//  in environment.  Matching can have one of 3 different results:
+//  (1) SUCCESS, in which case the match is successful,
+//  (2) FAILURE, in which case the match is not successful, or
+//  (3) UNKNOWN, if the result cannot be determined statically.
+//
+///////////////////////////////////////////////////////////////////////////////
+Result RewriteMix::pmatch (Pat pat, Exp exp) 
+{ 
+   // Perform bindings and some simple simplifications.
+   match while (pat)
+   {  TYPEDpat(p, _):   { pat = p; }
+   |  MARKEDpat(_, p):  { pat = p; }
+   |  ASpat(id,p,ty,e): { pat = p; }
+   |  WILDpat _:        { return SUCCESS; }
+   |  IDpat(id, ty, e): { return SUCCESS; }
+   }
+
+   // Match the expression against the pattern.
+   match (pat) and (exp)
+   { 
+     LITERALpat a, LITERALexp b:  
+     { return literal_equal(a,b) ? SUCCESS : FAILURE; }
+   | TUPLEpat ps,   TUPLEexp es:   { return pmatch(ps,es); }
+   | EXTUPLEpat ps, EXTUPLEexp es: { return pmatch(ps,es); }
+   | RECORDpat (lps, _), RECORDexp les: { return pmatch(lps,les); }
+   //| LISTpat { head, tail ... }, LISTexp (_,_,heade,taile):
+   //  { return pmatch(head,tail,heade,taile,E,visible,plr); }
+   | CONSpat ONEcons { name ... }, IDexp id:
+     { return name == id ? SUCCESS : FAILURE; }
+   | APPpat(CONSpat ONEcons { name ... }, p), APPexp(IDexp id,e) 
+	| find_cons(id) != NOcons:
+     { if (name != id) return FAILURE;
+       else return pmatch(p,e); 
+     }
+   | APPpat(CONSpat _,_), IDexp id | find_cons(id) != NOcons:
+     { return FAILURE; }
+   | CONSpat _, APPexp(IDexp id,_) | find_cons(id) != NOcons:
+     { return FAILURE; }
+   | _:  { return UNKNOWN; }
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to match an expression list against a pattern list.
+//
+///////////////////////////////////////////////////////////////////////////////
+Result RewriteMix::pmatch (Pats pats, Exps exps)
+{  match while (pats) and (exps)
+   {  #[a ... b], #[c ... d]:
+      {  Result r = pmatch(a,c);
+	 if (r != SUCCESS) return r;
+         pats = b; exps = d;
+      }
+   }
+   return SUCCESS; 
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to match a labeled expression list against a labeled pattern list.
+//
+///////////////////////////////////////////////////////////////////////////////
+Result RewriteMix::pmatch (LabPats pats, LabExps exps) 
+{  for_each (LabPat, p, pats)
+   {  for_each (LabExp, e, exps)
+      {  if (p.label == e.label)
+	 {  Result r = pmatch(p.pat,e.exp);
+	    if (r != SUCCESS) return r;
+	    goto NEXT;
+	 }
+      }
+      // not found:
+      return FAILURE;
+   NEXT: ;
+   }
+   return SUCCESS;
+}

@@ -1,0 +1,109 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This example program performs simplification of first order logic
+//  formulas using rewriting.  We'll use topdown rules for this.
+//
+///////////////////////////////////////////////////////////////////////////////
+#include <iostream.h>
+#include <AD/strings/quark.h>
+#include <AD/generic/generic.h>
+
+datatype Wff = T                  => "true"
+	     | F                  => "false"
+	     | Var Id             => _
+             | And Wff, Wff       => '(' _ "and" _ ')'
+             | Or  Wff, Wff       => '(' _ "or" _ ')'
+             | Not Wff            => "not" '(' _ ')'
+	     | Implies Wff, Wff   => '(' _ "=>" _ ')'
+	     | Predicate Id, Ids  => _ _ 
+	     | Exists Id, Wff     => "exists" _ '.' _
+	     | Forall Id, Wff     => "forall" _ '.' _
+and Ids :: printable = #() | #( Id ... Ids )
+where type Id = class Quark
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Function to check that an identifier occurs free in a wff.
+//
+///////////////////////////////////////////////////////////////////////////////
+Bool is_free (Id id, Wff wff)
+{  match (wff)
+   {  T || F:         { return true; }
+   |  Var x:          { return id != x; }
+   |  And(a,b):       { return is_free(id,a) && is_free(id,b); }
+   |  Or(a,b):        { return is_free(id,a) && is_free(id,b); }
+   |  Implies(a,b):   { return is_free(id,a) && is_free(id,b); }
+   |  Not a:          { return is_free(id,a); }
+   |  Exists(a,b):    { return a == id || is_free(id,b); }
+   |  Forall(a,b):    { return a == id || is_free(id,b); }
+   |  Predicate(_,l): { Ids ids = l;
+			match while (ids)
+			{  #():                  { return true; }
+			|  #(x ... _) | x == id: { return false; }
+			|  #(_ ... t):           { ids = t; }
+			}
+                      }
+   } 
+}
+
+instantiate datatype Wff, Ids;
+
+void transform(Wff wff)
+{  
+   cout << "Input: " << wff << endl;
+
+   rewrite (wff) type (Wff)
+   {
+   topdown:
+
+      // Transform into prenex normal form
+
+      Forall(x,Not(P)):  Not(Exists(x,P))
+   |  Exists(x,Not(P)):  Not(Forall(x,P))
+   |  Forall(x,And(P,Q)): And(Forall(x,P),Forall(x,Q))
+   |  Exists(x,Or(P,Q)):  Or(Exists(x,P),Exists(x,Q))
+   |  Exists(x,And(P,Q)) | is_free(x,Q): And(Exists(x,P),Q)
+   |  Exists(x,And(P,Q)) | is_free(x,P): And(P,Exists(x,Q))
+   |  Forall(x,Or(P,Q))  | is_free(x,Q): Or(Forall(x,P),Q)
+   |  Forall(x,Or(P,Q))  | is_free(x,P): Or(P,Forall(x,Q))
+   |  Forall(x,P) | is_free(x,P): P
+   |  Exists(x,P) | is_free(x,P): P
+
+   |  Or(T, _):    T
+   |  Or(_, T):    T
+   |  Or(F,X):     X
+   |  Or(X,F):     X
+   |  And(F,_):    F
+   |  And(_,F):    F
+   |  And(T,X):    X
+   |  And(X,T):    X
+   |  Not(T):      F
+   |  Not(F):      T
+   |  Not(Not(X)): X
+   |  Implies(X,Y): Or(Not(X),Y)
+   }
+
+   cout << "Output: " << wff << endl;
+}
+
+
+int main()
+{
+   Wff wff;
+
+   wff = Implies(Exists(#"w",Forall(#"x",Predicate(#"P",#(#"w",#"x")))),
+		 Forall(#"y",Exists(#"z",Predicate(#"P",#(#"z",#"y")))));
+   transform(wff);
+
+   wff = Forall(#"w",Forall(#"y",Exists(#"x",Exists(#"z",
+	      Implies(Predicate(#"P",#(#"w",#"x")),
+		      Predicate(#"P",#(#"z",#"y")))))));
+   transform(wff);
+   wff = Forall(#"w",Forall(#"y",Exists(#"x",
+	     Implies(Predicate(#"P",#(#"w",#"x")),
+		     Predicate(#"P",#(#"x",#"y"))))));
+   transform(wff);
+
+   return 0;
+}

@@ -1,0 +1,355 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements the pretty printer generator.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <ctype.h>
+#include <string.h>
+#include <AD/strings/quark.h>
+#include <AD/strings/charesc.h>
+#include "ir.ph"
+#include "ast.ph"
+#include "datatype.ph"
+#include "type.h"
+#include "matchcom.h"
+#include "list.h"
+#include "codegen.h"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the interface definition for the pretty printers
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::generate_print_interface( CodeGen& C)
+{
+}
+
+void DatatypeHierarchy::generate_print_interface( CodeGen& C)
+{
+  C.pr(
+        "%^%/"
+        "%^//"
+        "%^//  Pretty printing methods for %s%V"
+        "%^//"
+        "%^%/"
+        "%^class PrettyOStream;"
+          "%^%Hextern std::ostream& operator<<(std::ostream&, %s%v);"
+          "%^%Hextern PrettyOStream& operator<<(PrettyOStream&, %s%v);",
+        datatype_name, parameters,
+        parameters, datatype_name, parameters,
+        parameters, datatype_name, parameters
+      );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate the pretty printer implementation.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void DatatypeClass::generate_print_implementation( CodeGen&, Tys, DefKind)
+{
+}
+
+void DatatypeHierarchy::generate_print_implementation
+   ( CodeGen& C, Tys tys, DefKind k)
+{
+  Ty ty = NOty;
+  match (datatype_ty)
+  {
+    DATATYPEty ({ polyty ... },_):
+      { ty =  apply_ty(polyty,tys); }
+  | _: // skip
+  }
+
+  C.pr(
+        "%^%/"
+        "%^//"
+        "%^// Pretty printing methods for %s%P"
+        "%^//"
+        "%^%/",
+        datatype_name, tys
+      );
+
+  //
+  // Generate the std::ostream based method
+  //
+
+  C.pr( "%^std::ostream& operator << (std::ostream& strm__, %t obj__)", ty, "");
+
+  if (k == EXTERNAL_INSTANTIATION)
+     C.pr( "%^{  PrettyOStream S(strm__); S << obj__; return strm__; }\n\n");
+  else
+     C.pr( ";");
+
+  //
+  // Generate the PrettyOStream based method
+  //
+
+  C.pr(
+        "%^PrettyOStream& operator << (PrettyOStream& strm__, %t obj__)",
+        ty,""
+      );
+
+  if (k == EXTERNAL_INSTANTIATION)
+     C.pr( "%^{%+");
+  else
+     C.pr( ";");
+
+  if (k != EXTERNAL_INSTANTIATION) return;
+
+  if (arity > 1)
+    C.pr( "%^switch (%U)%^{%+", IDexp(#"obj__"), ty);
+
+  for (int i = 0; i < arity; i++)
+  {
+    Cons term = constructor_terms[i];
+    if (arity > 1)
+      C.pr( "%^case %*: %+", term, true);
+    generate_printer( C, tys, k, ty, term);
+    if (arity > 1)
+      C.pr( "%^break;%-");
+  }
+
+  if (arity > 1)
+    C.pr( "%-%^}");
+  C.pr(
+        "%^return strm__;"
+        "%-%^}"
+      );
+
+  C.pr( "\n\n");
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Pretty printer for one single variant
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::generate_printer
+   (CodeGen& C, Tys tys, DefKind k, Ty mono_ty, Cons cons)
+{
+  match (cons)
+  {
+    ONEcons { ty, cons_ty, print_formats ... }:
+      {
+        cons_arg_ty = ty == NOty ? NOty : apply_ty(cons_ty,tys);
+
+        if (print_formats == #[])
+          generate_default_printer( C, tys, k, mono_ty, cons, cons_arg_ty);
+        else
+          generate_formatted_printer( C, tys, k, mono_ty,
+              cons, cons_arg_ty, print_formats);
+      }
+  |  _: // skip
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a default pretty printer
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::generate_default_printer
+   (CodeGen& C, Tys tys, DefKind k, Ty mono_ty, Cons cons, Ty ty)
+{
+  PrintFormats fmt = #[];
+  match (cons) and (deref_all(ty))
+  {
+  ONEcons { name ... }, NOty | is_list_constructor(name):
+    { fmt = #[SPECIALsym('['),SPECIALsym(']')]; }
+  | ONEcons { name ... }, NOty:
+    { fmt = #[TERMSTRINGsym(name)]; }
+  | ONEcons { name ... }, TUPLEty #[a,b] | is_list_constructor(name):
+    { fmt = #[SPECIALsym('['), SPECIALsym('L'), SPECIALsym(']')]; }
+  | ONEcons { name ... }, TUPLEty Ts:
+    {
+      Tys ts;
+      fmt = #[ TERMsym(')') ];
+      Bool comma = false;
+      for( ts = Ts; ts; ts = ts->#2)
+      {
+        if (comma)
+          fmt = #[ TERMsym(',') ... fmt ];
+        fmt = #[ SPECIALsym('_') ... fmt ];
+        comma = true;
+      }
+      fmt = #[TERMSTRINGsym(name), TERMsym('(') ... fmt ];
+    }
+  | ONEcons { name ... }, EXTUPLEty Ts:
+    {
+      Tys ts;
+      fmt = #[ TERMsym(')') ];
+      Bool comma = false;
+      for( ts = Ts; ts; ts = ts->#2)
+      {
+        if (comma)
+          fmt = #[ TERMsym(',') ... fmt ];
+        fmt = #[ SPECIALsym('_') ... fmt ];
+        comma = true;
+      }
+      fmt = #[TERMSTRINGsym(name), TERMsym('(') ... fmt ];
+    }
+  | ONEcons { name ... }, RECORDty(Ls,_,Ts):
+    {
+      Ids ls; Tys ts;
+      fmt = #[TERMsym('{'), TERMSTRINGsym(name) ];
+      Bool comma = false;
+      for( ls = Ls, ts = Ts; ls && ts; ls = ls->#2, ts = ts->#2)
+      {
+        if (comma)
+          fmt = #[ TERMsym(',') ... fmt ];
+        fmt = #[ SPECIALsym('_'),TERMsym('='),TERMSTRINGsym(ls->#1) ... fmt ];
+        comma = true;
+      }
+      fmt = #[ TERMsym('}') ... fmt ];
+      fmt = rev(fmt);
+    }
+  | ONEcons { name ... }, ty:
+    {
+      fmt = #[TERMSTRINGsym(name), TERMsym('('), SPECIALsym('_'),TERMsym(')')];
+    }
+  | _: // skip
+  }
+  generate_formatted_printer( C, tys, k, mono_ty, cons, ty, fmt);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a formatted pretty printer
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::generate_formatted_printer
+   (CodeGen& C, Tys tys, DefKind k, Ty mono_ty,
+    Cons cons, Ty ty, PrintFormats fmt)
+{
+  Tys tyl  = #[];
+  Ids label_list = #[];
+
+  match (deref_all(ty))
+  {
+    NOty:             { tyl = #[]; }
+  | TUPLEty tys:      { tyl = tys; }
+  | RECORDty(l,_,t):  { tyl = t; label_list = l; }
+  | ty:               { tyl = #[ty]; }
+  }
+
+  int N = length(tyl);
+  int index = 1;
+
+  Exp exp = select(IDexp("obj__"),cons,mono_ty);
+
+  for_each (ProductionSymbol, f, fmt)
+  {
+    match (f)
+    {
+    NONTERMsym l: { gen_print_field(C,DOTexp(exp,l),component_ty(ty,l)); }
+    | POSNONTERMsym i:
+          { gen_print_field(C,DOTexp(exp,index_of(i)),component_ty(ty,i)); }
+    | TERMsym c:
+      { C.pr( "%^strm__ << '%s';", print_char(c)); }
+    | TERMSTRINGsym s:
+      {
+        int len = strlen(s);
+        if (len == 1)
+        {
+          C.pr( "%^strm__ << '%s';",s);
+        }
+        else if (len == 3 && s[0] == '"' && s[2] == '"' && !isalnum(s[1]))
+        {
+          C.pr( "%^strm__ << '%s';",print_char(s[1]));
+        }
+        else
+        {
+          Id quote = s[0] == '"' ? "" : "\"";
+          C.pr( "%^strm__ << %s%s%s;",quote,s,quote);
+        }
+      }
+    | SPECIALsym '[': // Print lists
+      { C.pr("%^strm__ << '%c';", (int)cons->name[1]); }
+    | SPECIALsym ']': // Print lists
+      {
+        char c = cons->name[strlen(cons->name)-1];
+        C.pr("%^strm__ << '%c';", (int)c);
+      }
+    | SPECIALsym 'L': // Print lists
+      {
+        char nil_name[4];
+        nil_name[0] = '#'; nil_name[1] = cons->name[1];
+        nil_name[2] = cons->name[5]; nil_name[3] = '\0';
+        Cons nil = lookup_cons(nil_name);
+        C.pr(
+              "%^{%+"
+              "%^int comma__ = 0;"
+              "%^for (%S%P * l__ = obj__; l__ != %S; l__ = %e)"
+              "%^{%+"
+              "%^if (comma__) strm__ << ',';"
+                     "%^strm__ << %e;"
+              "%^comma__ = 1;"
+              "%-%^}"
+              "%-%^}",
+              class_name, tys, nil->name,
+              DOTexp(select(IDexp("l__"),cons,mono_ty),"_2"),
+              DOTexp(select(IDexp("l__"),cons,mono_ty),"_1")
+            );
+      }
+    | SPECIALsym '{': { C.pr("%^strm__.indent().newline().tab();"); }
+    | SPECIALsym '}': { C.pr("%^strm__.unindent().newline().tab();"); }
+    | SPECIALsym '/': { C.pr("%^strm__.newline().tab();"); }
+    | SPECIALsym '_' | tyl != #[]:
+      {
+        if (N == 1)
+          gen_print_field(C, exp, ty);
+        else if (label_list == #[])
+          gen_print_field( C, DOTexp( exp, index_of( index)),tyl->#1);
+        else
+          gen_print_field( C, DOTexp( exp, label_list->#1),tyl->#1);
+
+        C.pr(" // %T", tyl->#1);
+        if (tyl != #[])
+          tyl = tyl->#2;
+        if (label_list != #[])
+          label_list = label_list->#2;
+        index++;
+      }
+    | SPECIALsym c:
+      {
+        error( "%!illegal print format '%c' in constructor %s %T\n",
+        cons->location, (int)c, cons->name, ty);
+      }
+    | _:
+      {
+        bug( "%!illegal print format in constructor %s %T\n",
+             cons->location, cons->name, ty);
+      }
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a formatted pretty printer for a field
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void DatatypeHierarchy::gen_print_field( CodeGen& C, Exp exp, Ty ty)
+{
+  Id stream =
+      (
+        ty_equal(ty,integer_ty) ||
+        ty_equal(ty,character_ty) ||
+        ty_equal(ty,string_ty) ||
+        ty_equal(ty,bool_ty) ||
+        ty_equal(ty,real_ty) ||
+        ty_equal(ty,quark_ty) ||
+        has_qual(QUALprintable,ty) ||
+        has_qual(QUALprintable,deref_all(ty))
+      ) ? "" : ".stream()";
+  C.pr( "%^strm__%s << %e;", stream, exp);
+}

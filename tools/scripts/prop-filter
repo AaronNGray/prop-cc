@@ -1,0 +1,31 @@
+#!/usr/bin/perl -p
+
+$id = "[a-zA-Z_0-9]+";
+
+sub translate 
+{  local($ident) = @_;
+   if ($ident =~ /(XX.*XX)/)
+   {  $text   = $1;
+      $string = "";
+      for ($i = 0; $i < length($text); $i += 2)
+      {  $token = substr($text,$i,2);
+         next if ($token eq "XX");
+         if ($token =~ /^_(.)/) { $string = "$string$1"; }
+         else
+         {  $token =~ /^(.)(.)/;
+            $c = chr(hex($1) * 16 + hex($2));
+            $string = "$string$c";
+         }
+      }
+      return "\"$string\"";
+   }
+   return $ident;
+}
+
+while (<>)
+{  s/_(XX.*)__FP\d+(.*)/\1(\2 *)/go;
+   s/a_($id) \*/translate($1)/goe;
+   s/a_($id<[^\>]+>) \*/translate($1)/goe;
+   s/(XX.*XX)/translate($1)/goe;
+   print;
+}

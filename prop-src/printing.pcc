@@ -1,0 +1,1145 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file implements various pretty printing and formating routines.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include <strstream>
+#include <AD/contain/bitset.h>
+#include <AD/strings/charesc.h>
+#include <AD/strings/quark.h>
+#include <stdio.h>
+#include <ctype.h>
+#include "ir.ph"
+#include "ast.ph"
+#include "matchcom.ph"
+#include "type.h"
+#include "options.h"
+#include "list.h"
+#include "graphtype.h"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Flags controlling printing formats of types.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool      pretty_print_ty      = true;
+Bool      pretty_print_pattern = false;
+Bool      pretty_print_exp     = false;
+Bool      print_semantic_stack = false;
+Bool      print_inner_action   = false;
+Bool      print_default_value  = true;
+Id        ty_id                = 0;
+Parameter ty_parameter         = TYformal;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Print an identifier list
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Ids vars)
+{
+  for( Ids vs = vars; vs; vs = vs->#2)
+  {
+    f << vs->#1;
+    if (vs->#2)
+      f << ", ";
+    }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Print a scope
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Scope s)
+{
+  match (s)
+  {
+    case PUBLICscope:    f << "public";
+    case PROTECTEDscope: f << "protected";
+    case PRIVATEscope:   f << "private";
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//  Return the label for an tuple element index
+///////////////////////////////////////////////////////////////////////////////
+
+Id index_of( int i, Id prefix)
+{
+  if (prefix == 0)
+    prefix = "";
+  return Quark( Quark( prefix, "_"), i);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Print a persistent id.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Pid pid)
+{
+  match (pid)
+  {
+    PERSISTid id:  { f << id; }
+  | PERSISTnone:   // skip
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Print a literal.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Literal l)
+{
+  match (l)
+  {
+    INTlit    i:  { f << i; }
+  | BOOLlit   b:  { f << (b ? "true" : "false"); }
+  | CHARlit   c:  { char b[32]; print_char(b,c); f << '\'' << b << '\''; }
+  | REALlit   r:
+    {
+      // use sprintf due to library problems in libg++ 2.5.8 on Linux
+      char buf[256];
+      sprintf( buf,"%lf", r);
+      f << buf;
+      // std::ostrstream S(buf,sizeof(buf));
+      // std::ostream& S2 = S;
+      // S2 << r << std::ends;
+      // f << S.str();
+    }
+  | STRINGlit s:  { f << s; }
+  | REGEXPlit re: { f << re; }
+  | QUARKlit q:
+    {
+      if (pretty_print_pattern)
+        f << '#' << q;
+      else
+        f << MatchCompiler::quark_name(q);
+    }
+  | BIGINTlit n:
+    {
+      if (pretty_print_pattern)
+        f << "#" << n;
+      else
+        f << n;
+    }
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Print type list.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Tys tys)
+{
+  for(Tys t = tys; t; t = t->#2)
+  {
+    f << t->#1;
+    if (t->#2 != #[])
+      f << ", ";
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Print type variables (i.e. template actual arguments)
+//
+///////////////////////////////////////////////////////////////////////////////
+void print_tyvars( std::ostream& f, Tys tys, Bool is_datatype)
+{
+  if (tys != #[])
+    if (is_datatype)
+      f << "(" << tys << ")";
+    else
+      f << '<' << tys << "> ";
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Print type variables (i.e. formal template arguments)
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void print_tyvars( std::ostream& f, TyVars tyvars, char open, char close, Bool header)
+{
+  if (tyvars != #[])
+  {
+    if (header) f << "template ";
+    f << open;
+    for(TyVars t = tyvars; t; t = t->#2)
+    {
+      if (header)
+        f << "class ";
+      f << t->#1;
+      if (t->#2)
+        f << ", ";
+    }
+    f << close;
+    if (header)
+      f << ' ';
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Print a tuple type.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void print_tuple(std::ostream& f, Tys tys)
+{
+  if (pretty_print_ty)
+    f << '(' << tys << ')';
+  else
+  {
+    f << "struct {";
+    int i = 1;
+    for (Tys t = tys; t; t = t->#2)
+    {
+      ty_id = index_of(i);
+      f << t->#1 << "; ";
+      ty_id = #[];
+    }
+    f << "} ";
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Print a mktuple type
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void print_mktuple( std::ostream& f, Tys tys)
+{
+  if (pretty_print_ty)
+    f << ".[" << tys << ']';
+  else
+  {
+    f << "Tuple" << length(tys);
+    print_tyvars(f,tys,false);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Print a record type.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void print_record( std::ostream& f, Ids labs, Tys tys, Bool flex)
+{
+  if ( !pretty_print_ty) f << "struct ";
+  f << "{ ";
+  Tys t; Ids l;
+  for (t = tys, l = labs; t && l; t = t->#2, l = l->#2)
+  {
+    if (pretty_print_ty)
+    {
+      f << l->#1 << " : " << t->#1;
+      if (t->#2) f << ", ";
+    }
+    else
+    {
+      ty_id = l->#1; f << t->#1 << "; ";
+      ty_id = #[];
+    }
+  }
+  if (pretty_print_ty && flex)
+    f << " ... ";
+  f << " }";
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Print a function parameter.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void print_parameter( std::ostream& f, Ty ty, Id id, Parameter p)
+{
+  Parameter save = ty_parameter;
+  Bool      sp = pretty_print_ty;
+  pretty_print_ty = false;
+  ty_parameter = p;
+  match (deref(ty))
+  {
+    TUPLEty tys:
+    {
+      int i = 1;
+      if (p == TYformal || p == TYsimpleformal ||
+          p == TYactual && tys != #[]) f << '(';
+      for (Tys ts = tys; ts; ts = ts->#2)
+      {
+        ty_id = index_of(i,(p != TYbody ? "x" : ""));
+        if (p != TYactual) f << ts->#1;
+        else f << ty_id;
+        if (p != TYbody) { if (ts->#2) f << ", "; }
+        else f << "; ";
+        i++;
+        ty_id = #[];
+      }
+      if (p == TYformal || p == TYsimpleformal ||
+          p == TYactual && tys != #[])
+        f << ')';
+    }
+  | RECORDty( labs, _, tys):
+    {
+      Ids l;
+      Tys t;
+      if (p == TYformal || p == TYsimpleformal ||
+          p == TYactual && tys != #[])
+        f << '(';
+
+      for (l = labs, t = tys; l && t; l = l->#2, t = t->#2)
+      {
+        if (p != TYbody)
+          ty_id = #"x_" + l->#1;
+        else
+          ty_id = l->#1;
+        if (p != TYactual)
+          f << t->#1;
+        else
+          f << ty_id;
+        if (p != TYbody)
+        {
+          if (t->#2)
+            f << ", ";
+        }
+        else
+          f << "; ";
+        ty_id = #[];
+      }
+
+      if (p == TYformal || p == TYsimpleformal ||
+          p == TYactual && tys != #[])
+        f << ')';
+    }
+  | ty:
+    {
+      if (p != TYbody)
+        f << '(';
+      if (p != TYbody)
+        ty_id = #"x_" + id;
+      else
+        ty_id = id;
+      if (p != TYactual)
+        f << ty;
+      else
+        f << ty_id;
+      if (p == TYbody)
+        f << "; ";
+      ty_id = 0;
+      if (p != TYbody)
+        f << ')';
+    }
+  }
+  ty_parameter = save;
+  pretty_print_ty = sp;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print a type expression.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Ty ty)
+{
+  Id this_id = 0;
+  if (ty_id)
+  {
+    this_id = ty_id;
+    ty_id = 0;
+  }
+
+  ty = deref(ty);
+  match (ty)
+  {
+    NOty:                 { f << "error"; }
+  | VARty _:              { f << "???"; }
+  | INDty (id, _):        { f << id; }
+  | POLYty(t, _, _):      { f << t; }
+  | TYPEty:               { f << "type"; }
+  | POINTERty  t:         { f << t << " *"; }
+  | REFty t:              { f << t << " &"; }
+  | FUNty(a, b):          { f << a << " -> " << b; }
+  | GRAPHty G:            { f << G->class_name; }
+  | NODEty n:             { f << n->graph()->class_name <<"::"<< n->name(); }
+  | EDGEty e:             { f << "edge " << e->name(); }
+  | TUPLEty tys:          { print_tuple(f,tys); }
+  | EXTUPLEty tys:        { print_mktuple(f,tys); }
+  | RECORDty(l,flex,tys): { print_record(f,l,tys,flex); }
+  | IDty(id, tys):
+    {
+      if (options.new_type_format && tys != #[])
+      {
+        match (deref_all(ty))
+        {
+          DATATYPEty({ id ... },_):
+          {
+            if ( !pretty_print_ty) f << "a_";
+            f << id; print_tyvars(f,tys,false);
+            if ( !pretty_print_ty)
+            {
+              if (tys == #[])
+                f << ' ';
+              f << "* ";
+            }
+          }
+        | _:
+          {
+            f << id;
+            print_tyvars(f,tys,false);
+          }
+        }
+      }
+      else
+      {
+        f << id;
+        match (deref_all(ty))
+        {
+          DATATYPEty(_,_): { print_tyvars( f, tys, !pretty_print_ty); }
+        | _:               { print_tyvars( f, tys, false); }
+        }
+      }
+    }
+  | ARRAYty(t,exp):
+    {
+      if (this_id)
+      {
+        ty_id = this_id;
+        this_id = 0;
+      }
+      f << t << '[' << exp << ']';
+    }
+  | DEFVALty(ty, exp):
+    {
+      if (this_id)
+      {
+        ty_id = this_id;
+        this_id = 0;
+      }
+      f << ty;
+      if (ty_parameter != TYbody && ty_parameter != TYsimpleformal
+	      && print_default_value)
+	    f << " = " << exp;
+    }
+  | QUALty  (q,t):
+    {
+      if (q & QUALunsigned)
+        f << "unsigned ";
+      if (q & QUALsigned)
+        f << "signed ";
+      if ((ty_parameter == TYformal || ty_parameter == TYsimpleformal)
+	      && (q & QUALclass))
+        f << (TYCONty((TyCon)REFtycon,#[ QUALty(QUALconst,t) ]));
+      else
+        f << t;
+      if (q & QUALconst)
+        f << " const";
+    }
+  | DATATYPEty({ id, tyvars ... }, #[]): { f << id; }
+  | DATATYPEty({ id, tyvars ... }, tys):
+    {
+      if ( !pretty_print_ty)
+        f << "a_";
+      f << id;
+      print_tyvars( f, tys, false);
+      if ( !pretty_print_ty)
+      {
+        if (tys == #[])
+          f << ' ';
+        f << "* ";
+      }
+    }
+  | NESTEDty(a,b):
+    {
+    f << a << "::" << b;
+    }
+  | _:
+    {
+      bug ("operator << (std::ostream&, Ty)");
+    }
+  }
+  if (this_id)
+    f << ' ' << this_id;
+  return f;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print a pattern list.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void print( std::ostream& f, Pats pats, Id open, Id close,
+            Bool flex1, Pat p, Bool flex2 = false,
+            Pat len = NOpat, Pat array = NOpat)
+{
+  f << open;
+  if (len != NOpat)
+  {
+    f << " |" << len;
+    if (array != NOpat)
+      f << " : " << array;
+    f << " |";
+  }
+  if (flex2)
+    f << " ... ";
+  for (Pats ps = pats; ps; ps = ps->#2)
+  {
+    f << ps->#1;
+    if (ps->#2)
+      f << ", ";
+  }
+  if (flex1 && pats != #[] && p != NOpat)
+    f << " ... ";
+  if (p != NOpat)
+    f << p;
+  f << close;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print a labeled pattern list.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void print( std::ostream& f, LabPats lab_pats, Bool flex)
+{
+  f << '{';
+  for (LabPats ps = lab_pats; ps; ps = ps->#2)
+  {
+    f << ps->#1.label << " = " << ps->#1.pat;
+    if (ps->#2)
+      f << ", ";
+  }
+  f << '}';
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Methods extract the open and close brace of a list.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Id open_of( Cons c)
+{
+  match (c)
+  {
+  ONEcons { name ... }:
+    {
+      char s[3];
+      s[0] = name[0];
+      s[1] = name[1];
+      s[2] = '\0';
+      return Quark(s);
+    }
+  | _:
+    { return "<\?\?>["; }
+  }
+}
+
+Id close_of( Cons c)
+{
+  match (c)
+  {
+    ONEcons { name ... }: { return name+2; }
+  | _:                    { return "]"; }
+  }
+}
+
+Id close_of2( Cons c)
+{
+  match (c)
+  {
+    ONEcons { name ... }: { return name + strlen( name) - 2; }
+  | _:                    { return "]"; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print a pattern list.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Pats ps)
+{
+  print( f, ps, "", "", false, NOpat);
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print a pattern.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Pat p)
+{
+  match (p)
+  {
+    NOpat:                      // skip
+  | WILDpat _:                  { f << '_'; }
+  | BACKEDGEpat(_,id,_):        { f << '<' << id << '>'; }
+  | IDpat(id,_,_):              { f << id; }
+  | INDpat(id,_,_):             { f << '?' << id; }
+  | ASpat(id,p,_,_):            { f << id << " as " << p; }
+  | TYPEDpat(p,ty):             { f << p << " : " << ty; }
+  | TUPLEpat ps:                { print(f,ps,"(",")",false,NOpat); }
+  | EXTUPLEpat ps:              { print(f,ps,".(",")",false,NOpat); }
+  | ARRAYpat (ps,flex):         { print(f,ps,"[","]",flex,NOpat); }
+  | RECORDpat (ps,flex):        { print(f,ps,flex); }
+  | LOGICALpat(NOTpat,a,_):     { f << "(! " << a << ")"; }
+  | LOGICALpat(ANDpat,a,b):     { f << '(' << a << " && " << b << ')'; }
+  | LOGICALpat(ORpat,a,b):      { f << '(' << a << " || " << b << ')'; }
+  | LOGICALpat(IMPLIESpat,a,b): { f << '(' << a << " implies: " << b << ')'; }
+  | LOGICALpat(EQUIVpat,a,b):   { f << '(' << a << " equiv: " << b << ')'; }
+  | LOGICALpat(XORpat,a,b):     { f << '(' << a << " xor: " << b << ')'; }
+  | GUARDpat(p,e):              { f << p << " | " << e; }
+  | APPENDpat(p1,p2,_):         { f << '(' << p1 << " ; " << p2 << ')'; }
+  | UNIFYpat(p,e):              { f << '(' << p << " := " << e << ")"; }
+  | MARKEDpat(_,p):             { f << p; }
+  | CONSpat(ONEcons { qual, alg_ty = DATATYPEty ({ id ... },_) ... })
+        | qual & QUALvariable:
+                                { f << id << "?"; }
+  | CONSpat(ONEcons { name ... }):   { f << name; }
+  | CONSpat(NOcons):            { f << "<none>"; }
+  | APPpat(p1,p2):              { f << p1 << ' ' << p2; }
+  | LEXEMEpat(id, ty, n, terms): { f << "lexeme class " << id; }
+  | POLYpat(id,_,#[],p,e,_):      { f << id << " = " << p; }
+  | POLYpat(id,_,vars,p,e,_):     { f << id << '(' << vars << ") = " << p; }
+  | VECTORpat{ cons, elements, len, array, head_flex = u, tail_flex = v}:
+    { print( f, elements, open_of(cons), close_of2(cons), v, NOpat, u, len, array); }
+  | LISTpat{ nil, head, tail ...}:
+    { print( f, head, open_of(nil), close_of(nil), true, tail); }
+  | CONTEXTpat( context, pat):
+    {
+      f << "<<";
+      for (Conses ids = context; ids; ids = ids->#2)
+      {
+        if (ids->#1 != NOcons)
+          f << ids->#1->name;
+        if (ids->#2)
+          f << ", ";
+      }
+      f << ">>" << pat;
+    }
+  | LITERALpat lit:
+    {
+      Bool save = pretty_print_pattern;
+      pretty_print_pattern = true;
+      f << lit;
+      pretty_print_pattern = save;
+    }
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Convert a string into a suitable encoding
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void encode_string( char * buf, const char * s)
+{
+  while (*s)
+  {
+    unsigned char c = *s++;
+    if (c == '"')
+    {
+      *buf++ = 'X';
+      *buf++ = 'X';
+    }
+    else if (isalnum(c) || c == '_')
+    {
+      *buf++ = '_';
+      *buf++ = c;
+    }
+    else
+    {
+       int lo = c % 16, hi = c / 16;
+       *buf++ = hi + 'a';
+       *buf++ = lo + 'a';
+    }
+  }
+  *buf++ = '\0';
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print the mangled name of list constructors.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+fun mangle id | id == 0: { return "(null)"; }
+  | mangle "#[...]": Id: { return "list_1_"; }
+  | mangle "#(...)":     { return "list_2_"; }
+  | mangle "#{...}":     { return "list_3_"; }
+  | mangle "#[]":        { return "nil_1_"; }
+  | mangle "#()":        { return "nil_2_"; }
+  | mangle "#{}":        { return "nil_3_"; }
+  | mangle "[|...|]":    { return "vector_1_"; }
+  | mangle "(|...|)":    { return "vector_2_"; }
+  | mangle "{|...|}":    { return "vector_3_"; }
+  | mangle id | id[0] == '"':
+    {
+      char buf[256];
+      encode_string( buf, id);
+      return Quark( buf);
+    }
+  | mangle id:           { return id; }
+  ;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print the name of a constructor
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& print_cons( std::ostream& f, Cons cons)
+{
+  match (cons)
+  {
+    ONEcons { name, ty = NOty ... }: {  f << mangle(name); }
+  | ONEcons { name, alg_ty = DATATYPEty({ opt, id ... },_) ... }:
+    {
+      if (opt & OPTsubclassless)
+        f << "a_" << id;
+      else
+        f << id << "_" << mangle( name);
+    }
+  | _:
+    {  bug("print_cons()"); }
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print an expression list
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Exps es)
+{
+  for (Exps l = es; l; l = l->#2)
+  {
+    f << l->#1;
+    if (l->#2)
+      f << ',';
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print an expression.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Exp e)
+{
+  match (e)
+  {
+    NOexp:                     { }
+  | IDexp id:                  { f << id; }
+  | RELexp i | same_selectors: { f << "_0"; }
+  | RELexp i:                  { f << '_' << i; }
+  | MARKEDexp (_,e):           { f << e; }
+  | LITERALexp l:              { f << l; }
+  | ASSIGNexp (e1,e2):         { f << '(' << e1 << " = " << e2 << ')'; }
+  | DOTexp(SELECTORexp(e,c,t),id) | pretty_print_exp:
+    {
+      f << e << '!' << c->name << '.';
+	  int n = atol(id+1);
+	  if (n > 0)
+	    f << n;
+	  else
+	    f << id;
+    }
+  | SELECTORexp(e,c,t) | pretty_print_exp:
+    { f << e << '!' << c->name; }
+  | DOTexp( SELECTORexp( e, c, t), id):
+    { f << MatchCompiler::make_select( e, c, t, id); }
+  | SELECTORexp( e, cons, t):
+    { f << MatchCompiler::make_select( e, cons, t); }
+  | DOTexp (DEREFexp e,id):    { f << e << "->" << id; }
+  | DOTexp    (e,id):     { f << e << '.' << id; }
+  | DEREFexp  (e):        { f << "(*" << e << ')'; }
+  | ARROWexp  (e,id):     { f << e << "->" << id; }
+  | APPexp    (e1,e2):    { f << e1 << '(' << e2 << ')'; }
+  | INDEXexp  (e1,e2):    { f << e1 << '[' << e2 << ']'; }
+  | BINOPexp  (x,e1,e2):  { f << '(' << e1 << ' ' << x << ' ' << e2 << ')'; }
+  | PREFIXexp (x,e):      { f << '(' << x << ' ' << e << ')'; }
+  | POSTFIXexp(x,e):      { f << '(' << e << ' ' << x << ')'; }
+  | CASTexp( ty, e):
+    {
+      Bool save = pretty_print_ty;
+      pretty_print_ty = false;
+      f << "((" << ty << ')' << e << ')';
+      pretty_print_ty = save;
+    }
+  | QUALexp (ty,e):       { f << ty << "::" << e; }
+  | EQexp(_,e1,e2):       { f << "equality_of(" << e1 << ',' << e2 << ')'; }
+  | UNIFYexp(_,e1,e2):    { f << "unify(" << e1 << ',' << e2 << ')'; }
+  | LTexp(_,e1,e2):       { f << '(' << e1 << " < " << e2 << ')'; }
+  | HASHexp(_,e):         { f << "hash(" << e << ')'; }
+  | TUPLEexp es:          { f << es; }
+  | EXTUPLEexp es:        { f << "mkTuple" << length(es) << '(' << es << ')'; }
+  | IFexp(a,b,c):         { f << '(' << a << " ? " << b << " : " << c <<')';}
+  | SYNexp( i, r, _, in_rewrite):
+    {
+      if (in_rewrite)
+        f << '_' << i << "__";
+      else if (r < 0) // parser semantic action
+      {
+        if (i == 0)
+          f << "syn_" << "._" << -r;
+        else
+          f << "t__[" << i << "+to__]._" << -r;
+      }
+      else
+        f << "t__->kids[" << i << "]->u._" << r;
+    }
+  | THISSYNexp (r,_,in_rewrite):
+    {
+      if (in_rewrite)
+        f << "__";
+      else // in parser
+        f << "t__->u._" << r;
+    }
+  | COSTexp (i): { f << "t__->kids[" << i << "]->cost"; }
+  | THISCOSTexp _: { f << "t__->cost"; }
+  | CONSexp(c as
+            ONEcons { name, ty = TYCONty(RECORDtycon(labels,_),tys) ... },
+            placement, e as RECORDexp lab_exps):
+    {  // rearrange arguments to
+      if (placement)
+      {
+        f << "new (" << placement << ") ";
+        print_cons( f, c);
+      }
+      else
+        f << mangle(name);
+
+      f << '(';
+
+      {
+        for_each ( LabExp, i, lab_exps)
+        {
+          for_each ( Id, j, labels)
+            if (i.label == j)
+              goto next;
+          error( "%Lillegal record label '%s' in expression: %s%e\n",
+                 i.label, name, e);
+          next: ;
+        }
+      }
+      {
+        Bool comma = false;
+        Ids is; Tys ts;
+        for(is = labels, ts = tys; is; is = is->#2, ts = ts->#2)
+        {
+          Id i = is->#1;
+          Bool found = false;
+          for_each (LabExp, j, lab_exps)
+          {
+            if (i == j.label) {
+              if (found)
+                error( "%Lduplicated label '%s' in expression: %s%e\n",
+                       j.label, name, e);
+              found = true;
+              if (comma)
+                f << ", ";
+              comma = true;
+              f << j.exp;
+            }
+          }
+          if ( !found)
+          {
+            match (default_val(ts->#1))
+            {
+            NOexp:
+              { error ("%Lmissing label '%s' in expression: %s%e\n", i, name, e); }
+            | def_e:
+              {
+                if (comma)
+                  f << ", ";
+                comma = true;
+                f << def_e;
+              }
+            }
+          }
+        }
+      }
+      f << ')';
+    }
+  | CONSexp(ONEcons { name ... }, placement, RECORDexp _):
+    {
+      error("%Lconstructor '%s' doesn't take labeled arguments\n", name);
+    }
+  | CONSexp(ONEcons { name, ty = NOty ... },#[], NOexp):
+    {  f << mangle(name); }
+  | CONSexp(cons as ONEcons { name ... }, placement, e):
+    {
+      if (placement)
+      {
+        f << "new (" << placement << ") ";
+        print_cons(f,cons);
+      }
+      else
+        f << mangle(name);
+      f << '(' << e << ')';
+    }
+  | RECORDexp es:
+    {
+      f << "{ ";
+      for (LabExps l = es; l; l = l->#2)
+        {
+        f << l->#1.label << " = " << l->#1.exp;
+        if (l->#2)
+          f << ", ";
+      }
+      f << " }";
+    }
+  | LISTexp (cons, nil, es, e) | pretty_print_exp:
+    {
+      f << open_of(nil);
+	  for( Exps exp_list = es; exp_list; exp_list = exp_list->#2)
+	  {
+	    f << exp_list->#1;
+	    if (exp_list->#2)
+	      f << ", ";
+      }
+	  if (e != NOexp)
+	    f << " ... " << e;
+      f << close_of(nil);
+    }
+  | LISTexp (ONEcons { name = cons ...}, ONEcons { name = nil ...}, es, e):
+    {
+      int i = 0;
+      for( Exps exp_list = es; exp_list; exp_list = exp_list->#2)
+	  {
+	    Exp exp = exp_list->#1;
+        f << mangle(cons) << '(' << exp;
+	    if (exp_list->#2)
+	      f << ',';
+	    i++;
+      }
+      if (e != NOexp)
+        f << ',' << e;
+	  else if (es == #[])
+	    f << mangle(nil);
+      while (i-- > 0)
+        f << ')';
+    }
+  | LISTexp _: // skip
+  | VECTORexp (ONEcons { name = vec ... }, es):
+    {
+      f << mangle(vec) << '(';
+      {
+        for(Exps exps = es; exps; exps = exps->#2)
+        {
+          f << exps->#1;
+          if (exps->#2 != #[])
+            f << ',';
+        }
+      }
+      f << ')';
+    }
+  | VECTORexp _: // skip
+  | _:
+    { bug("operator << (std::ostream&, Exp);"); }
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print an inheritance type.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Inherit i)
+{
+  if (i->qualifiers & QUALvirtual)
+    f << "virtual ";
+  return f << i->scope << ' ' << i->super_class;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print a class inheritance list.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Inherits i)
+{
+  for ( ;i; i = i->#2)
+  {
+    f << i->#1;
+    if (i->#2)
+      f << ", ";
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print a cost expression
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Cost c)
+{
+  match (c)
+  {
+    NOcost:
+  | EXPcost (e,_): { f << " \\ " << e; }
+  | INTcost c:     { f << " \\ " << c; }
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to print a qualified identifier.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, QualId id)
+{
+  match (id)
+  {
+    NESTEDid(ty, id):             { f << ty << "::" << id; }
+  | SIMPLEid id | isalpha(id[0]): { f << id; }
+  | SIMPLEid id:                  { f << "operator " << id; }
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//  Method to print a pattern match rule.
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, MatchRule mr)
+{
+  match (mr)
+  {
+    MATCHrule (non_terminal, pat, guard, cost, action):
+    {
+      Bool save = pretty_print_exp;
+	  pretty_print_exp = true;
+	  if (non_terminal)
+	    f << non_terminal << " -> ";
+      f << pat;
+      if (guard != NOexp) f << " | " << guard;
+      f << cost << ": ...";
+	  pretty_print_exp = save;
+    }
+  }
+  return f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to pretty print a decision tree.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator << (std::ostream& f, Match m)
+{
+  match (m)
+  {
+    FAILmatch:              { f << '_'; }
+  | DONTCAREmatch:          { f << '-'; }
+  | BACKEDGEmatch (_,id,_): { f << '<' << id << '>'; }
+  | SUCCESSmatch (r,_):     { f << r; }
+  | GUARDmatch (e,yes,no):  { f << e << '(' << yes << ',' << no << ')'; }
+  | SUCCESSESmatch (n,set,_):
+    {
+      f << '{';
+      Bool comma = false;
+      for (int i = 0; i < n; i++)
+        if ((*set)[i])
+        {
+          if (comma)
+            f << ", ";
+          f << i;
+          comma = true;
+        }
+      f << '}';
+    }
+  | COSTmatch (n,costs,set,_):
+    {
+      f << '{';
+      Bool comma = false;
+      for (int i = 0; i < n; i++)
+        if ((*set)[i])
+        {
+           if (comma)
+             f << ", ";
+           f << costs[i] << " = " << i;
+           comma = true;
+        }
+      f << '}';
+    }
+  | TREECOSTmatch (m,set,_):
+    { f << "TREE{" << *set << "} => " << m; }
+  | TREELABELmatch (m,ty,_,k):
+    { f << "LABEL{" << ty << "(" << k << ")} => " << m; }
+  | LITERALmatch(_,_,l as [REGEXPlit _],n,m,d):
+    {
+      f << "[\n";
+      for (int i = 0; i < n; i++)
+        f << "  {" << i << "}" << l[i] << " => " << m[i] << ",\n";
+      f << d << ']';
+    }
+  | LITERALmatch(_,_,l,n,m,d):
+    {
+      f << '[';
+      for (int i = 0; i < n; i++)
+        f << l[i] << ':' << m[i] << ", ";
+      f << d << ']';
+    }
+  | CONSmatch(_,_,_, TYCONty( DATATYPEtycon { id, qualifiers ... },_),n,m,d):
+    {
+      f << id << '[';
+      for (int i = 0; i < n; i++)
+      {
+        f << m[i];
+        if (i < n - 1) f << ", ";
+      }
+      if (qualifiers & QUALextensible)
+        f << ", " << d;
+      f << ']';
+    }
+  | RANGEmatch(_,_,lo,hi,y,n):
+    { f << '[' << lo << ".." << hi << ": " << y << ", " << n << ']'; }
+  | _:
+    { bug("operator << (std::ostream&, Match);"); }
+  }
+  return f;
+}

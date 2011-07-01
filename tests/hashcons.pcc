@@ -1,0 +1,53 @@
+//
+//  This is a simple (and useless) example for testing the hash cons feature
+//  in Prop.
+//
+#include <iostream.h>
+
+datatype EXP :: unique = num (int)
+                       | add (EXP, EXP)
+                       | sub (EXP, EXP)
+                       | mul (EXP, EXP)
+                       | div (EXP, EXP)
+and LIST :: unique     = nil
+                       | list (EXP, LIST)
+                       ;
+
+//
+//  implement the datatypes.
+//
+instantiate datatype EXP, LIST; 
+
+ostream& operator << (ostream& f, EXP e)
+{
+   match (e) {
+      num n:    { return f << n; }
+   |  add(x,y): { return f << '(' << x << " + " << y << ')'; }
+   |  sub(x,y): { return f << '(' << x << " - " << y << ')'; }
+   |  mul(x,y): { return f << '(' << x << " * " << y << ')'; }
+   |  div(x,y): { return f << '(' << x << " / " << y << ')'; }
+   }
+}
+
+ostream& operator << (ostream& f, LIST l)
+{
+   match (l) {
+      case nil:           return f;
+      case list(e,nil):   return f << e;
+      case list(e,t):     return f << e << ',' << t;
+   }
+}
+
+int main()
+{
+   EXP e1 = mul(add(num(1),num(2)), add(num(2), num(3)));
+   EXP e2 = mul(add(num(1),num(2)), add(num(2), num(3)));
+   LIST l1 = list(e1, list(e2, nil));
+   cout << l1 << '\n';
+   cout << ((e1 == e2) ? "Good!\n" : "Bad boy! Naughty, naughty boy!\n");
+   cout << ((num(1) == num(1)) ? "Good!\n" : "Bad boy! Naughty, naughty boy!\n");
+   cout << ((num(1) != num(2)) ? "Good!\n" : "Bad boy! Naughty, naughty boy!\n");
+   cout << ((add(e1,e2) == add(e1,e2)) ? "Good!\n" : "Bad boy! Naughty, naughty boy!\n");
+   cout << ((add(e1,e2) != add(e1,num(2))) ? "Good!\n" : "Bad boy! Naughty, naughty boy!\n");
+   return 0;
+}

@@ -1,0 +1,63 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This file describes the interface of the constraint logic compiler
+//  internals.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#ifndef constraint_logic_compiler_h
+#define constraint_logic_compiler_h
+
+#include "hashtab.h"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Forward datatype declarations
+//
+///////////////////////////////////////////////////////////////////////////////
+
+datatype Ty          //  Type expressions
+     and Pat         //  Patterns
+     and Exp         //  Expressions
+     and Decl        //  Prop declarations
+     and Def         //  Definitions
+     and Stmt        //  Statements
+     and Instness    //  Instantiatedness
+     and Determinism //  Determinism of a predicate
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Internals of the constraint compiler.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+class ConstraintCompilerInternal
+{  // Unimplemented
+  ConstraintCompilerInternal (const ConstraintCompilerInternal&);
+  void operator = (const ConstraintCompilerInternal&);
+
+  friend class ConstraintCompiler;
+
+  Id class_name;
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  //  Internal maps.
+  //
+  ////////////////////////////////////////////////////////////////////////////
+  HashTable rule_map;        // mapping from functor name to clauses
+  HashTable typing_map;      // mapping from functor name to type
+  HashTable instness_map;    // mapping from id to instness type
+  HashTable det_map;         // mapping from id to determinism.
+
+public:
+  ////////////////////////////////////////////////////////////////////////////
+  //
+  //  Constructor and destructor
+  //
+  ////////////////////////////////////////////////////////////////////////////
+  ConstraintCompilerInternal(Id);
+  ~ConstraintCompilerInternal();
+};
+
+#endif

@@ -1,0 +1,62 @@
+#!/bin/sh
+TESTDIR=./testpropdir
+CURDIR=`pwd`
+errors=0
+
+echo "I'm now attempting to regenerate all files in this release using"
+echo "the new prop compiler and see if everything matches." 
+echo "Current directory is $CURDIR."
+echo "Making a test directory $TESTDIR."
+mkdir -p $TESTDIR
+echo "Testing all .ph files"
+badfiles=""
+for ph_file in [a-z]*.ph; do
+   h_file=`echo $ph_file | sed -e 's/\\.ph$/\\.h/'`
+   if [ -f $h_file ]; then
+      awk 'BEGIN { printf "Compiling '${ph_file}' into " }' </dev/null
+      cp $ph_file $TESTDIR
+      cd $TESTDIR
+      $CURDIR/prop -O14 -S -I$CURDIR -I$CURDIR/../include $ph_file
+      cd $CURDIR
+      awk 'BEGIN { printf "Testing '${h_file}'..." }' </dev/null
+      diff $TESTDIR/$h_file $CURDIR/$h_file 
+      if [ $? != 0 ]; then
+         echo "Bad"; errors=`expr $errors + 1`;
+         badfiles="$badfiles $h_file"
+      else
+         echo "Ok";
+      fi;
+      rm $TESTDIR/*;
+   fi
+done
+
+echo "Testing all .pcc files"
+for pcc_file in [a-z]*.pcc; do
+   cc_file=`echo $pcc_file | sed -e 's/\.pcc$/\.cc/'`
+   if [ -f $cc_file ]; then
+      awk 'BEGIN { printf "Compiling '${pcc_file}' into " }' </dev/null
+      cp $pcc_file $TESTDIR
+      cd $TESTDIR
+      $CURDIR/prop -O14 -S -I$CURDIR -I$CURDIR/../include $pcc_file 
+      cd $CURDIR
+      awk 'BEGIN { printf "Testing '${cc_file}'..." }' </dev/null
+      diff $TESTDIR/$cc_file $CURDIR/$cc_file 
+      if [ $? != 0 ]; then
+         echo "Bad"; errors=`expr $errors + 1`;
+         badfiles="$badfiles $cc_file"
+      else
+         echo "Ok";
+      fi;
+      rm $TESTDIR/*;
+   fi
+done
+
+rmdir $TESTDIR
+if [ $errors != 0 ]; then
+   echo "There are $errors errors"; 
+   echo "The errors are in: $badfiles";
+   echo "Please send bug report to leunga@cs.nyu.edu"
+   exit 1;
+else
+   echo "$CURDIR/prop seems to be okay."; exit 0;
+fi

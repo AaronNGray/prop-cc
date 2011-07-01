@@ -1,0 +1,240 @@
+///////////////////////////////////////////////////////////////////////////////
+//  Indexing optimizations for pattern matching.
+//
+//  The following indexing schemes is largely inspired by the work of
+//  Sekar, Ramesh and Ramakrishnan in ``Adaptive Pattern Matching.''
+//  Techreport, SUNY at Stony Brook (year 91+ but unknown).
+//
+//  Intuitively, an index is the next position of a pattern that must be
+//  inspected to determine a match(Levy and Huet).  Given a set of
+//  prioritized patterns, at least an index must exist at each position.
+//  The algorithm of SRR attempts to locate the index at each position
+//  when constructing the the DFA-like matching automata.
+//
+//  In the previous algorithm I've implemented, merging of matching trees at
+//  identical positions are performed and the resulting automaton guarantees
+//  that the same position is only examined once.  This is an improvement
+//  over Wadler's algorithm, which may examine the same position more than
+//  once in a match.  However, we may examine a position even if it is not
+//  needed.
+//
+//    For example, in
+//
+//       f(_,a,b):
+//       f(a,a,_):
+//       f(_,b,c):
+//
+//   We exam position 1, 2, 3 in sequence in term f even though it is
+// best to exam position 2 first.
+//
+//  I think my algorithm is similar to the one by Graf.  In any case,
+//  My, Graf's and Wadler's algorithms all use a fixed traversal order
+//  (usually left-to-right).  However, the intuition is that in many instances
+//  it is best if the traversal order *adapts* itself according to the
+//  pattern.  This is the essential idea of SRR's algorithm.
+//
+//  Sekar et al. have shown that constructing a DFA-like matching
+//  automata can be exponential in time and space.  They have
+//  developed a polynomial time algorithm for computing indices for untyped
+//  terms.  Unfortunately, in our typed case the time complexity of index
+//  computation is co-NP.
+//
+//  So we'll just use a few heuristics to compute something close to
+//  the notion of an index, and cross our fingers and hope for the best.
+///////////////////////////////////////////////////////////////////////////////
+
+#include "ir.ph"
+#include "ast.ph"
+#include "matchcom.ph"
+#include "hashtab.h"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Hash function on position list
+//
+///////////////////////////////////////////////////////////////////////////////
+
+unsigned int pos_hash( HashTable::Key p)
+{
+  Pos pos = (Pos)p;
+  unsigned int h = 37;
+  match while (pos)
+  {
+    POSzero:            { return h; }
+  | POSinfinity:        { return h + 83; }
+  | POSint(i,p):        { h += i; pos = p; }
+  | POSlabel(l,p):      { h += (unsigned int)l; pos = p; }
+  | POSadaptive(i,_,p): { h += i + 437; pos = p; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Checks if a pattern is refutable.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool is_refutable( Pat pat)
+{
+  match while (pat)
+  {
+    NOpat || WILDpat _ || IDpat(_,_,NOexp): { return false; }
+  | IDpat(_,_,! NOexp) || ASpat(_,_,_,! NOexp)
+    || LITERALpat _ || LEXEMEpat _:    { return true; }
+  | ASpat(_,p,_,_):     { pat = p; }
+  | TYPEDpat(p,_):      { pat = p; }
+  | MARKEDpat(_,p):     { pat = p; }
+  | LOGICALpat (_,a,b): { return is_refutable(a) || is_refutable(b); }
+  | TUPLEpat ps:        { return is_refutable(ps); }
+  | ARRAYpat (ps,_):    { return is_refutable(ps); }
+  | VECTORpat { elements = ps, len = p ... }:
+                        { return is_refutable(p) || is_refutable(ps); }
+  | RECORDpat (ps,_):   { return is_refutable(ps); }
+  | CONTEXTpat(_,p):    { return is_refutable(p); }
+  | CONSpat( ONEcons {
+              alg_ty =
+                 TYCONty(DATATYPEtycon{ unit, arg, qualifiers ... },_)
+              ...
+            }):
+    { return ((unit + arg > 1) || (qualifiers & QUALextensible)); }
+  | APPpat(a,b):       { return is_refutable(a) || is_refutable(b); }
+  | LISTpat{ cons, nil, head = ps, tail = p}:
+    {
+      if (is_refutable(ps))
+        return true;
+      pat = p;
+    }
+  | _: { bug("is_refutable()"); }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Is a pattern list refutable?
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool is_refutable( Pats pats)
+{
+  for_each (Pat, p, pats)
+    if (is_refutable(p))
+      return true;
+  return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Is a labeled pattern list refutable?
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Bool is_refutable( LabPats pats)
+{
+  for_each (LabPat, p, pats)
+    if (is_refutable(p.pat))
+      return true;
+  return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to compute the indices.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void indexing( int priority, Pat pat, Pos pos, HashTable& index_map)
+{
+  match while (pat)
+  {
+    ASpat(_,p,_,_):  { pat = p; }
+  | TYPEDpat(p,_):   { pat = p; }
+  | MARKEDpat(_,p):  { pat = p; }
+  | CONTEXTpat(_,p): { pat = p; }
+  | APPpat( CONSpat( ONEcons {
+              tag, alg_ty = TYCONty(DATATYPEtycon { unit ... }, _)
+              ... }),p as ! NOpat):
+    {  indexing(priority, p, POSint(tag + unit, pos), index_map); return; }
+  | TUPLEpat ps:     { indexing(priority, ps, pos, index_map); return; }
+  | ARRAYpat (ps,_): { indexing(priority, ps, pos, index_map); return; }
+  | VECTORpat { elements = ps, len = p ...}:
+    { indexing(priority, #[ p ... ps ], pos, index_map); return; }
+  | RECORDpat (ps,_):
+    {
+      for_each(LabPat, p, ps)
+        indexing(priority, p.pat, POSlabel(p.label,pos), index_map);
+      return;
+    }
+  | LOGICALpat(_,a,b): { indexing(priority,a,pos,index_map); pat = b; }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to compute the indices.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void indexing( int priority, Pats pats, Pos pos, HashTable& index_map)
+{
+  int n;
+  Pat Ps[32];
+
+  int i = 0;
+  // initialize the pattern array
+  { for_each (Pat, p, pats) Ps[i++] = p; }
+  n = i;
+  if (n <= 0 || n > 32) return;
+
+  // compute the set of index positions for this pattern list
+  unsigned long indices = 0;
+  for (i = 0; i < n; i++)
+    if (is_refutable(Ps[i])) indices |= 1 << i;
+
+  // Locate the position ranking
+  HashTable::Entry * e = index_map.lookup(pos);
+  int * ranks;
+  if (e)
+  {
+    // Heuristic to update the ranks given new index and priority
+    // informations.
+    ranks = (int*)index_map.value(e);
+  }
+  else
+  {
+    // Initialize the new ranking array.
+    // Put all used positions in front and
+    // the rest the the back.
+    ranks = (int*)mem_pool[n * sizeof(int)];
+    int j = 0;
+    for (i = 0; i < n; i++) if (indices & (1 << i))     ranks[j++] = i;
+    for (i = 0; i < n; i++) if (! (indices & (1 << i))) ranks[j++] = i;
+    index_map.insert( pos, ranks);
+  }
+
+  // Recursive on subcomponents, and insert an adaptive rank.
+  for (i = 0; i < n; i++)
+    indexing( priority, Ps[i], POSadaptive( i, ranks, pos), index_map);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to compute the indices information for a set of pattern matching
+//  rules.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void indexing( MatchRules rules, HashTable& index_map)
+{
+  int priority = 0;
+  for_each (MatchRule, r, rules)
+  {
+    match (r)
+    {
+      MATCHrule( _, pat, _, _, _):
+      {
+        indexing( priority, pat, POSzero, index_map);
+        priority++;
+      }
+    }
+  }
+}

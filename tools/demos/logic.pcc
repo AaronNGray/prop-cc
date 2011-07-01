@@ -1,0 +1,41 @@
+#include "logic.ph"
+
+Bool eval(const Wff wff, const Bool e[])
+{  match (wff) {
+      case truth:         return true;
+      case falsity:       return false;
+      case prop(x):       return e[x];
+      case implies(x, y): return ! eval(x,e) || eval(y,e);
+      case disj(x, y):    return eval(x,e) || eval(y,e);
+      case conj(x, y):    return eval(x,e) && eval(y,e);
+      case not(a):        return ! eval(a,e);
+   }
+}
+
+Wff simplify(Wff wff)
+{  match (wff) {
+      case implies(x, y): x = simplify(x); y = simplify(y);
+      case disj(x, y):    x = simplify(x); y = simplify(y);
+      case conj(x, y):    x = simplify(x); y = simplify(y);
+      case not(a):        a = simplify(a);
+      case _:
+   }
+   for (;;) {
+      match (wff) {
+         case implies(truth,   a):       wff = a;
+         case implies(falsity, a):       return truth;
+         case implies(a,       falsity): wff = not(a); 
+         case implies(a,       truth):   return truth;
+         case disj(truth,   a):       return truth;
+         case disj(falsity, a):       wff = a;
+         case disj(a,       truth):   return truth;
+         case disj(a,       falsity): wff = a;
+         case conj(truth,   a):       wff = a;
+         case conj(falsity, a):       return falsity;
+         case conj(a,       truth):   wff = a;
+         case conj(a,       falsity): return falsity;
+         case not(not(a)):            wff = a;
+         case _:                      return wff;
+      }
+   }
+}

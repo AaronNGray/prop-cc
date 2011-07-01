@@ -1,0 +1,239 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  The file implements the class Compiler and this is the main entry
+//  point of the Prop -> C++ translator.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include "ir.ph"
+#include "ast.ph"
+#include "type.h"
+#include "compiler.h"
+#include "options.h"
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructor and destructor
+//
+///////////////////////////////////////////////////////////////////////////////
+
+Compiler:: Compiler( TyOpt opt, int embedded_tags)
+    : DatatypeCompiler( opt, embedded_tags) {}
+Compiler::~Compiler() {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Emit header info
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void Compiler::emit_header( const char * text, int n)
+{
+  header.emit( text, n);
+}
+
+void Compiler::emit_header_text()
+{
+  const char * header_text = header.text();
+  if (header_text)
+    pr( "%s", header_text);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Additional printing method
+//
+///////////////////////////////////////////////////////////////////////////////
+
+va_list Compiler::printer( char fmt, va_list arg)
+{
+  match (fmt)
+  {
+    'm': { MatchCompiler::gen( va_arg( arg, Match)); }
+  | '&': { gen( va_arg( arg, Decls)); }
+  | 'D': { gen( va_arg( arg, Decl)); }
+  |  _ : { bug( "undefined print format '%%%c'\n", (int)fmt); }
+  }
+  return arg;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Top level code generation method
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void Compiler::generate(Decls ds)
+{
+  // generate the quark literals
+  if ( quark_map.size() > 0)
+  {
+    pr(
+        "%^%/"
+        "%^//  Quark literals"
+        "%^%/"
+      );
+
+    foreach_entry (e, quark_map)
+    {
+      Id name  = (Id) quark_map.key( e);
+      Id quark = (Id) quark_map.value( e);
+      pr ("%^static const Quark %s(%s);\n", quark, name);
+    }
+  }
+
+  // now generate the main program.
+  gen( ds);
+
+  // finally, generate any outstanding rewriters
+  gen_rewriters();
+
+  // if the visualization is on then print GDL
+  if (options.visualization)
+    print_definitions_as_GDL();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a list of declarations.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void Compiler::gen( Decls ds)
+{
+  Bool line_prefix = true;
+  Bool line_suffix = true;
+  match while (ds)
+  {
+  #[one ... rest]:
+    {
+      match (one)
+      {
+      TYPEEXPdecl _: { line_suffix = line_prefix; line_prefix = false; }
+      | _:           { line_suffix = line_prefix; line_prefix = true; }
+      }
+
+      gen( one, line_prefix, line_suffix);
+      ds = rest;
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate one declaration.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+void Compiler::gen( Decl d, Bool line_prefix, Bool line_suffix)
+{
+  match (d) of
+    NOdecl:                           { /* skip */ }
+  | OPAQUEdecl d:                     { pr ("%C",d); }
+  | DATATYPEdecl(d,v,l,t):            { gen_datatype(d,v,l,t); }
+  | INSTANTIATEdecl(e,t):             { instantiate_datatypes(e,t);}
+  | REWRITEdecl (id,indices,rules):   { gen_rewrite(id, indices, rules); }
+  | REWRITINGdecl (a,b,c,d,e,f):      { gen_rewriting(a,b,c,d,e,f); }
+  | FUNdecl (fundefs):                { gen_fun_def(fundefs); }
+  | MATCHdecl (exps, rules, opt, ty): { gen_match_stmt(exps,rules,opt,ty); }
+  | SYNTAXdecl(id, gram_exp):         { gen_parser(id,gram_exp); }
+  | ATTRIBUTEGRAMMARdecl(id, e):      { gen_attribute_grammar(id,e); }
+  | INFERENCEdecl (id, rules):        { gen_inference_rules(id, rules); }
+  | SETLSTMTdecl stmt:                { gen_setl(stmt); }
+  | SETLDEFdecl def:                  { gen_setl(def); }
+// |  CONSTRAINTdecl(id,rules):		    { compile_ruleset(id,rules); }
+  | REPLACEMENTdecl(exp,mode):        { gen_replacement(exp,mode); }
+  | CUTREWRITEdecl(exp,mode):         { gen_cutreplacement(exp,mode); }
+  | FAILREWRITEdecl(mode):            { gen_failrewrite(mode); }
+  | CLASSDEFdecl(a_class):            { a_class->gen_class_definition(*this); }
+  | CLASSOFdecl id:
+    {
+      match (lookup_ty(id))
+      {
+        TYCONty(DATATYPEtycon { id ... }, _):
+          { pr( "a_%s", id); }
+       | NOty:
+          {
+            match (find_cons(id))
+            {
+            ONEcons { ty = NOty ... }:
+              {  error ("%Lconstructor %s is not a class\n", id); }
+            | ONEcons { opt ... } | opt & OPTunboxed:
+              {  error ("%Lthe class representation of constructor %s has been elided\n", id); }
+            | ONEcons { name, alg_ty = TYCONty(DATATYPEtycon{ id, opt ... },_) ... }:
+              {
+                if (opt & OPTsubclassless)
+                  pr ("a_%s", id);
+                else
+                  pr ("%s_%S", id, name);
+              }
+            | _:
+              {  error ("%Ltype or constructor %s is undefined\n", id); }
+            }
+          }
+       | ty:
+         {  error ("%Ltype %s has unknown class: %T\n",id, ty); }
+       }
+    }
+  | TYPEEXPdecl ty:               { pr ("%t", ty,""); }
+  | GOTOdecl  label:              { pr ("%^goto %s;\n", label); }
+  | SETSTATEdecl state:           { pr ("s__ = %i;", state); }
+  | INJECTdecl { node_number, direction = RIGHTdirection }:
+    {
+      pr( " if (i__) insert_alpha(%i,fact__); else remove_alpha(%i,fact__); ",
+          node_number, node_number);
+    }
+  | INJECTdecl { node_number, direction = LEFTdirection }:
+    {
+      pr( " if (i__) insert_beta(%i,f__); else remove_beta(%i,f__); ",
+          node_number, node_number);
+    }
+//   |  BITFIELDdecl { name, width, field_names, laws }:
+//      {  define_bitfield(name, width, field_names, laws);
+//         gen_bitfield(name, width, field_names, laws);
+//      }
+  | EXPdecl { exp = e as (SYNexp _ || THISSYNexp _) ... }:
+    { pr( "%e", e); }
+  | EXPdecl { prefix, exp, suffix}:
+    { pr( "%^%s%e%s", (prefix ? prefix : ""),exp, (suffix ? suffix : "")); }
+  | MARKEDdecl (loc,d):
+    {
+      line = loc.begin_line;
+      file = loc.file_name;
+      if (line_prefix)
+        pr ("%#",line,file);
+      gen(d);
+      line = loc.end_line;
+      if (line_suffix)
+        pr ("%#",line,file);
+    }
+  | d:  { bug("Unimplemented feature"); }
+  end match;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Method to generate a report.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+std::ostream& Compiler::print_report(std::ostream& f)
+{
+  f << "------------------------------- Statistics -------------------------------"
+    << "\nMerge matching rules         = " << (options.merge_match ?  "yes" : "no")
+    << "\nNumber of DFA nodes merged   = " << merges
+    << "\nNumber of ifs generated      = " << ifs
+    << "\nNumber of switches generated = " << switches
+    << "\nNumber of labels             = " << goto_labels
+    << "\nNumber of gotos              = " << gotos
+    << "\nAdaptive matching            = " << (options.adaptive_matching ? "enabled" : "disabled")
+    << "\nFast string matching         = " << (options.fast_string_match ? "enabled" : "disabled")
+    << "\nInline downcasts             = " << (options.inline_casts ? "enabled" : "disabled")
+    << "\n"
+       "--------------------------------------------------------------------------"
+       "\n"
+       ;
+  return f;
+}

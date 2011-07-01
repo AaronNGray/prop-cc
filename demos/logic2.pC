@@ -1,0 +1,188 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//  This example program performs simplification of propositional logic
+//  formulas using rewriting.  We'll also define a parser to parses a
+//  logical formula from the input.
+//
+///////////////////////////////////////////////////////////////////////////////
+#include <stdlib.h>
+#include <iostream.h>
+#include <AD/strings/quark.h>
+#include <AD/automata/iolexerbuf.h>
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  First, we define the type Wff (Well Formed Formulas) to represent
+//  our logic formulas.  Identifiers (type Id) are represented as 
+//  atomic strings so that equality testing can be done quickly.  
+//
+//  We also use pretty printing annotations to
+//  indicate to Prop to generate a simple print routine.
+//
+///////////////////////////////////////////////////////////////////////////////
+datatype Wff :: rewrite
+   = True             
+   | False             
+   | Var (class Quark)  =>  _
+   | Op  (class Quark, Wff, Wff) => "(" 2 " " 1 " " 3 ")"
+   | Not (Wff)          => "not (" _ ")"
+
+   ////////////////////////////////////////////////////////////////////////////
+   //
+   //  The following set of laws abbreviate commonly used logical connectives.
+   //
+   ////////////////////////////////////////////////////////////////////////////
+law 
+    inline And(a,b)     = Op(#"and",a,b)
+and inline Or(a,b)      = Op(#"or",a,b)
+and inline Implies(a,b) = Op(#"->",a, b)
+and inline Xor(a,b)     = Op(#"xor",a,b)
+and inline Equiv(a,b)   = Op(#"<->",a,b)
+;
+
+instantiate datatype Wff;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Next, we define the set of symbols used for our Wff parser.
+//
+///////////////////////////////////////////////////////////////////////////////
+datatype WffToken :: lexeme =
+   "[" | "]" | "(" | ")" | "*" | "+" | "->" | "<->" 
+| "not" | "and" | "or" |  "xor" | ";" | "true" | "false" | "t" | "f"
+|  ID /[a-zA-Z][a-zA-Z0-9]*/
+;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Next, we declare the interface of the parser.
+//
+///////////////////////////////////////////////////////////////////////////////
+syntax class WffParser
+{  IOLexerBuffer lexbuf;
+public:
+   int get_token();      // retrieve a token
+   void process (Wff);   // process a Wff
+};
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  The lexer simply returns the tokens one by one; it also skip over the
+//  spaces and newlines.  If any unrecognized tokens are encountered,
+//  the program will terminate.
+//
+///////////////////////////////////////////////////////////////////////////////
+int WffParser::get_token()
+{  matchscan while (lexbuf) 
+   {  lexeme class WffToken:  { return ?lexeme; }
+   |  /[ \t\n]/: // skip spaces
+   }
+   return EOF;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  The parser is defined below.  Notice that the wffs are separated
+//  by semi-colons.  We call process() to simplify each one.
+//
+///////////////////////////////////////////////////////////////////////////////
+syntax WffParser
+{
+
+   ////////////////////////////////////////////////////////////////////////////
+   //
+   //  Precedences.   Note that implication associates to the right. 
+   //
+   ////////////////////////////////////////////////////////////////////////////
+left:  1 "not";
+left:  2 "*" "and" "xor";
+left:  3 "+" "or";
+right: 4 "->";
+left:  5 "<->";
+
+command:	
+|	wff ";" { process($1); } command	
+|	? ";" command  // for error recover, just skip to the next ;
+;
+
+wff Wff:  wff "+" wff	{ $$ = Or($1,$3); }
+|         wff "*" wff	{ $$ = And($1,$3); }
+|         wff "->" wff	{ $$ = Implies($1,$3); }
+|         wff "<->" wff	{ $$ = Equiv($1,$3); }
+|         wff "and" wff	{ $$ = And($1,$3); }
+|         wff "or" wff	{ $$ = Or($1,$3); }
+|         wff "xor" wff	{ $$ = Xor($1,$3); }
+|         "not" wff 	{ $$ = Not($2); }
+|	  "(" wff ")"	{ $$ = $2; }
+|	  "[" wff "]"	{ $$ = $2; }
+|	  ID		{ $$ = Var(lexbuf.text()); }
+|         "true"        { $$ = True; }
+|         "t"           { $$ = True; }
+|         "false"       { $$ = False; }
+|         "f"           { $$ = False; }
+;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  For processing, we just transform the input formula a bit, 
+//  then prints it out.  The rules are by no means exhaustive. 
+//
+///////////////////////////////////////////////////////////////////////////////
+void WffParser::process(Wff wff)
+{
+   cout << "input = " << wff << '\n';
+
+   rewrite (wff) type (Wff) of
+      And(True,X):     X
+   |  And(X,True):     X
+   |  And(False,_):    False
+   |  And(_,False):    False
+   |  Or(True,_):      True
+   |  Or(_,True):      True
+   |  Or(False,X):     X
+   |  Or(X,False):     X
+   |  Not True:        False
+   |  Not False:       True
+   |  Not(Not X):      X
+   |  Not(And(X,Y)):   Or(Not(X),Not(Y))
+   |  Not(Or(X,Y)):    And(Not(X),Not(Y))
+   |  And(And(X,Y),Z): And(X,And(Y,Z))
+   |  Or(Or(X,Y),Z):   Or(X,Or(Y,Z))
+   |  And(a,b) | a==b:  a
+   |  Or(a,b)  | a==b:  a
+   |  And(X as Var a,Var b) | a == b: X  
+   |  Or(X as Var a,Var b) | a == b:  X   
+   |  And(X as Var a,Y as Var b) | a > b: And(Y,X)
+   |  Or(X as Var a,Y as Var b) | a > b: Or(Y,X)
+   |  And(X as Var a,And(Y as Var b,Z)) | a > b: And(Y,And(X,Z))
+   |  Or(X as Var a,Or(Y as Var b,Z)) | a > b: Or(Y,Or(X,Z))
+   |  And(X as Var a,And(Y as Var b,Z)) | a == b: Or(X,Z)
+   |  Or(X as Var a,Or(Y as Var b,Z)) | a == b: Or(X,Z)
+   |  Xor(a,b):     Or(And(a,Not b),And(a,Not b))
+   |  Equiv(a,b):   Or(And(a,b),And(Not a,Not b))
+   |  Implies(a,b): Or(Not a, b)
+   end rewrite;
+
+   cout << "output = " << wff << '\n';
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Finally, the main program simply instantiates a copy of the parser,
+//  and invoke the parse method.   By default, the input is from
+//  the standard input.
+//
+///////////////////////////////////////////////////////////////////////////////
+int main()
+{
+   WffParser P;
+
+   cerr << "Enter logical expressions terminated by a semicolon.\n";
+   cerr << "Use t for true, f for false, + for or, * for and, etc.:\n";
+
+   P.parse();
+
+   exit(0);
+}

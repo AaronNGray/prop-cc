@@ -1,0 +1,181 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{F3E080B1-BCB9-41DC-9845-6EAD3869AF55}</ProjectGuid>
+    <RootNamespace>proppcc</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="prop.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Debug\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</IntDir>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Prop_Compiler Include="..\..\prop-src\aggen.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\ast.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\bitfield.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\classdef.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\codegen.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\collection.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\compiler.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\constr.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\constraint.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\dataflow.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\datagen.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\datatype.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\documentation.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\env.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\funmap.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\gcgen.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\graphops.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\graphrep.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\graphreport.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\graphtype.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\grsgen.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\indexing.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\infgen.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\instance.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\lawgen.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\lexeme.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\lexer.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\logicgen.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\matchcom.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\matchgen.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\metasyntax.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\parsegen.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\parser-util.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\parser.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\pat.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\persistgen.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\printgen.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\printing.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\prop-main.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\querydecomp.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\rwgen.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\rwgen2.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\rwgen3.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\rwgen4.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\rwgen5.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\rwmix.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\selector.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\setl-ast.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\setlgen.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\setltype.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\timespace.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\trs.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\trs2.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\trs3.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\type.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\visual2.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\visualize.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\wam.pcc" />
+    <Prop_Compiler Include="..\..\prop-src\adaptgen.ph" />
+    <Prop_Compiler Include="..\..\prop-src\aggen.ph" />
+    <Prop_Compiler Include="..\..\prop-src\ast.ph" />
+    <Prop_Compiler Include="..\..\prop-src\basics.ph" />
+    <Prop_Compiler Include="..\..\prop-src\bitfield.ph" />
+    <Prop_Compiler Include="..\..\prop-src\collection.ph" />
+    <Prop_Compiler Include="..\..\prop-src\constraint.ph" />
+    <Prop_Compiler Include="..\..\prop-src\dataflow.ph" />
+    <Prop_Compiler Include="..\..\prop-src\datatype.ph" />
+    <Prop_Compiler Include="..\..\prop-src\env.ph" />
+    <Prop_Compiler Include="..\..\prop-src\funmap.ph" />
+    <Prop_Compiler Include="..\..\prop-src\graphedges.ph" />
+    <Prop_Compiler Include="..\..\prop-src\graphtype.ph" />
+    <Prop_Compiler Include="..\..\prop-src\grsgen.ph" />
+    <Prop_Compiler Include="..\..\prop-src\ir.ph" />
+    <Prop_Compiler Include="..\..\prop-src\keywords.ph" />
+    <Prop_Compiler Include="..\..\prop-src\list.ph" />
+    <Prop_Compiler Include="..\..\prop-src\logicgen.ph" />
+    <Prop_Compiler Include="..\..\prop-src\matchcom.ph" />
+    <Prop_Compiler Include="..\..\prop-src\metasyntax.ph" />
+    <Prop_Compiler Include="..\..\prop-src\parsegen.ph" />
+    <Prop_Compiler Include="..\..\prop-src\parser.ph" />
+    <Prop_Compiler Include="..\..\prop-src\pat.ph" />
+    <Prop_Compiler Include="..\..\prop-src\rwmix.ph" />
+    <Prop_Compiler Include="..\..\prop-src\setl-ast.ph" />
+    <Prop_Compiler Include="..\..\prop-src\setlgen.ph" />
+    <Prop_Compiler Include="..\..\prop-src\timespace.ph" />
+    <Prop_Compiler Include="..\..\prop-src\trs.ph" />
+    <Prop_Compiler Include="..\..\prop-src\wam.ph" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ADLib\ADLib.vcxproj">
+      <Project>{3374ccbc-71a2-41a8-942a-0f5841be6061}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="prop.targets" />
+  </ImportGroup>
+</Project>

@@ -1,0 +1,82 @@
+//////////////////////////////////////////////////////////////////////////////
+//  This program tests rewriting and garbage collection by using 
+//  the rewriting mechanism to compute the Fibonacci number the hard way. 
+//////////////////////////////////////////////////////////////////////////////
+#include <iostream.h>
+#include <AD/gc/gcobject.h>
+#include <AD/gc/markswp.h>
+
+//////////////////////////////////////////////////////////////////////////////
+//  Datatype EXP denotes an expression. 
+//////////////////////////////////////////////////////////////////////////////
+datatype EXP :: collectable =
+   num (int)       => _
+|  fib (EXP)       => "fib " _
+|  add (EXP, EXP)  => "(" _ "+" _ ")"
+;
+
+//////////////////////////////////////////////////////////////////////////////
+//  Defines the interface to a rewrite class.
+//  A private counter ``rewrite_count'' is encapsulated by the class
+//  mechanism.
+//////////////////////////////////////////////////////////////////////////////
+rewrite class Fib (EXP) { 
+   int rewrites;  // number of replacements performed during rewriting
+public:
+   Fib() : rewrites(0) {}
+  ~Fib() {}
+
+   inline int number_of_rewrites() const { return rewrites; }
+};
+
+
+//////////////////////////////////////////////////////////////////////////////
+//  Specifies the rewrite rules.  We'll use rewriting to compute 
+//  addition also.  The algorithm is exponential in time and generates
+//  a lot of garbage in the process. 
+//
+//  Notice that all private data within the rewrite class is visible within
+//  the rewrite rules.
+//////////////////////////////////////////////////////////////////////////////
+rewrite Fib {
+  fib (x as num n):        { rewrites++; 
+     if (n <= 1) rewrite(x); else; rewrite(add(fib(num(n-1)),fib(num(n-2))));}
+| add (num x, num y): { rewrites++; rewrite(num(x+y)); }
+};
+
+//////////////////////////////////////////////////////////////////////////////
+//  Instantiate the datatype
+//////////////////////////////////////////////////////////////////////////////
+instantiate datatype EXP;
+
+//////////////////////////////////////////////////////////////////////////////
+//  Input a number and test the rewrite rules.
+//////////////////////////////////////////////////////////////////////////////
+int main()
+{  
+   ///////////////////////////////////////////////////////////////////////////
+   //  Give ourselves some more memory (2Meg) to work with.
+   //  The default heap size is only 128K.   Using a larger heap
+   //  can drastically cut down the overhead of GC since almost all
+   //  intermediate terms generated can be reclaimed.  With the copying 
+   //  garbage collecting scheme that we are using, the overhead of GC
+   //  is proportional to the amount of live data, not the total heap size.
+   ///////////////////////////////////////////////////////////////////////////
+   MarkSweepGC ms;
+   GC::set_default_gc(ms);
+   GC::get_default_gc().set_initial_heap_size(2*1024*1024);
+
+   int n;
+   cout << "This simple benchmark tests the efficiency of rewriting\n"
+           "by computing the Fibonacci numbers with a naive, exponential\n"
+           "algorithm.  The goal is to stress the pattern matching and\n"
+           "term replacement facilities.\n" 
+           "Please input a small non-negative number(0-25): " << flush;
+   cin >> n;
+   Fib F;
+   EXP x = fib(num(n));
+   F(x);
+   cout << "fib(" << n << ") = " << x << '\n'; 
+   cout << "Number of replacements = " << F.number_of_rewrites() << '\n';
+   return 0;
+}

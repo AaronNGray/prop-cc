@@ -1,0 +1,58 @@
+#include <AD/pretty/postream.h>
+#include "phase3.ph"
+#include "list.ph"
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Constructors and destructors for phase3 
+//
+///////////////////////////////////////////////////////////////////////////////
+Phase3::Phase3() {}
+Phase3::~Phase3() {}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Methods to invoke phase3 
+//
+///////////////////////////////////////////////////////////////////////////////
+Exp Phase3::phase3(Exp e) 
+{  message("Disjunction removal phase", e); (*this)(e); return e; }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//  Transformations to change disjunctions into unions
+//
+///////////////////////////////////////////////////////////////////////////////
+rewrite Phase3
+{
+
+   // Flatten set comprehensions
+preorder:
+   GENERATOR(x,A,GENERATOR(y,B,C)): GENERATOR(append(x,y),append(A,B),C)
+
+bottomup:
+
+   // Flatten disjunctions
+|  Or(a,OP("or",b)):  OP("or",#[a ... b])
+
+   // The following rules transform disjunction into unions
+|  GENERATOR(x,A,GUARD(OP("or", es),e)):  
+   {  Ids  xs   = #[];
+      Exps Qs   = #[];
+      Exps exps = #[];
+      Exps disjuncts = es;
+      match while (disjuncts) of
+	 #[h ... t]:  
+	 {  Id Q = gensym();
+	    xs   = #[ Q ... xs ];
+	    Qs   = #[ GENERATOR(x,A,GUARD(h,e)) ... Qs];
+            exps = #[ ID(Q) ... exps ];
+            disjuncts = t;
+         }
+      end match;
+      rewrite(make_let(xs,Qs,OP("union",exps)));
+   }
+
+   // Flatten lets
+|  LET(x,LET(y,b,a),e):  LET(y,b,LET(x,a,e))
+};
