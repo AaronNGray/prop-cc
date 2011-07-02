@@ -29,7 +29,7 @@
 // 1994
 //////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
+#include <string>
 #include <assert.h>
 #include <AD/automata/treegram.h>
 #include <AD/contain/bitset.h>

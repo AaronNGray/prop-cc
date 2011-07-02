@@ -29,7 +29,7 @@
 
 #include <iostream.h>
 #include <stdlib.h>
-#include <string.h>
+#include <string>
 #include <new.h>
 #include <AD/automata/lr1gen.h>     // LR(1) parser generator
 #include <AD/automata/item.h>       // LR items

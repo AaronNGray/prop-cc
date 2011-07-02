@@ -23,7 +23,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #define PSTREAM_IMPLEMENTATION
-#include <string.h>
+#include <string>
 #include <iostream>
 #include <strstream>
 #include <AD/persist/pconfig.h>

@@ -1,7 +1,7 @@
 #ifndef pstd::ostream_implementation_h
 #define pstd::ostream_implementation_h
 #include <stdlib.h>
-#include <string.h>
+#include <string>
 #include <AD/hash/lhash2.h>       // linear probing hash table
 #include <AD/contain/variset.h>   // variable length integer set
 

@@ -39,7 +39,7 @@
 //  is used to accomplish this.
 //
 
-#include <string.h>
+#include <string>
 #include <AD/generic/generic.h>
 
 class Atom

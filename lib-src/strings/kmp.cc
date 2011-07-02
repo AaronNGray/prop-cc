@@ -23,7 +23,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #include <stddef.h>
-#include <string.h>
+#include <string>
 #include <AD/strings/kmp.h>
 
 void KMP::compile( register const char* pattern, int len)

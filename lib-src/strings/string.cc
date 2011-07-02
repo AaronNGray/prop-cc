@@ -25,7 +25,7 @@
 #include <iostream>
 #include <assert.h>
 #include <ctype.h>
-#include <string.h>
+#include <string>
 #include <stdlib.h>
 #include <AD/strings/string.h>
 

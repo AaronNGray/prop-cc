@@ -23,7 +23,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #include <iostream>
-#include <string.h>
+#include <string>
 #include <AD/memory/mem.h>
 #include <AD/memory/sysmem.h>
 

@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
-//  This file is generated automatically using Prop (version 2.3.8),
-//  last updated on Sep 16, 2005.
+//  This file is generated automatically using Prop (version 2.4.0),
+//  last updated on Jul 1, 2011.
 //  The original source file is "..\..\prop-src\selector.pcc".
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -22,7 +22,7 @@ static const Quark cocofmcocofm_p_r_o_pcn_s_r_cfm_s_e_l_e_c_t_o_rco_c_c_Q4("unta
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
+#include <string>
 #include <limits.h>
 #include <stdlib.h>
 #include <AD/strings/quark.h>

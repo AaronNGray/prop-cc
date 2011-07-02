@@ -23,7 +23,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #include <assert.h>
-#include <string.h>
+#include <string>
 #include <ctype.h>
 #include <new.h>
 #include <AD/automata/lexergen.h> // Lexical scanner generator

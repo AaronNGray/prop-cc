@@ -23,7 +23,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #include <limits.h>
-#include <string.h>
+#include <string>
 #include <AD/automata/densedfa.h>
 
 //#define DEBUGMSG(e) e

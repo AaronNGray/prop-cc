@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
-//  This file is generated automatically using Prop (version 2.3.8),
-//  last updated on Sep 16, 2005.
+//  This file is generated automatically using Prop (version 2.4.0),
+//  last updated on Jul 1, 2011.
 //  The original source file is "..\..\prop-src\prop-main.pcc".
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -14,14 +14,14 @@
 //    ////////   //       //   //  //    //
 //   //         //       //   //  ///////
 //  //         //        /////   //
-//                              //      Version 2.3.x
+//                              //      Version 2.4.x
 //
 //                                      Allen Leung (leunga@cs.nyu.edu)
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <iostream>
 #include <stdlib.h>
-#include <string.h>
+#include <string>
 #include "basics.h"
 #include "config.h"
 #include "author.h"

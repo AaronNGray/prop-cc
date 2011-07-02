@@ -26,7 +26,7 @@
 #include <strstream>
 #include <iomanip>
 #include <ctype.h>
-#include <string.h>
+#include <string>
 #include <AD/automata/grammar.h>
 #include <AD/strings/charesc.h>
 

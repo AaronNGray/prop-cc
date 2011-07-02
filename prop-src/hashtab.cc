@@ -2,7 +2,7 @@
 //  Hash Tables
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
+#include <string>
 #include <AD/generic/ordering.h>
 #include "hashtab.h"
 

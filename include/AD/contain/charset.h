@@ -25,7 +25,7 @@
 #ifndef character_set_h
 #define character_set_h
 
-#include <string.h>
+#include <string>
 #include <AD/generic/generic.h>
 
 class CharSet

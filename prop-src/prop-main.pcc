@@ -12,7 +12,7 @@
 
 #include <iostream>
 #include <stdlib.h>
-#include <string.h>
+#include <string>
 #include "basics.h"
 #include "config.h"
 #include "author.h"

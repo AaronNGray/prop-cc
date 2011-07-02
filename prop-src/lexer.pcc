@@ -6,7 +6,7 @@
 
 #include <new>
 #include <stdlib.h>
-#include <string.h>
+#include <string>
 #include <iostream>
 #include <strstream>
 #include <ctype.h>

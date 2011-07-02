@@ -23,7 +23,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #include <stdio.h>
-#include <string.h>
+#include <string>
 #include <assert.h>
 #include <AD/memory/arena.h>      // Arenas
 #include <AD/memory/boundtag.h>   // Boundary tag memory manager

@@ -22,7 +22,7 @@
 // 1994
 //////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
+#include <string>
 #include <stdlib.h>
 #include <AD/automata/lrgen.h>
 #include <AD/automata/gentable.h>

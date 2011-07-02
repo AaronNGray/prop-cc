@@ -24,6 +24,6 @@
 
 #include <iostream.h>
 #include <math.h>
-#include <string.h>
+#include <string>
 #include <AD/numeric/vector.h>
 

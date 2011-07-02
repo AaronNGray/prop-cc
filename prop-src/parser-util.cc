@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
-//  This file is generated automatically using Prop (version 2.3.8),
-//  last updated on Sep 16, 2005.
+//  This file is generated automatically using Prop (version 2.4.0),
+//  last updated on Jul 1, 2011.
 //  The original source file is "..\..\prop-src\parser-util.pcc".
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -25,7 +25,7 @@ static const Quark cocofmcocofm_p_r_o_pcn_s_r_cfm_p_a_r_s_e_rcn_u_t_i_lco_c_c_Q2
 #include <iostream>
 #include <AD/pretty/postream.h>
 #include <strstream>
-#include <string.h>
+#include <string>
 #include <stdlib.h>
 #include "ir.h"
 #include "ast.h"

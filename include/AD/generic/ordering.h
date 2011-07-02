@@ -25,7 +25,7 @@
 #ifndef hashing_and_ordering_functions_h
 #define hashing_and_ordering_functions_h
 
-#include <string.h>
+#include <string>
 #include <AD/generic/generic.h>
 
 ////////////////////////////////////////////////////////////////////////////

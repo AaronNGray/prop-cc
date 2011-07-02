@@ -22,7 +22,7 @@
 // 1994
 //////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
+#include <string>
 #include <AD/memory/cleanmem.h>
 #include <AD/memory/sysmem.h>
 

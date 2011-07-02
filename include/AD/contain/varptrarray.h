@@ -34,7 +34,7 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #include <new>
-#include <string.h>
+#include <string>
 #include <AD/generic/generic.h>   // Generic definitions
 
 

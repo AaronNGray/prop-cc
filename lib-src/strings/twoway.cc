@@ -22,7 +22,7 @@
 // 1994
 //////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
+#include <string>
 #include <AD/strings/twoway.h>
 
 int TwoWay::match(const char * text, int length) const

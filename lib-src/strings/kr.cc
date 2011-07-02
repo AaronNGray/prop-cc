@@ -23,7 +23,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #include <stddef.h>
-#include <string.h>
+#include <string>
 #include <AD/strings/kr.h>
 
 void KR::compile (const char* pat, int len)

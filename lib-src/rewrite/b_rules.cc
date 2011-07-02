@@ -31,7 +31,7 @@
 
 #define TreeGrammar_Iterators
 #include <iostream>
-#include <string.h>
+#include <string>
 #include <AD/automata/treegram.h>
 #include <assert.h>
 #include <AD/rewrite/b_rules.h>

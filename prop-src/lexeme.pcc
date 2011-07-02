@@ -5,7 +5,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
+#include <string>
 #include <AD/strings/charesc.h>
 #include "ir.ph"
 #include "ast.ph"

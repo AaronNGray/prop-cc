@@ -24,7 +24,7 @@
 
 #define PSTREAM_IMPLEMENTATION
 #include <assert.h>
-#include <string.h>
+#include <string>
 #include <stdlib.h>
 #include <iostream>
 #include <strstream>

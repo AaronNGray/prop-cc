@@ -6,7 +6,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <iostream>
-#include <string.h>
+#include <string>
 #include "trs.ph"
 #include "ir.ph"
 #include "ast.ph"

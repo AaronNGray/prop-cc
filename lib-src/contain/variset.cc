@@ -22,7 +22,7 @@
 // 1994
 //////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
+#include <string>
 #include <stdlib.h>
 #include <iostream.h>
 #include <AD/contain/variset.h>

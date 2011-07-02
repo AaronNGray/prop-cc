@@ -26,7 +26,7 @@
 #define LR1_full_parser_h
 
 #include <iostream>
-#include <string.h>
+#include <string>
 #include <AD/automata/lr1.h>
 
 

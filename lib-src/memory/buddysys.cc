@@ -25,7 +25,7 @@
 #include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
-#include <string.h>
+#include <string>
 #include <AD/memory/buddy.h>     // Fibonacci buddy system
 #include <AD/generic/tables.h>   // Fibonacci numbers table
 

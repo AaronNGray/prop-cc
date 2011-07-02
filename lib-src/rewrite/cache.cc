@@ -21,7 +21,7 @@
 // Allen Leung (leunga@cs.nyu.edu)
 // 1994-1997
 //////////////////////////////////////////////////////////////////////////////
-#include <string.h>
+#include <string>
 #include <AD/rewrite/cache.h>
 
 RewriteCache::RewriteCache() : the_cache(0), the_capacity(0) {}

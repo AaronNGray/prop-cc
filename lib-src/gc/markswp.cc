@@ -26,7 +26,7 @@
 #include <iostream>
 #include <strstream>
 #include <stdlib.h>
-#include <string.h>
+#include <string>
 #include <setjmp.h>
 #include <unistd.h>
 #include <sys/types.h>

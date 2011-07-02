@@ -22,7 +22,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 //#include <iostream>
-#include <string.h>
+#include <string>
 #include <stdlib.h>
 #include <AD/automata/lrparser.h>
 #include <AD/contain/stack.h>

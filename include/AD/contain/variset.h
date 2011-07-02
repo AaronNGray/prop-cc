@@ -30,7 +30,7 @@
 //  from 0 to some ``small'' n.  The integer set can grow if necessary
 ////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
+#include <string>
 #include <stdlib.h>
 #include <AD/generic/generic.h>  // Generic definitions
 

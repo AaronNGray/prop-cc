@@ -33,7 +33,7 @@
 
 #include <iostream>
 #include <stdlib.h>
-#include <string.h>
+#include <string>
 #include <new>
 #include <ctype.h>
 #include <AD/generic/generic.h>

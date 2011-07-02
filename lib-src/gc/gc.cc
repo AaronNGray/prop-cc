@@ -24,7 +24,7 @@
 
 #include <iostream.h>
 #include <stdlib.h>
-#include <string.h>
+#include <string>
 #include <unistd.h>
 #include <sys/types.h>
 #include <AD/gc/gcconfig.h>  // system configuration

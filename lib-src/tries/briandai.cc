@@ -22,7 +22,7 @@
 // 1994
 //////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
+#include <string>
 #include <AD/tries/briandai.h>   // De la briandais tries
 
 typedef Briandais::Node   Node;

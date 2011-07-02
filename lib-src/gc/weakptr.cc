@@ -22,7 +22,7 @@
 // 1994-1997
 //////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
+#include <string>
 #include <AD/gc/weakptr.h>    // weak pointers
 #include <AD/gc/gcheaps.h>    // heap manager
 #include <AD/gc/gcmacros.h>   // useful macros

@@ -30,7 +30,7 @@
 //  partial order.  We'll use this property to devise our algorithms.
 ////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
+#include <string>
 #include <stdlib.h>
 #include <AD/automata/bottomup.h> // bottomup tree matcher/matcher-compiler
 #include <AD/contain/dchmap.h>    // Map based on direct chaining hash tables

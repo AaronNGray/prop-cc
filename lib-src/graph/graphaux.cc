@@ -1,4 +1,4 @@
-#include <string.h>
+#include <string>
 #include <AD/graph/graph.h>
 #include <AD/graph/node.h>
 #include <AD/graph/edge.h>

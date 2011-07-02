@@ -8,7 +8,7 @@
 #include <iostream>
 #include <AD/pretty/postream.h>
 #include <strstream>
-#include <string.h>
+#include <string>
 #include <stdlib.h>
 #include "ir.ph"
 #include "ast.ph"

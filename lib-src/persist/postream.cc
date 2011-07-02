@@ -24,7 +24,7 @@
 
 #define PSTREAM_IMPLEMENTATION
 #include <stdlib.h>
-#include <string.h>
+#include <string>
 #include <iostream>
 #include <AD/persist/ptype.h>     // persistent type id
 #include <AD/persist/pstream.h>   // persistent stream base class

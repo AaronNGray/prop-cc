@@ -4,7 +4,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
+#include <string>
 #include <iostream>
 #include "basics.h"
 #include "config.h"

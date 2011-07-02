@@ -23,7 +23,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #include <iostream>
-#include <string.h>
+#include <string>
 #include <AD/automata/lexerbuf.h>
 #include <AD/strings/charesc.h>
 

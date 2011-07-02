@@ -9,7 +9,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
+#include <string>
 #include <limits.h>
 #include <stdlib.h>
 #include <AD/contain/bitset.h>

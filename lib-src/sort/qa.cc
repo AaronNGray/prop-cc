@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <string.h>
+#include <string>
 #include <assert.h>
 #include <AD/sort/bubble.h>     // bubble sort
 #include <AD/sort/insort.h>     // Insertion sort

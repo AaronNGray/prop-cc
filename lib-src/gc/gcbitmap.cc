@@ -23,7 +23,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #include <iostream.h>
-#include <string.h>
+#include <string>
 #include <assert.h>
 #include <AD/gc/gcbitmap.h>
 #include <AD/gc/gcheaps.h>

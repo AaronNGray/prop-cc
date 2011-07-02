@@ -22,7 +22,7 @@
 // 1994
 //////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
+#include <string>
 #include <AD/automata/graminfo.h>
 #include <AD/sort/shellsrt.h>  // Shell sort
 

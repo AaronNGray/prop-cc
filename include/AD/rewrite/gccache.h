@@ -25,7 +25,7 @@
 #ifndef rewrite_cache_for_gc_object_h
 #define rewrite_cache_for_gc_object_h
 
-#include <string.h>
+#include <string>
 #include <AD/generic/generic.h>
 #include <AD/rewrite/burs.h>
 #include <AD/gc/weakptr.h>

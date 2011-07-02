@@ -23,7 +23,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #include <ctype.h>
-#include <string.h>
+#include <string>
 #include <AD/automata/nfa_node.h>
 #include <AD/automata/nfa.h>
 #include <AD/memory/mempool.h>

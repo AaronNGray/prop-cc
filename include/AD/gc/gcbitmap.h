@@ -26,7 +26,7 @@
 #define gc_bitmaps_h
 
 #include <new>
-#include <string.h>
+#include <string>
 #include <AD/generic/generic.h>
 #include <AD/gc/gcconfig.h>
 #include <AD/gc/gcintern.h>

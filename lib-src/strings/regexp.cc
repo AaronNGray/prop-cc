@@ -24,7 +24,7 @@
 
 #include <stddef.h>
 #include <stdlib.h>
-#include <string.h>
+#include <string>
 #include <ctype.h>
 #include <AD/generic/generic.h>  // Generic definitions
 #include <AD/contain/charset.h>  // Character set

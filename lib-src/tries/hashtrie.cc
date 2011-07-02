@@ -22,7 +22,7 @@
 // 1994
 //////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
+#include <string>
 #include <AD/tries/hashtrie.h>
 
 HashTrie::HashTrie() : slots(0), symbol(0), back(0) {}

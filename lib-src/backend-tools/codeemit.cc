@@ -23,7 +23,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #include <stdlib.h>
-#include <string.h>
+#include <string>
 #include <iostream.h>
 #include <AD/backend-tools/codeemit.h>
 #include <AD/hash/lhash.h>
