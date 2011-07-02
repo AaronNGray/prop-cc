@@ -5,6 +5,8 @@ and generates C++ code as output.
 Release 2.4
      Updated projects and solution to Visual Studio 2010.
 	 Removed "using namespace std"'s to local std::'s
+	 converted <string.h>'s to <string>'s
+	 support for .pcc and .ph in Visual Studio
 
 Release 2.3.8
      Converted tabs to 2 spaces.
