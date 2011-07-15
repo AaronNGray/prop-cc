@@ -7,7 +7,7 @@
 		<CustomBuildRule
 			Name="Prop Compiler"
 			DisplayName="Prop Compiler"
-			CommandLine="..\prop\debug\prop.exe -I[$IncludePath] -I[$RootPath] [inputs]"
+			CommandLine="..\prop\$(Configuration)\prop.exe -I[$IncludePath] -I[$RootPath] [inputs]"
 			Outputs="[$Output].cc"
 			FileExtensions="*.pcc;*.ph"
 			ExecutionDescription="Prop Compiler"
