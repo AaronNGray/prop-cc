@@ -201,15 +201,15 @@ std::ostream& CodeGen::outv( const char * fmt, va_list arg)
           anchored = false;
           break;
         }
-	  case 'f':
-	    {
-	      Bool save = pretty_print_exp;
-		  pretty_print_exp = true;
+      case 'f':
+        {
+          Bool save = pretty_print_exp;
+          pretty_print_exp = true;
           (*output)<< va_arg(arg,Exp);
           anchored = false;
-		  pretty_print_exp = save;
-	      break;
-	    }
+          pretty_print_exp = save;
+          break;
+        }
       case 'E':
         {
           Exp e = va_arg( arg, Exp);
@@ -447,15 +447,15 @@ list_1_(integer_ty,list_1_(mkptrty(QUALty(QUALconst,ty))))
       case 'U':
         {
           Exp exp = va_arg(arg,Exp);
-		  Ty  ty  = va_arg(arg,Ty);
-		  (*output) << MatchCompiler::untag( exp, ty);
+          Ty  ty  = va_arg(arg,Ty);
+          (*output) << MatchCompiler::untag( exp, ty);
           break;
         }
       case '*':
         {
           Cons cons = va_arg(arg,Cons);
-		  Bool normalized = (Bool) va_arg( arg, int);
-		  (*output) << MatchCompiler::tag_name_of( cons, normalized);
+          Bool normalized = (Bool) va_arg( arg, int);
+          (*output) << MatchCompiler::tag_name_of( cons, normalized);
           break;
         }
       case '%':
