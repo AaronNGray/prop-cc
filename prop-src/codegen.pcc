@@ -5,7 +5,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <iostream>
-#include <string>
+#include <cstring>
 #include <AD/strings/charesc.h>
 #include "codegen.h"
 #include "ir.ph"
@@ -133,7 +133,7 @@ std::ostream& CodeGen::outv( const char * fmt, va_list arg)
       case 's':
         {
           const char * s = va_arg( arg, const char *);
-          int len = strlen(s);
+          int len = std::strlen(s);
           (*output) << s;
           anchored = (s[len-1] == '\n');
         }
@@ -299,17 +299,10 @@ std::ostream& CodeGen::outv( const char * fmt, va_list arg)
             if (! anchored)
               (*output) << '\n';
 #ifdef _MSC_VER
-			int extrachars = 0;
-			const char *c = f;
+            char *filename = new char[ strlen( f) + 1];
 
-			while (c != 0)
-			  if ( c == '\\')
-				++extrabytes;
-
-			char *filename = new char[ strlen( f) +  extrabytes + 1];
-
-			const char *s = f;
-			char *d = filename;
+            const char *s = f;
+            char *d = filename;
 
             for ( ; *s != '\0'; ++s, ++d)
               if ( *s != '\\')
@@ -320,7 +313,7 @@ std::ostream& CodeGen::outv( const char * fmt, va_list arg)
 
             (*output) << "#line " << l << " \"" << filename << "\"\n";
 
-			delete filename[];
+            delete filename;
 #else
             (*output)<< "#line " << l << " \"" << f << "\"\n";
 #endif
