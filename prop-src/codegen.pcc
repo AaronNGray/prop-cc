@@ -299,7 +299,14 @@ std::ostream& CodeGen::outv( const char * fmt, va_list arg)
             if (! anchored)
               (*output) << '\n';
 #ifdef _MSC_VER
-			char *filename = new char[ strlen( f)];
+			int extrachars = 0;
+			const char *c = f;
+
+			while (c != 0)
+			  if ( c == '\\')
+				++extrabytes;
+
+			char *filename = new char[ strlen( f) +  extrabytes + 1];
 
 			const char *s = f;
 			char *d = filename;
@@ -312,6 +319,8 @@ std::ostream& CodeGen::outv( const char * fmt, va_list arg)
             *d = '\0';
 
             (*output) << "#line " << l << " \"" << filename << "\"\n";
+
+			delete filename[];
 #else
             (*output)<< "#line " << l << " \"" << f << "\"\n";
 #endif

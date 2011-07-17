@@ -4,7 +4,7 @@
 //  The original source file is "..\..\prop-src\codegen.pcc".
 ///////////////////////////////////////////////////////////////////////////////
 
-#line 1 "../../prop-src/codegen.pcc"
+#line 1 "..\..\prop-src\codegen.pcc"
 ///////////////////////////////////////////////////////////////////////////////
 //
 //  This file implements the low level routine for generating C++ output->
@@ -40,51 +40,51 @@ void CodeGen::set_stream(std::ostream& s) { output = &s; }
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#line 36 "../../prop-src/codegen.pcc"
-#line 43 "../../prop-src/codegen.pcc"
+#line 36 "..\..\prop-src\codegen.pcc"
+#line 43 "..\..\prop-src\codegen.pcc"
 Id literal_type_of (Literal x_1);
 Id literal_type_of (Literal x_1)
 {
   switch (x_1->tag__) {
     case a_Literal::tag_INTlit: {
-#line 36 "../../prop-src/codegen.pcc"
+#line 36 "..\..\prop-src\codegen.pcc"
      return "integer"; 
-#line 36 "../../prop-src/codegen.pcc"
+#line 36 "..\..\prop-src\codegen.pcc"
       } break;
     case a_Literal::tag_BOOLlit: {
-#line 39 "../../prop-src/codegen.pcc"
+#line 39 "..\..\prop-src\codegen.pcc"
      return "boolean"; 
-#line 39 "../../prop-src/codegen.pcc"
+#line 39 "..\..\prop-src\codegen.pcc"
       } break;
     case a_Literal::tag_CHARlit: {
-#line 38 "../../prop-src/codegen.pcc"
+#line 38 "..\..\prop-src\codegen.pcc"
      return "character"; 
-#line 38 "../../prop-src/codegen.pcc"
+#line 38 "..\..\prop-src\codegen.pcc"
       } break;
     case a_Literal::tag_REALlit: {
-#line 37 "../../prop-src/codegen.pcc"
+#line 37 "..\..\prop-src\codegen.pcc"
      return "real"; 
-#line 37 "../../prop-src/codegen.pcc"
+#line 37 "..\..\prop-src\codegen.pcc"
       } break;
     case a_Literal::tag_QUARKlit: {
-#line 41 "../../prop-src/codegen.pcc"
+#line 41 "..\..\prop-src\codegen.pcc"
      return "Quark"; 
-#line 41 "../../prop-src/codegen.pcc"
+#line 41 "..\..\prop-src\codegen.pcc"
       } break;
     case a_Literal::tag_BIGINTlit: {
-#line 42 "../../prop-src/codegen.pcc"
+#line 42 "..\..\prop-src\codegen.pcc"
      return "BigInt"; 
-#line 42 "../../prop-src/codegen.pcc"
+#line 42 "..\..\prop-src\codegen.pcc"
       } break;
     default: {
-#line 40 "../../prop-src/codegen.pcc"
+#line 40 "..\..\prop-src\codegen.pcc"
      return "string"; 
-#line 40 "../../prop-src/codegen.pcc"
+#line 40 "..\..\prop-src\codegen.pcc"
       } break;
   }
 }
-#line 43 "../../prop-src/codegen.pcc"
-#line 43 "../../prop-src/codegen.pcc"
+#line 43 "..\..\prop-src\codegen.pcc"
+#line 43 "..\..\prop-src\codegen.pcc"
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -214,27 +214,27 @@ std::ostream& CodeGen::outv( const char * fmt, va_list arg)
         {
           Exp e = va_arg( arg, Exp);
           
-#line 171 "../../prop-src/codegen.pcc"
-#line 176 "../../prop-src/codegen.pcc"
+#line 171 "..\..\prop-src\codegen.pcc"
+#line 176 "..\..\prop-src\codegen.pcc"
 {
   if (e) {
     switch (e->tag__) {
       case a_Exp::tag_MARKEDexp: {
-#line 174 "../../prop-src/codegen.pcc"
+#line 174 "..\..\prop-src\codegen.pcc"
        pr ("%D", MARKEDdecl( _MARKEDexp(e)->_1, EXPdecl(_MARKEDexp(e)->_2))); 
-#line 174 "../../prop-src/codegen.pcc"
+#line 174 "..\..\prop-src\codegen.pcc"
         } break;
       default: {
         L1:; 
-#line 176 "../../prop-src/codegen.pcc"
+#line 176 "..\..\prop-src\codegen.pcc"
         (*output)<< e; 
-#line 176 "../../prop-src/codegen.pcc"
+#line 176 "..\..\prop-src\codegen.pcc"
         } break;
     }
   } else { goto L1; }
 }
-#line 177 "../../prop-src/codegen.pcc"
-#line 177 "../../prop-src/codegen.pcc"
+#line 177 "..\..\prop-src\codegen.pcc"
+#line 177 "..\..\prop-src\codegen.pcc"
 
           anchored = false;
           break;
@@ -277,18 +277,18 @@ std::ostream& CodeGen::outv( const char * fmt, va_list arg)
               body_ty =
                 mkrecordty(
                 
-#line 218 "../../prop-src/codegen.pcc"
-#line 218 "../../prop-src/codegen.pcc"
+#line 218 "..\..\prop-src\codegen.pcc"
+#line 218 "..\..\prop-src\codegen.pcc"
 list_1_(Id("_len_"),list_1_(id))
-#line 218 "../../prop-src/codegen.pcc"
-#line 218 "../../prop-src/codegen.pcc"
+#line 218 "..\..\prop-src\codegen.pcc"
+#line 218 "..\..\prop-src\codegen.pcc"
 ,
                 
-#line 219 "../../prop-src/codegen.pcc"
-#line 219 "../../prop-src/codegen.pcc"
+#line 219 "..\..\prop-src\codegen.pcc"
+#line 219 "..\..\prop-src\codegen.pcc"
 list_1_(integer_ty,list_1_(mkptrty(QUALty(QUALconst,ty))))
-#line 219 "../../prop-src/codegen.pcc"
-#line 219 "../../prop-src/codegen.pcc"
+#line 219 "..\..\prop-src\codegen.pcc"
+#line 219 "..\..\prop-src\codegen.pcc"
 ,
                 false);
             }
@@ -372,7 +372,14 @@ list_1_(integer_ty,list_1_(mkptrty(QUALty(QUALconst,ty))))
             if (! anchored)
               (*output) << '\n';
 #ifdef _MSC_VER
-			char *filename = new char[ strlen( f)];
+			int extrachars = 0;
+			const char *c = f;
+
+			while (c != 0)
+			  if ( c == '\\')
+				++extrabytes;
+
+			char *filename = new char[ strlen( f) +  extrabytes + 1];
 
 			const char *s = f;
 			char *d = filename;
@@ -385,6 +392,8 @@ list_1_(integer_ty,list_1_(mkptrty(QUALty(QUALconst,ty))))
             *d = '\0';
 
             (*output) << "#line " << l << " \"" << filename << "\"\n";
+
+			delete filename[];
 #else
             (*output)<< "#line " << l << " \"" << f << "\"\n";
 #endif
@@ -535,7 +544,7 @@ std::ostream& CodeGen::pr( const char * fmt, ...)
   va_end( arg);
   return *output;
 }
-#line 465 "../../prop-src/codegen.pcc"
+#line 474 "..\..\prop-src\codegen.pcc"
 /*
 ------------------------------- Statistics -------------------------------
 Merge matching rules         = yes
