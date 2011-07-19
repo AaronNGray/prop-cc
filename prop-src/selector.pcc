@@ -177,7 +177,7 @@ Exp MatchCompiler::tag_name_of( Cons cons, Bool normalized)
     }
   | ONEcons { name, ty = NOty, alg_ty = DATATYPEty({ arg ... },_) ... }:
     {
-      return CASTexp( integer_ty, IDexp( mangle( name)));
+      return CASTexp( integer_ty, IDexp( Quark( "v_", mangle( name))));
     }
   | ONEcons { name, alg_ty = DATATYPEty({ id, arg, unit, tyvars ... },_) ... }
 	    | !normalized && tyvars == #[] && arg > 1:
