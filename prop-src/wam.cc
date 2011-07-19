@@ -124,28 +124,28 @@ PrettyOStream& operator << (PrettyOStream& strm__, WAM  obj__)
 {
   switch (untag(obj__))
   {
-    case ((int)XX_g_e_t___xXX): 
+    case ((int)v_XX_g_e_t___xXX): 
       strm__ << "get_x";
       break;
-    case ((int)XX_g_e_t___yXX): 
+    case ((int)v_XX_g_e_t___yXX): 
       strm__ << "get_y";
       break;
-    case ((int)XX_p_r_o_c_e_e_dXX): 
+    case ((int)v_XX_p_r_o_c_e_e_dXX): 
       strm__ << "proceed";
       break;
-    case ((int)XX_f_a_i_lXX): 
+    case ((int)v_XX_f_a_i_lXX): 
       strm__ << "fail";
       break;
-    case ((int)XX_d_e_r_e_fXX): 
+    case ((int)v_XX_d_e_r_e_fXX): 
       strm__ << "deref";
       break;
-    case ((int)XX_u_n_i_f_yXX): 
+    case ((int)v_XX_u_n_i_f_yXX): 
       strm__ << "unify";
       break;
-    case ((int)XX_u_n_i_f_y___v_a_r_i_a_b_l_eXX): 
+    case ((int)v_XX_u_n_i_f_y___v_a_r_i_a_b_l_eXX): 
       strm__ << "unify_variable";
       break;
-    case ((int)XX_t_r_u_s_t___m_e___e_l_s_e___f_a_i_lXX): 
+    case ((int)v_XX_t_r_u_s_t___m_e___e_l_s_e___f_a_i_lXX): 
       strm__ << "trust_me_else_fail";
       break;
     case 8: 
@@ -295,7 +295,7 @@ Determinism deref (Determinism det)
 #line 39 "../../prop-src/wam.pcc"
       } else {
         switch ((int)det->VAR_DET) {
-          case ((int)UNKNOWN_DET): { goto L1; } break;
+          case ((int)v_UNKNOWN_DET): { goto L1; } break;
           default: { goto L2; } break;
         }
       }
@@ -362,32 +362,32 @@ std::ostream& operator << (std::ostream& f, Determinism d)
 #line 72 "../../prop-src/wam.pcc"
   } else {
     switch ((int)_V1) {
-      case ((int)UNKNOWN_DET): {
+      case ((int)v_UNKNOWN_DET): {
 #line 65 "../../prop-src/wam.pcc"
        f << "unknown"; 
 #line 65 "../../prop-src/wam.pcc"
         } break;
-      case ((int)DET): {
+      case ((int)v_DET): {
 #line 66 "../../prop-src/wam.pcc"
        f << "det"; 
 #line 66 "../../prop-src/wam.pcc"
         } break;
-      case ((int)SEMI_DET): {
+      case ((int)v_SEMI_DET): {
 #line 67 "../../prop-src/wam.pcc"
        f << "semidet"; 
 #line 67 "../../prop-src/wam.pcc"
         } break;
-      case ((int)MULTI_DET): {
+      case ((int)v_MULTI_DET): {
 #line 68 "../../prop-src/wam.pcc"
        f << "multidet"; 
 #line 68 "../../prop-src/wam.pcc"
         } break;
-      case ((int)NON_DET): {
+      case ((int)v_NON_DET): {
 #line 69 "../../prop-src/wam.pcc"
        f << "nondet"; 
 #line 69 "../../prop-src/wam.pcc"
         } break;
-      case ((int)FAIL_DET): {
+      case ((int)v_FAIL_DET): {
 #line 70 "../../prop-src/wam.pcc"
        f << "fail"; 
 #line 70 "../../prop-src/wam.pcc"

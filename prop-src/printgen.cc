@@ -287,7 +287,7 @@ nil_1_
             }
           } else {
             switch ((int)_TYCONty(_V1)->_1) {
-              case ((int)TUPLEtycon): {
+              case ((int)v_TUPLEtycon): {
                 if (_TYCONty(_V1)->_2) {
                   if (_TYCONty(_V1)->_2->_2) {
                     if (_TYCONty(_V1)->_2->_2->_2) {
@@ -353,7 +353,7 @@ nil_1_
                   } else { goto L3; }
                 } else { goto L3; }
                 } break;
-              case ((int)EXTUPLEtycon): {
+              case ((int)v_EXTUPLEtycon): {
 #line 185 "../../prop-src/printgen.pcc"
                 
                 Tys ts;
@@ -492,7 +492,7 @@ nil_1_
           }
         } else {
           switch ((int)_TYCONty(_V2)->_1) {
-            case ((int)TUPLEtycon): {
+            case ((int)v_TUPLEtycon): {
 #line 238 "../../prop-src/printgen.pcc"
              tyl = _TYCONty(_V2)->_2; 
 #line 238 "../../prop-src/printgen.pcc"

@@ -57,8 +57,11 @@ struct MatchBase : public MEM
   typedef a_Match * Match;
 #endif
 
-#  define FAILmatch 0
-#  define DONTCAREmatch 1
+#  define v_FAILmatch 0
+#  define v_DONTCAREmatch 1
+
+#  define FAILmatch (Match)v_FAILmatch
+#  define DONTCAREmatch (Match)v_DONTCAREmatch
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -71,7 +74,9 @@ struct MatchBase : public MEM
   typedef a_Cost * Cost;
 #endif
 
-#  define NOcost 0
+#  define v_NOcost 0
+
+#  define NOcost (Cost)v_NOcost
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -84,8 +89,11 @@ struct MatchBase : public MEM
   typedef a_Pos * Pos;
 #endif
 
-#  define POSzero 0
-#  define POSinfinity 1
+#  define v_POSzero 0
+#  define v_POSinfinity 1
+
+#  define POSzero (Pos)v_POSzero
+#  define POSinfinity (Pos)v_POSinfinity
 
 ///////////////////////////////////////////////////////////////////////////////
 //

@@ -431,7 +431,7 @@ void DatatypeClass::gen_field_persist_IO
           }
         } else {
           switch ((int)_TYCONty(_V5)->_1) {
-            case ((int)TUPLEtycon): {
+            case ((int)v_TUPLEtycon): {
 #line 267 "../../prop-src/persistgen.pcc"
               
               int i = 1;
@@ -440,7 +440,7 @@ void DatatypeClass::gen_field_persist_IO
               
 #line 271 "../../prop-src/persistgen.pcc"
               } break;
-            case ((int)EXTUPLEtycon): {
+            case ((int)v_EXTUPLEtycon): {
 #line 273 "../../prop-src/persistgen.pcc"
               
               int i = 1;

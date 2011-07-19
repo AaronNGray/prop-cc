@@ -242,7 +242,9 @@ public:
   typedef a_Exp * Exp;
 #endif
 
-#  define NOexp 0
+#  define v_NOexp 0
+
+#  define NOexp (Exp)v_NOexp
 
 enum SETLOp {
   ARBop = 0, DOMop = 1, RANop = 2, 
@@ -296,7 +298,9 @@ enum SETLOp {
   typedef a_Decl * Decl;
 #endif
 
-#  define NOdecl 0
+#  define v_NOdecl 0
+
+#  define NOdecl (Decl)v_NOdecl
 
 enum EntryDirection {
   LEFTdirection = 0, RIGHTdirection = 1

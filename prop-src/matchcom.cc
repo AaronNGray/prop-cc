@@ -783,7 +783,7 @@ void decor_view
 #line 428 "../../prop-src/matchcom.pcc"
                         } else {
                           switch ((int)_TYCONty(_V2)->_1) {
-                            case ((int)TUPLEtycon): {
+                            case ((int)v_TUPLEtycon): {
 #line 398 "../../prop-src/matchcom.pcc"
                               
                               int i;

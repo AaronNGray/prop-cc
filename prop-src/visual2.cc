@@ -146,7 +146,7 @@ void DatatypeClass::visualize( PropVisualizer& v)
           }
         } else {
           switch ((int)_TYCONty(_V1)->_1) {
-            case ((int)TUPLEtycon): {
+            case ((int)v_TUPLEtycon): {
 #line 116 "../../prop-src/visual2.pcc"
               
               for_each(Ty, t, _TYCONty(_V1)->_2)

@@ -121,7 +121,9 @@ template <class T> class a_List;
 #define List(T) a_List<T> *
 #endif
 
-#  define nil_1_ 0
+#  define v_nil_1_ 0
+
+#  define nil_1_ v_nil_1_
 
 ///////////////////////////////////////////////////////////////////////////////
 //

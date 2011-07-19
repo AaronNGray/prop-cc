@@ -489,7 +489,7 @@ void print_parameter( std::ostream& f, Ty ty, Id id, Parameter p)
           }
         } else {
           switch ((int)_TYCONty(_V1)->_1) {
-            case ((int)TUPLEtycon): {
+            case ((int)v_TUPLEtycon): {
 #line 285 "../../prop-src/printing.pcc"
               
               int i = 1;
@@ -776,7 +776,7 @@ std::ostream& operator << (std::ostream& f, Ty ty)
           }
         } else {
           switch ((int)_TYCONty(ty)->_1) {
-            case ((int)POINTERtycon): {
+            case ((int)v_POINTERtycon): {
               if (_TYCONty(ty)->_2) {
                 if (_TYCONty(ty)->_2->_2) { goto L4; } else {
 #line 381 "../../prop-src/printing.pcc"
@@ -785,7 +785,7 @@ std::ostream& operator << (std::ostream& f, Ty ty)
                 }
               } else { goto L4; }
               } break;
-            case ((int)REFtycon): {
+            case ((int)v_REFtycon): {
               if (_TYCONty(ty)->_2) {
                 if (_TYCONty(ty)->_2->_2) { goto L4; } else {
 #line 382 "../../prop-src/printing.pcc"
@@ -794,17 +794,17 @@ std::ostream& operator << (std::ostream& f, Ty ty)
                 }
               } else { goto L4; }
               } break;
-            case ((int)TUPLEtycon): {
+            case ((int)v_TUPLEtycon): {
 #line 387 "../../prop-src/printing.pcc"
              print_tuple(f,_TYCONty(ty)->_2); 
 #line 387 "../../prop-src/printing.pcc"
               } break;
-            case ((int)EXTUPLEtycon): {
+            case ((int)v_EXTUPLEtycon): {
 #line 388 "../../prop-src/printing.pcc"
              print_mktuple(f,_TYCONty(ty)->_2); 
 #line 388 "../../prop-src/printing.pcc"
               } break;
-            case ((int)FUNtycon): {
+            case ((int)v_FUNtycon): {
               if (_TYCONty(ty)->_2) {
                 if (_TYCONty(ty)->_2->_2) {
                   if (_TYCONty(ty)->_2->_2->_2) { goto L4; } else {

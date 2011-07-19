@@ -174,8 +174,11 @@ class HashTable;
   typedef a_ConstraintBody * ConstraintBody;
 #endif
 
-#  define CONSTRAINTnone 0
-#  define CONSTRAINTcut 1
+#  define v_CONSTRAINTnone 0
+#  define v_CONSTRAINTcut 1
+
+#  define CONSTRAINTnone (ConstraintBody)v_CONSTRAINTnone
+#  define CONSTRAINTcut (ConstraintBody)v_CONSTRAINTcut
 
 ///////////////////////////////////////////////////////////////////////////////
 // Definition of type ConstraintDefs

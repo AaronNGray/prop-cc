@@ -881,7 +881,7 @@ void RewritingCompiler::gen_component_traversal
           }
         } else {
           switch ((int)_TYCONty(arg_ty)->_1) {
-            case ((int)TUPLEtycon): {
+            case ((int)v_TUPLEtycon): {
 #line 740 "../../prop-src/rwgen.pcc"
               
               gen_tuple_component_traversal(F,term,arity,_TYCONty(arg_ty)->_2);

@@ -71,7 +71,9 @@
   typedef a_Domain * Domain;
 #endif
 
-#  define UNITdom 0
+#  define v_UNITdom 0
+
+#  define UNITdom (Domain)v_UNITdom
 
 ///////////////////////////////////////////////////////////////////////////////
 // Definition of type Domains

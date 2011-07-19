@@ -677,7 +677,7 @@ Bool is_parameter_type (Ty ty)
           }
         } else {
           switch ((int)_TYCONty(_V2)->_1) {
-            case ((int)TUPLEtycon): { goto L6; } break;
+            case ((int)v_TUPLEtycon): { goto L6; } break;
             default: { goto L7; } break;
           }
         }

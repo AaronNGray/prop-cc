@@ -101,7 +101,9 @@
   typedef a_Def * Def;
 #endif
 
-#  define NOdef 0
+#  define v_NOdef 0
+
+#  define NOdef (Def)v_NOdef
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -114,7 +116,9 @@
   typedef a_Sig * Sig;
 #endif
 
-#  define NOsig 0
+#  define v_NOsig 0
+
+#  define NOsig (Sig)v_NOsig
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -127,7 +131,9 @@
   typedef a_Stmt * Stmt;
 #endif
 
-#  define NOstmt 0
+#  define v_NOstmt 0
+
+#  define NOstmt (Stmt)v_NOstmt
 
 ///////////////////////////////////////////////////////////////////////////////
 // Definition of type LabSig

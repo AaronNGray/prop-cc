@@ -137,7 +137,9 @@
   typedef a_Instness * Instness;
 #endif
 
-#  define NOinst 0
+#  define v_NOinst 0
+
+#  define NOinst (Instness)v_NOinst
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -150,13 +152,21 @@
   typedef a_Determinism * Determinism;
 #endif
 
-#  define UNKNOWN_DET 0
-#  define DET 1
-#  define SEMI_DET 2
-#  define MULTI_DET 3
-#  define NON_DET 4
-#  define FAIL_DET 5
-#  define ERROR_DET 6
+#  define v_UNKNOWN_DET 0
+#  define v_DET 1
+#  define v_SEMI_DET 2
+#  define v_MULTI_DET 3
+#  define v_NON_DET 4
+#  define v_FAIL_DET 5
+#  define v_ERROR_DET 6
+
+#  define UNKNOWN_DET (Determinism)v_UNKNOWN_DET
+#  define DET (Determinism)v_DET
+#  define SEMI_DET (Determinism)v_SEMI_DET
+#  define MULTI_DET (Determinism)v_MULTI_DET
+#  define NON_DET (Determinism)v_NON_DET
+#  define FAIL_DET (Determinism)v_FAIL_DET
+#  define ERROR_DET (Determinism)v_ERROR_DET
 
 enum UnificationMode {
   READ_MODE = 0, WRITE_MODE = 1
@@ -175,14 +185,23 @@ enum UnificationMode {
   typedef a_WAM * WAM;
 #endif
 
-#  define XX_g_e_t___xXX 0
-#  define XX_g_e_t___yXX 1
-#  define XX_p_r_o_c_e_e_dXX 2
-#  define XX_f_a_i_lXX 3
-#  define XX_d_e_r_e_fXX 4
-#  define XX_u_n_i_f_yXX 5
-#  define XX_u_n_i_f_y___v_a_r_i_a_b_l_eXX 6
-#  define XX_t_r_u_s_t___m_e___e_l_s_e___f_a_i_lXX 7
+#  define v_XX_g_e_t___xXX 0
+#  define v_XX_g_e_t___yXX 1
+#  define v_XX_p_r_o_c_e_e_dXX 2
+#  define v_XX_f_a_i_lXX 3
+#  define v_XX_d_e_r_e_fXX 4
+#  define v_XX_u_n_i_f_yXX 5
+#  define v_XX_u_n_i_f_y___v_a_r_i_a_b_l_eXX 6
+#  define v_XX_t_r_u_s_t___m_e___e_l_s_e___f_a_i_lXX 7
+
+#  define XX_g_e_t___xXX (WAM)v_XX_g_e_t___xXX
+#  define XX_g_e_t___yXX (WAM)v_XX_g_e_t___yXX
+#  define XX_p_r_o_c_e_e_dXX (WAM)v_XX_p_r_o_c_e_e_dXX
+#  define XX_f_a_i_lXX (WAM)v_XX_f_a_i_lXX
+#  define XX_d_e_r_e_fXX (WAM)v_XX_d_e_r_e_fXX
+#  define XX_u_n_i_f_yXX (WAM)v_XX_u_n_i_f_yXX
+#  define XX_u_n_i_f_y___v_a_r_i_a_b_l_eXX (WAM)v_XX_u_n_i_f_y___v_a_r_i_a_b_l_eXX
+#  define XX_t_r_u_s_t___m_e___e_l_s_e___f_a_i_lXX (WAM)v_XX_t_r_u_s_t___m_e___e_l_s_e___f_a_i_lXX
 
 ///////////////////////////////////////////////////////////////////////////////
 //

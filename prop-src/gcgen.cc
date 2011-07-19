@@ -197,7 +197,7 @@ void DatatypeClass::gen_field_tracing_methods
           }
         } else {
           switch ((int)_TYCONty(_V1)->_1) {
-            case ((int)TUPLEtycon): {
+            case ((int)v_TUPLEtycon): {
 #line 115 "../../prop-src/gcgen.pcc"
               
               int i = 1;
@@ -206,7 +206,7 @@ void DatatypeClass::gen_field_tracing_methods
               
 #line 119 "../../prop-src/gcgen.pcc"
               } break;
-            case ((int)EXTUPLEtycon): {
+            case ((int)v_EXTUPLEtycon): {
 #line 121 "../../prop-src/gcgen.pcc"
               
               int i = 1;

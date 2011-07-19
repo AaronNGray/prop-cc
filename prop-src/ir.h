@@ -189,7 +189,9 @@ enum Polarity {
   typedef a_Ty * Ty;
 #endif
 
-#  define NOty 0
+#  define v_NOty 0
+
+#  define NOty (Ty)v_NOty
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -202,12 +204,19 @@ enum Polarity {
   typedef a_TyCon * TyCon;
 #endif
 
-#  define POINTERtycon 0
-#  define REFtycon 1
-#  define TUPLEtycon 2
-#  define EXTUPLEtycon 3
-#  define FUNtycon 4
-#  define TYPEtycon 5
+#  define v_POINTERtycon 0
+#  define v_REFtycon 1
+#  define v_TUPLEtycon 2
+#  define v_EXTUPLEtycon 3
+#  define v_FUNtycon 4
+#  define v_TYPEtycon 5
+
+#  define POINTERtycon (TyCon)v_POINTERtycon
+#  define REFtycon (TyCon)v_REFtycon
+#  define TUPLEtycon (TyCon)v_TUPLEtycon
+#  define EXTUPLEtycon (TyCon)v_EXTUPLEtycon
+#  define FUNtycon (TyCon)v_FUNtycon
+#  define TYPEtycon (TyCon)v_TYPEtycon
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -220,7 +229,9 @@ enum Polarity {
   typedef a_Pat * Pat;
 #endif
 
-#  define NOpat 0
+#  define v_NOpat 0
+
+#  define NOpat (Pat)v_NOpat
 
 enum LogicalPat {
   NOTpat = 0, ANDpat = 1, ORpat = 2, 
@@ -251,7 +262,9 @@ enum LogicalPat {
   typedef a_Cons * Cons;
 #endif
 
-#  define NOcons 0
+#  define v_NOcons 0
+
+#  define NOcons (Cons)v_NOcons
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -275,7 +288,9 @@ enum LogicalPat {
   typedef a_Pid * Pid;
 #endif
 
-#  define PERSISTnone 0
+#  define v_PERSISTnone 0
+
+#  define PERSISTnone (Pid)v_PERSISTnone
 
 ///////////////////////////////////////////////////////////////////////////////
 //
