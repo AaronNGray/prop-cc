@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup
+    Condition="'$(Prop_CompilerBeforeTargets)' == '' and '$(Prop_CompilerAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
+    <Prop_CompilerBeforeTargets>Midl</Prop_CompilerBeforeTargets>
+    <Prop_CompilerAfterTargets>CustomBuild</Prop_CompilerAfterTargets>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Prop_CompilerDependsOn
+      Condition="'$(ConfigurationType)' != 'Makefile'">_SelectedFiles;$(Prop_CompilerDependsOn)</Prop_CompilerDependsOn>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <Prop_Compiler>
+      <IncludePath>..\..\include</IncludePath>
+      <RootPath>..\..\prop-src</RootPath>
+      <CommandLineTemplate>..\prop\$(Configuration)\prop.exe -I%(IncludePath) -I%(RootPath) [inputs]</CommandLineTemplate>
+      <Outputs>%(Output).cc</Outputs>
+      <ExecutionDescription>Prop Compiler</ExecutionDescription>
+      <ShowOnlyRuleProperties>false</ShowOnlyRuleProperties>
+    </Prop_Compiler>
+  </ItemDefinitionGroup>
+</Project>

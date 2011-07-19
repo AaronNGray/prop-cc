@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx</Extensions>
     </Filter>
+    <Filter Include="Generator Header Files">
+      <UniqueIdentifier>{36f5c417-d60f-4971-8391-2215ba9e8000}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Generator Source Files">
+      <UniqueIdentifier>{6f6f33a8-7a98-44c5-9c84-e13e8b1ba741}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\prop-src\aggen.cc">
