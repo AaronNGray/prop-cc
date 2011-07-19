@@ -107,7 +107,7 @@ Exp MatchCompiler::make_select
                             }
                           } else {
                             switch ((int)_TYCONty(_V1)->_1) {
-                              case ((int)TUPLEtycon): {
+                              case ((int)v_TUPLEtycon): {
 #line 59 "../../prop-src/selector.pcc"
                                 
                                 	        use_projection = false;
@@ -167,7 +167,7 @@ Exp MatchCompiler::make_select
                             }
                           } else {
                             switch ((int)_TYCONty(_V2)->_1) {
-                              case ((int)TUPLEtycon): { goto L2; } break;
+                              case ((int)v_TUPLEtycon): { goto L2; } break;
                               default: { goto L3; } break;
                             }
                           }
@@ -415,7 +415,7 @@ Exp MatchCompiler::tag_name_of( Cons cons, Bool normalized)
                             L15:; 
 #line 179 "../../prop-src/selector.pcc"
                             
-                            return CASTexp( integer_ty, IDexp( mangle( cons->name)));
+                            return CASTexp( integer_ty, IDexp( Quark( "v_", mangle( cons->name))));
                             
 #line 181 "../../prop-src/selector.pcc"
                           }

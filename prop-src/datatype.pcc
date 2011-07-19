@@ -690,16 +690,22 @@ void DatatypeHierarchy::generate_constructor_tags
 
 void DatatypeHierarchy::generate_define_tags( CodeGen& C, int n, Cons terms[])
 {
-  for (int i = 0; i < n; i++)
-    C.pr("%n#  define %S %i", terms[i]->name, tag_of(terms[i]));
-/*
-   {  if (is_polymorphic())
-     C.pr("%n#  define %S %i", terms[i]->name, tag_of(terms[i]));
-      else
-     C.pr("%n#  define %S (%s)%i",
-        terms[i]->name, datatype_name, tag_of(terms[i]));
+   for (int i = 0; i < n; i++)
+   {  
+      C.pr("%n#  define v_%S %i",
+	  terms[i]->name, tag_of(terms[i]));
    }
-*/
+
+   C.pr("\n\n");
+
+   for (int i = 0; i < n; i++)
+   {  
+      if (is_polymorphic())
+        C.pr("%n#  define %S v_%S", terms[i]->name, terms[i]->name);
+      else
+        C.pr("%n#  define %S (%s)v_%S",
+	    terms[i]->name, datatype_name, terms[i]->name);
+   }
 }
 
 //////////////////////////////////////////////////////////////////////////////
