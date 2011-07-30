@@ -18,6 +18,12 @@
         </Category.DisplayName>
       </Category>
       <Category
+        Name="Options">
+        <Category.DisplayName>
+          <sys:String>Options</sys:String>
+        </Category.DisplayName>
+      </Category>
+      <Category
         Name="Command Line"
         Subtype="CommandLine">
         <Category.DisplayName>
@@ -25,11 +31,26 @@
         </Category.DisplayName>
       </Category>
     </Rule.Categories>
+
+    <BoolProperty
+      Name="AutoMake"
+      DisplayName="Automake"
+      Category="Options"
+      Visible="True"
+      IncludeInCommandLine="True"
+      Switch="-automake" />
+    <BoolProperty
+      Name="NonLinear"
+      DisplayName="Non Linear"
+      Category="Options"
+      Visible="True"
+      IncludeInCommandLine="True"
+      Switch="-non_linear" />
+    
     <StringListProperty
       Name="Inputs"
       Category="Command Line"
-      IsRequired="true"
-      Switch=" ">
+      IsRequired="true">
       <StringListProperty.DataSource>
         <DataSource
           Persistence="ProjectFile"
@@ -100,8 +121,8 @@
     <StringListProperty
       Name="Outputs"
       DisplayName="Outputs"
-      Visible="False"
-      IncludeInCommandLine="False" />
+      Visible="True"
+      IncludeInCommandLine="True" />
     <StringProperty
       Name="ExecutionDescription"
       DisplayName="Execution Description"

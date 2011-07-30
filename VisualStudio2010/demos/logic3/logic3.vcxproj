@@ -11,9 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{55C54588-777D-4BDB-B925-E26C10FAEBFB}</ProjectGuid>
+    <ProjectGuid>{2457595D-F5B2-4076-ABCD-68ABD8F268F7}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>logic</RootNamespace>
+    <RootNamespace>logic3</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -29,7 +29,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="prop.props" />
+    <Import Project="..\..\prop.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -75,13 +75,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Prop_Compiler Include="..\..\demos\logic.pC">
+    <Prop_Compiler Include="..\..\..\demos\logic3.pC">
       <FileType>Document</FileType>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">-non_linear %(AdditionalOptions)</AdditionalOptions>
+      <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\..\include</IncludePath>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">-I..\..\..\demos %(AdditionalOptions)</AdditionalOptions>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\demos\logic3.ph">
+      <FileType>Document</FileType>
     </Prop_Compiler>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="prop.targets" />
+    <Import Project="..\..\prop.targets" />
   </ImportGroup>
 </Project>

@@ -13,9 +13,9 @@
     <Prop_Compiler>
       <IncludePath>..\..\include</IncludePath>
       <RootPath>..\..\prop-src</RootPath>
-      <CommandLineTemplate>..\prop\$(Configuration)\prop.exe -I%(IncludePath) -I%(RootPath) [inputs]</CommandLineTemplate>
+      <CommandLineTemplate>"$(SolutionDir)prop\$(Configuration)\prop.exe" [AutoMake] [NonLinear] -I%(IncludePath) -I%(RootPath) [AdditionalOptions] [inputs]</CommandLineTemplate>
       <Outputs>%(Output).cc</Outputs>
-      <ExecutionDescription>Prop Compiler</ExecutionDescription>
+      <ExecutionDescription>Prop Compiler Compiler</ExecutionDescription>
       <ShowOnlyRuleProperties>false</ShowOnlyRuleProperties>
     </Prop_Compiler>
   </ItemDefinitionGroup>

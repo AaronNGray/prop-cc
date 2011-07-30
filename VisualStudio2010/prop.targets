@@ -45,6 +45,8 @@
     <Prop_Compiler
       Condition="'@(Prop_Compiler)' != '' and '%(Prop_Compiler.ExcludedFromBuild)' != 'true'"
       CommandLineTemplate="%(Prop_Compiler.CommandLineTemplate)"
+      AutoMake="%(Prop_Compiler.AutoMake)"
+      NonLinear="%(Prop_Compiler.NonLinear)"
       IncludePath="%(Prop_Compiler.IncludePath)"
       RootPath="%(Prop_Compiler.RootPath)"
       AdditionalOptions="%(Prop_Compiler.AdditionalOptions)"
