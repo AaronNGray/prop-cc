@@ -9,22 +9,18 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Prop_Compiler Include="..\..\..\demos\logic3.ph">
-      <Filter>Header Files</Filter>
-    </Prop_Compiler>
-    <Prop_Compiler Include="..\..\..\demos\logic3.pcc">
+    <Prop_Compiler Include="..\..\..\demos\rewrite-trick6.pcc">
       <Filter>Source Files</Filter>
     </Prop_Compiler>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\demos\logic3.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\..\demos\logic3.cc">
+    <ClCompile Include="..\..\..\demos\rewrite-trick6.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -7,8 +7,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Prop_Compiler Include="..\..\..\demos\logic2.pC">
+    <Prop_Compiler Include="..\..\..\demos\logic2.pcc">
       <Filter>Source Files</Filter>
     </Prop_Compiler>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\demos\logic2.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
