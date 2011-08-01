@@ -424,7 +424,9 @@ static const DFATables::Rule _X1_accept_rule [ 224 ] = {
 static int run_prog( const char * prog, int argc, const char * argv[])
 {
   char command[4096];
-  strcpy( command, prog);
+  strcpy( command, "\"");
+  strcat( command, prog);
+  strcat( command, "\"");
   for (int i = 0; i < argc; i++)
   {
     strcat( command, " ");
@@ -473,7 +475,7 @@ int main( int argc, const char * argv [])
   }
   exit(stat);
 }
-#line 207 "../../prop-src/prop-main.pcc"
+#line 209 "../../prop-src/prop-main.pcc"
 /*
 ------------------------------- Statistics -------------------------------
 Merge matching rules         = yes

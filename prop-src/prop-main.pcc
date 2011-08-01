@@ -155,7 +155,9 @@ void PropOptions::process_command_line_arguments
 static int run_prog( const char * prog, int argc, const char * argv[])
 {
   char command[4096];
-  strcpy( command, prog);
+  strcpy( command, "\"");
+  strcat( command, prog);
+  strcat( command, "\"");
   for (int i = 0; i < argc; i++)
   {
     strcat( command, " ");
