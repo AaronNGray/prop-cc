@@ -22,11 +22,11 @@
 // 1994-1995
 //////////////////////////////////////////////////////////////////////////////
 
-#include <iostream.h>
+#include <iostream>
 #include <stdlib.h>
 #include <string>
 #include <setjmp.h>
-#include <unistd.h>
+#include <io.h>
 #include <assert.h>
 #include <signal.h>
 #include <sys/types.h>
@@ -37,9 +37,11 @@
 #include <AD/gc/gcmacros.h>  // useful macros
 #include <AD/gc/weakptr.h>   // weak pointers
 #ifdef GC_USE_TIMER
-#   include <sys/time.h>
-#   include <sys/resource.h>
-#   include <AD/gc/gctimer.h>
+#  ifndef _WIN32
+#    include <sys/time.h>
+#    include <sys/resource.h>
+#  endif
+#include <AD/gc/gctimer.h>
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -115,7 +117,7 @@ void CGC::verify_heap_top()
   {
     (*console) << "[ GC" << id
     << ": checking heap top address " << (void*)try_addr
-    << " ]\n" << flush;
+    << " ]\n" << std::flush;
   }
 
   void * dummy_unused_variable = *try_addr; // may trap here
@@ -124,7 +126,7 @@ void CGC::verify_heap_top()
   {
     (*console) << "[ GC" << id
     << ": heap top address " << (void*)try_addr
-    << " is ok ]\n" << flush;
+    << " is ok ]\n" << std::flush;
   }
 }
 
@@ -327,7 +329,7 @@ void CGC::initialization_message() const
   if (is_debugging() && console)
     (*console) << "[ GC" << id
     << ": initializing (page size = " << GC_PAGE_SIZE
-    << ", alignment = " << GC_ALIGNMENT << ") ]\n" << flush;
+    << ", alignment = " << GC_ALIGNMENT << ") ]\n" << std::flush;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -337,7 +339,7 @@ void CGC::initialization_message() const
 void CGC::cleanup_message() const
 {
   if (is_debugging() && console)
-    (*console) << "[ GC" << id << ": cleaning up. ]\n" << flush;
+    (*console) << "[ GC" << id << ": cleaning up. ]\n" << std::flush;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -350,7 +352,7 @@ void CGC::scanning_message(const char * area, void * start, void * stop) const
   {
     (*console) << "[ GC" << id << ": scanning the " << area
     << " (" << start << " ... " << stop << ") "
-    << ((Byte*)stop - (Byte*)start) << " bytes ]\n" << flush;
+    << ((Byte*)stop - (Byte*)start) << " bytes ]\n" << std::flush;
   }
 }
 
@@ -369,7 +371,7 @@ void CGC::do_weak_pointer_collection()
   if ((verbosity_level & gc_notify_weak_pointer_collection) && console)
   {
     (*console) << "[ GC" << id << ": weakpointer collection ("
-    << size << "/" << capacity << ") ..." << flush;
+    << size << "/" << capacity << ") ..." << std::flush;
   }
   WeakPointerManager::scavenge_wp_table(this);
   int new_size     = WeakPointerManager::size();
@@ -377,6 +379,6 @@ void CGC::do_weak_pointer_collection()
   if ((verbosity_level & gc_notify_weak_pointer_collection) && console)
   {
     (*console) << " done (" << new_size << "/" << new_capacity
-    << ") ]\n" << flush;
+    << ") ]\n" << std::flush;
   }
 }

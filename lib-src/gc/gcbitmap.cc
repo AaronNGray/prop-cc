@@ -22,7 +22,7 @@
 // 1994-1995
 //////////////////////////////////////////////////////////////////////////////
 
-#include <iostream.h>
+#include <iostream>
 #include <string>
 #include <assert.h>
 #include <AD/gc/gcbitmap.h>

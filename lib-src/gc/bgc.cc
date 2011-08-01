@@ -22,11 +22,11 @@
 // 1994-1995
 //////////////////////////////////////////////////////////////////////////////
 
-#include <iostream.h>
+#include <iostream>
 #include <stdlib.h>
 #include <string>
 #include <setjmp.h>
-#include <unistd.h>
+#include <io.h>
 #include <assert.h>
 #include <AD/gc/gcconfig.h>  // system configuration
 #include <AD/gc/bgc.h>       // Bartlett's garbage collector
@@ -184,7 +184,7 @@ void BGC::free( void * obj)
     // Hold on, Pedro!  The object doesn't seem to exist!
     std::cerr << "[ GC" << id
     << ": application tries to free non-existent object at "
-    << (void*)obj << " ]\n" << flush;
+    << (void*)obj << " ]\n" << std::flush;
   }
 }
 
@@ -212,7 +212,7 @@ void BGC::grow_heap( size_t bytes)
   {
     // Growth failed!
     std::cerr << "[ GC" << id << ": Out of memory!  Can't allocate "
-    << bytes << " bytes from system. ]\n" << flush;
+    << bytes << " bytes from system. ]\n" << std::flush;
     exit (1);
   }
 
@@ -821,7 +821,7 @@ void BGC::copy_promoted_pages ()
   {
     std::cerr << "[ Bug: number of objects promoted = " << objects_promoted
     << " while the number of objects traced = " << objects_traced
-    << " ]\n" << flush;
+    << " ]\n" << std::flush;
   }
 #endif
 
@@ -891,7 +891,7 @@ void BGC::heap_growth_message( size_t/*heap_size_now*/, size_t /*growth*/) const
     size_t percent = heap_used * 100 / total;
     (*console) << "[ GC" << id << ": increasing heap... "
     << heap_used << '/' << total
-    << " (" << percent << "%) ]\n" << flush;
+    << " (" << percent << "%) ]\n" << std::flush;
   }
 }
 
@@ -907,7 +907,7 @@ void BGC::start_collection_message() const
     size_t percent = heap_used * 100 / total;
     (*console) << "[ GC" << id << ": collecting... "
     << heap_used << '/' << total
-    << " (" << percent << "%) ]\n" << flush;
+    << " (" << percent << "%) ]\n" << std::flush;
   }
 }
 
@@ -933,7 +933,7 @@ void BGC::end_collection_message() const
       << (long)(GC_PAGE_SIZE * pages_removed - bytes_copied)
       << " freed)";
     }
-    (*console) << " ]\n" << flush;
+    (*console) << " ]\n" << std::flush;
 #ifdef GC_USE_TIMER
 
     if (verbosity_level & gc_print_collection_time)
@@ -943,7 +943,7 @@ void BGC::end_collection_message() const
       << " system time: "
       << stat.gc_system_time
       << " ]\n"
-      << flush;
+      << std::flush;
     }
 #endif
 

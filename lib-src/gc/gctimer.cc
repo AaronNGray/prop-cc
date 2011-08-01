@@ -27,8 +27,8 @@
 // hash consing.
 //////////////////////////////////////////////////////////////////////////////
 
-#include <iostream.h>
-#include <iomanip.h>
+#include <iostream>
+#include <io.h>
 #include <AD/gc/gcconfig.h>
 #include <AD/gc/gctimer.h>
 
@@ -36,12 +36,14 @@
 // since getrusage has higher resolution
 
 #ifdef PROP_HAS_GETRUSAGE
-#   include <sys/time.h>
-#   include <sys/resource.h>
+#  ifndef _WIN32
+#    include <sys/time.h>
+#    include <sys/resource.h>
+#  endif
 #else
-#   ifdef PROP_HAS_TIMES
-#      include <sys/times.h>
-#   endif
+#  ifdef PROP_HAS_TIMES
+#    include <sys/times.h>
+#  endif
 #endif
 
 GCTimer::GCTimer() : sec(0), usec(0)

@@ -22,10 +22,10 @@
 // 1994
 //////////////////////////////////////////////////////////////////////////////
 
-#include <iostream.h>
+#include <iostream>
 #include <stdlib.h>
 #include <string>
-#include <unistd.h>
+#include <io.h>
 #include <sys/types.h>
 #include <AD/gc/gcconfig.h>  // system configuration
 #include <AD/gc/gc.h>        // garbage collector base class
@@ -210,7 +210,7 @@ void GC::error( const char * message) const
     f = &get_console();
   else
     f = &std::cerr;
-  (*f) << '[' << my_name() << ": " << message << "]\n" << flush;
+  (*f) << '[' << my_name() << ": " << message << "]\n" << std::flush;
 }
 
 //////////////////////////////////////////////////////////////////////////////

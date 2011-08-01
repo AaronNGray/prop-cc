@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <string>
 #include <setjmp.h>
-#include <unistd.h>
+#include <io.h>
 #include <sys/types.h>
 #include <AD/gc/gcconfig.h>    // system configuration
 #include <AD/gc/markswp.h>     // Marksweep garbage collector
@@ -271,7 +271,7 @@ void * MarkSweepGC::m_alloc( size_t n)
     if (new_memory == 0)
     {
       std::cerr << "[ GC" << id << ": unable to allocate "
-      << bytes << " bytes! ]\n" << flush;
+      << bytes << " bytes! ]\n" << std::flush;
       exit (1);
     }
     heap_size += bytes_gotten;
@@ -343,7 +343,7 @@ void MarkSweepGC::grow_heap( size_t bytes)
   if (new_memory == 0)
   {
     std::cerr << "[ GC" << id << ": unable to allocate " << bytes << " bytes! ]\n"
-    << flush;
+              << std::flush;
     exit (1);
   }
 

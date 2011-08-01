@@ -22,7 +22,7 @@
 // 1994-1995
 //////////////////////////////////////////////////////////////////////////////
 
-#include <iostream.h>
+#include <iostream>
 #include <AD/gc/gcverify.h>  // verifier
 #include <AD/gc/gcheaps.h>   // heap manager
 #include <AD/gc/gcbitmap.h>  // bitmap
