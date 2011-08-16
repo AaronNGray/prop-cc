@@ -72,7 +72,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Lib>
-      <OutputFile>$(OutDir)ADLib.lib</OutputFile>
+      <OutputFile>$(OutputPath)ADLib.lib</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
