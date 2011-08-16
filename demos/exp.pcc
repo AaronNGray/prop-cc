@@ -165,11 +165,11 @@ rewrite IdiomMatcher
 |  exp -> Mul (a as exp, b as exp) \ 2: { ## = Mul(#a,#b); }
 |  exp -> Div (a as exp, b as exp) \ 2: { ## = Div(#a,#b); }
 |  exp -> Mul (a as exp, Add(b as exp, c as exp)) \ 2:
-      {  cout << "multiply/add idiom found\n";
+      {  std::cout << "multiply/add idiom found\n";
          ## = MulAdd(#a,#b,#c); 
       }
 |  exp -> Sub (Int 0, a as exp) \ 1: 
-      {  cout << "negation idiom found\n";
+      {  std::cout << "negation idiom found\n";
          ## = Neg(#a); 
       }
 };
@@ -182,13 +182,13 @@ rewrite IdiomMatcher
 ///////////////////////////////////////////////////////////////////////////////
 void ExpParser::process(Exp exp)
 {
-   cout << "input = " << exp << '\n';
+   std::cout << "input = " << exp << '\n';
 
    IdiomMatcher M;
    M(exp);                // construct a tree parse
    Exp e = M.reduce(exp); // reduces it according to the found derivation.
 
-   cout << "output = " << e << '\n';
+   std::cout << "output = " << e << '\n';
 }
 
 
@@ -203,7 +203,7 @@ int main()
 {
    ExpParser P;
 
-   cerr << "Enter expressions terminated by a semicolon:\n";
+   std::cerr << "Enter expressions terminated by a semicolon:\n";
 
    P.parse();
 
