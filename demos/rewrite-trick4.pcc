@@ -1,4 +1,4 @@
-#include <iostream.h>
+#include <iostream>
 
 
 datatype Exp :: rewrite =
@@ -21,8 +21,8 @@ int main()
 {
    Exp e = ADD(NUM(0),NUM(3));
    Silly S;
-   cout << "Before = " << e << '\n';
+   std::cout << "Before = " << e << '\n';
    S(e);
-   cout << "After = " << e << '\n';
+   std::cout << "After = " << e << '\n';
    return 0;
 }

@@ -6,8 +6,8 @@
 //  they are portable across platforms.  Furthermore, pointer sharing
 //  is preserved.
 //////////////////////////////////////////////////////////////////////////////
-#include <iostream.h>
-#include <fstream.h>
+#include <iostream>
+#include <fstream>
 #include <assert.h>
 #include <string.h>
 #include <AD/generic/generic.h>  // Definition of type Bool
@@ -93,8 +93,8 @@ int main()
    ///////////////////////////////////////////////////////////////////////////
    // Write the expression to a file.
    ///////////////////////////////////////////////////////////////////////////
-   cout << "Original = " << e8 << '\n';
-   {  ofstream out("persistence.dat");
+   std::cout << "Original = " << e8 << '\n';
+   {  std::ofstream out("persistence.dat");
       Postream pout(out);
       pout << e8;
       out.close();
@@ -104,7 +104,7 @@ int main()
    // Read the expression back from the same file 
    ///////////////////////////////////////////////////////////////////////////
    EXP e;
-   {  ifstream in("persistence.dat");
+   {  std::ifstream in("persistence.dat");
       Pistream pin(in);
       e = (EXP)read_object(pin);
       in.close();
@@ -113,11 +113,11 @@ int main()
    ///////////////////////////////////////////////////////////////////////////
    //  Verify the structure
    ///////////////////////////////////////////////////////////////////////////
-   cout << "Copy = " << e << '\n';
+   std::cout << "Copy = " << e << '\n';
    VerifySharing v;
    v(e);
    assert(equal(e8,e));
 
-   cout << "Persistence seems to be working on your platform\n";
+   std::cout << "Persistence seems to be working on your platform\n";
    return 0;
 }

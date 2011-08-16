@@ -1,4 +1,4 @@
-#include <iostream.h>
+#include <iostream>
 #include <AD/generic/generic.h>
 
 class Rewritable 
@@ -34,9 +34,9 @@ int main()
 {
    Exp e = ADD(NUM(0),NUM(3));
    Silly S;
-   cout << "Before = " << e << '\n';
+   std::cout << "Before = " << e << '\n';
    S(e);
    rewrite (e) type (Exp) { (e : Exp): { e->enable(); } }
-   cout << "After = " << e << '\n';
+   std::cout << "After = " << e << '\n';
    return 0;
 }

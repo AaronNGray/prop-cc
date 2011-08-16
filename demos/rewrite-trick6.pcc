@@ -5,7 +5,7 @@
 //
 //////////////////////////////////////////////////////////////////////////////
 
-#include <iostream.h>
+#include <iostream>
 #include <stdlib.h>
 #include <AD/strings/quark.h>
 #include <AD/rewrite/gccache.h>
@@ -85,7 +85,7 @@ int main()
          wff = And(wff,Or(True,Not(Var(#"x"))));
       //cout << "Trial " << i << " input = " << wff << '\n';
       S.simplify(wff);
-      cout << "Trial " << i << " output = " << wff << '\n';
+      std::cout << "Trial " << i << " output = " << wff << '\n';
       // if (i % 100 == 0) GC::garbage_collect();
    }
 

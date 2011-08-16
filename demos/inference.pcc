@@ -9,7 +9,7 @@
 //         -lad -liostream -lg++
 //////////////////////////////////////////////////////////////////////////////
 
-#include <iostream.h>
+#include <iostream>
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -65,7 +65,7 @@ inference Triangle {
   and num (y) where x < y
   and num (z) where y < z && x * x + y * y == z * z
   -----------------------------------------------------
-      { cout << x << " * " << x << " + " 
+      { std::cout << x << " * " << x << " + " 
              << y << " * " << y << " = "
              << z << " * " << z << '\n';
       };
@@ -81,9 +81,9 @@ int main()
    // Get the limit
    //
    ///////////////////////////////////////////////////////////////////////////
-   cout << "Please input a limit (say, between 10 - 100): " << flush;
-   cin >> top; 
-   cout << "Trying all numbers from 1 to " << top << '\n';
+   std::cout << "Please input a limit (say, between 10 - 100): " << std::flush;
+   std::cin >> top; 
+   std::cout << "Trying all numbers from 1 to " << top << '\n';
 
    ///////////////////////////////////////////////////////////////////////////
    //
