@@ -1,4 +1,4 @@
-#include <iostream.h>
+#include <iostream>
 #include "logic3.ph"
 
 instantiate datatype Wff;
@@ -6,7 +6,7 @@ instantiate datatype Wff;
 
 void simplify(Wff wff)
 {
-   cout << "input = " << wff << '\n';
+   std::cout << "input = " << wff << '\n';
 
    rewrite (wff) type (Wff) of
       And(True,X):     X
@@ -39,7 +39,7 @@ void simplify(Wff wff)
    |  Implies(a,b): Or(Not a, b)
    end rewrite;
 
-   cout << "output = " << wff << '\n';
+   std::cout << "output = " << wff << '\n';
 }
 
 int main()

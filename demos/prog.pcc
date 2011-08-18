@@ -2,7 +2,7 @@
 //  This test implements a rewrite based simplifier for the abstract
 //  syntax of a toy imperative language.  
 /////////////////////////////////////////////////////////////////////////////
-#include <iostream.h>
+#include <iostream>
 
 /////////////////////////////////////////////////////////////////////////////
 //  The following recursive type equations define the abstract syntax
@@ -140,7 +140,7 @@ rewrite class Simplify
 public:
    Simplify() {}
    // Method to print an error message 
-   void error(const char message[]) { cerr << message << '\n'; }
+   void error(const char message[]) { std::cerr << message << '\n'; }
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -274,8 +274,8 @@ int main()
                    print_stmt(unaryop(logical_not,boolean(False)))
                   ]
                 );
-   cout << "Before:\n" << prog << "\n\n";
+   std::cout << "Before:\n" << prog << "\n\n";
    simplify(prog);
-   cout << "After:\n"  << prog << "\n";
+   std::cout << "After:\n"  << prog << "\n";
    return 0;
 }

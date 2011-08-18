@@ -1,4 +1,4 @@
-#include <iostream.h>
+#include <iostream>
 
 datatype Replaced<T> = REPLACED of T
 
@@ -8,11 +8,11 @@ and Exp =
 |  FINAL of Replaced<Exp> => "FINAL(" _ ")"
 ;
 
-ostream& operator << (ostream& f, Replaced<Exp> e); 
+std::ostream& operator << (std::ostream& f, Replaced<Exp> e); 
 
 instantiate datatype Exp, Replaced<Exp>;
 
-ostream& operator << (ostream& f, Replaced<Exp> e)
+std::ostream& operator << (std::ostream& f, Replaced<Exp> e)
    { match (e) of REPLACED e: { return f << "REPLACED(" << e << ")"; } 
      end match; 
    }
@@ -31,12 +31,12 @@ int main()
 {
    Exp e = ADD(NUM(0),NUM(3));
    Silly S;
-   cout << "Before = " << e << '\n';
+   std::cout << "Before = " << e << '\n';
    S(e);
-   cout << "After = " << e << '\n';
+   std::cout << "After = " << e << '\n';
    rewrite (e) type (Exp,Replaced<Exp>) {
       FINAL(REPLACED(e)): e
    }
-   cout << "Finally = " << e << '\n';
+   std::cout << "Finally = " << e << '\n';
    return 0;
 }

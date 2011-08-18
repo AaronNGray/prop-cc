@@ -6,7 +6,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 #include <stdlib.h>
-#include <iostream.h>
+#include <iostream>
 #include <AD/strings/quark.h>
 #include <AD/automata/iolexerbuf.h>
 
@@ -131,7 +131,7 @@ wff Wff:  wff "+" wff	{ $$ = Or($1,$3); }
 ///////////////////////////////////////////////////////////////////////////////
 void WffParser::process(Wff wff)
 {
-   cout << "input = " << wff << '\n';
+   std::cout << "input = " << wff << '\n';
 
    rewrite (wff) type (Wff) of
       And(True,X):     X
@@ -164,7 +164,7 @@ void WffParser::process(Wff wff)
    |  Implies(a,b): Or(Not a, b)
    end rewrite;
 
-   cout << "output = " << wff << '\n';
+   std::cout << "output = " << wff << '\n';
 }
 
 
@@ -179,8 +179,8 @@ int main()
 {
    WffParser P;
 
-   cerr << "Enter logical expressions terminated by a semicolon.\n";
-   cerr << "Use t for true, f for false, + for or, * for and, etc.:\n";
+   std::cerr << "Enter logical expressions terminated by a semicolon.\n";
+   std::cerr << "Use t for true, f for false, + for or, * for and, etc.:\n";
 
    P.parse();
 
