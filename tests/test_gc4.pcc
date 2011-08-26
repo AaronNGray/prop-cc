@@ -2,7 +2,7 @@
 //  Program to test garbage collection with pointer sharing.
 //////////////////////////////////////////////////////////////////////////////
 
-#include <iostream.h>
+#include <iostream>
 #include <stdlib.h>
 #include <assert.h>
 #include <unistd.h>
@@ -82,15 +82,15 @@ TREE make_tree(int n)
 void testing()
 {  
    for (int trial = 1; trial <= TRIALS; trial++) {
-       cout << "Trial number " << trial << '\n' << flush;
+       std::cout << "Trial number " << trial << '\n' << std::flush;
        TREE tree1    = make_tree(NODES);
        int  size1    = size(tree1);
        int  sum1     = sum(tree1);
        int  sharing1 = sharing (tree1);
        check(tree1);
 
-       cout << "Size = " << size1 << " check sum = " << sum1 
-            << " pointer sharing = " << sharing1 << '\n' << flush;
+       std::cout << "Size = " << size1 << " check sum = " << sum1 
+            << " pointer sharing = " << sharing1 << '\n' << std::flush;
 
        make_tree(NODES);              // this just generates a lot of garbage
 
@@ -99,20 +99,22 @@ void testing()
        assert(sum(tree1)      == sum1);
        assert(sharing(tree1)  == sharing1);
        check(tree1);
-       cout << "Trial number " << trial << " has passed\n";
+       std::cout << "Trial number " << trial << " has passed\n";
    }
 }
 
 int main()
 {  
-   cout << 
+   std::cout << 
      "This test generate random dags and try to see if garbage collection\n"
      "works on preserving pointer sharing correctly.  I'll do this " 
       << TRIALS << " times.\n";
+#ifndef _WIN32
    srand(getpid()); 
+#endif
    testing();
    // force an explicit garbage collection
-   cout << "Finished.  Now I'm forcing another garbage collection to clean\n"
+   std::cout << "Finished.  Now I'm forcing another garbage collection to clean\n"
            "things up.  There should be very little garbage left at the end.\n";
    GC::garbage_collect();  
    return 0;

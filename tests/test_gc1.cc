@@ -9,10 +9,14 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #include <assert.h>
-#include <iostream.h>
+#include <iostream>
+#ifndef _WIN32
 #include <AD/gc/bgc.h>
+#endif
 #include <AD/gc/gcobject.h>
+#ifndef _WIN32
 #include <AD/gc/gcheaps.h>
+#endif
 
 #define LENGTH (256 * 64)
 #define UNIT   (16 * 64)
@@ -40,7 +44,7 @@ private:
 //  Method to print a list, currently unused.
 //////////////////////////////////////////////////////////////////////////////
 void print(LIST * x)
-{  if (x) { cout << x->c; print(x->next); }
+{  if (x) { std::cout << x->c; print(x->next); }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -48,13 +52,15 @@ void print(LIST * x)
 //////////////////////////////////////////////////////////////////////////////
 void verify (LIST * x)
 {  int count = 0;
-   cout << "Verifying list\n" << flush;
+   std::cout << "Verifying list\n" << std::flush;
    for ( ; x; x = x->next, count++) {
       //
       // Make sure that it lies within the collectable heap. 
       //
+#ifndef _WIN32
       assert (HM::is_mapped(x) && HM::page_gc(x) == bgc.gc_id());
       assert (HM::get_object_map().is_marked(x));
+#endif
 
       // Check its contents
       for (int i = 0; i < 20; i++)
@@ -64,7 +70,7 @@ void verify (LIST * x)
 
    // Make sure that it has the right length.
    assert (count == LENGTH);
-   cout << "List is okay\n" << flush;
+   std::cout << "List is okay\n" << std::flush;
 }
 
 
@@ -81,7 +87,7 @@ void do_some_stuff()
 
    // cout << "&x = " << (void*)&x << '\n';
    // cout << "&x = " << (void*)&x << " x = " << (void*)x << '\n';
-   cout << "List allocated\n";
+   std::cout << "List allocated\n";
    verify(x);
    GC::get_default_gc().collect();
 
@@ -96,7 +102,7 @@ void do_some_stuff()
 int main()
 {
    GC::Statistics stats = GC::get_default_gc().statistics();
-   cout << "Algorithm:        " << stats.algorithm << '\n'
+   std::cout << "Algorithm:        " << stats.algorithm << '\n'
         << "Version:          " << stats.version << '\n';
 
    do_some_stuff();
@@ -105,10 +111,12 @@ int main()
    stats = GC::get_default_gc().statistics();
    size_t memory_allocated = sizeof(LIST) * LENGTH * 2;
 
-   cout << "\n"
+   std::cout << "\n"
            "Memory allocated: " << memory_allocated << '\n'
+#ifndef _WIN32
         << "Final heap size:  " 
             << stats.bytes_managed + GCHeapManager::bytes_free() << '\n'
+#endif
         << "Bytes retained:   " << stats.bytes_used << '\n'
         << "Retention rate:   " 
            << (stats.bytes_used * 100 / memory_allocated) << "%\n"

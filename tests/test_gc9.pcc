@@ -2,8 +2,8 @@
 //  Simple example to garbage collection.
 //
 
-#include <new.h>
-#include <iostream.h>
+#include <new>
+#include <iostream>
 #include <AD/gc/markswp.h>
 
 MarkSweepGC marksweep_gc;
@@ -26,7 +26,7 @@ instantiate datatype EXP;
 //  Define a method that prints an expression.  This is simple
 //  inductive definition
 //
-ostream& operator << (ostream& f, EXP e)
+std::ostream& operator << (std::ostream& f, EXP e)
 {  match (e) {
       om:       { return f << "om"; }
    |  num i:    { return f << i; }
@@ -68,16 +68,16 @@ void do_something()
    EXP term = div(mul(t2,t2),t2);
    t2       = om;
 
-   cout << "[1] " << term << '\n';
+   std::cout << "[1] " << term << '\n';
 
    change(term,num(-2));
-   cout << "[2] " << term << '\n';
+   std::cout << "[2] " << term << '\n';
 
    term = t1; t1 = num(-1);
-   cout << "[3] " << term << '\n';
+   std::cout << "[3] " << term << '\n';
 
    term = om; t1 = om;
-   cout << "[4] " << term << '\n';
+   std::cout << "[4] " << term << '\n';
 }
   
 int main()

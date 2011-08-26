@@ -4,7 +4,7 @@
 //  Garbage collection should preserve the shape of the list.
 //////////////////////////////////////////////////////////////////////////////
 
-#include <iostream.h>
+#include <iostream>
 #include <assert.h>
 #include <AD/gc/gc.h>
 #include <AD/gc/gcobject.h>
@@ -57,13 +57,13 @@ void do_something()
 
 int main()
 {
-   cout << "Testing crossheap pointers\n";
+   std::cout << "Testing crossheap pointers\n";
    for (int trial = 1; trial <= TRIALS; trial++) {
-      cout << "Trial " << trial << "\n" << flush;
+      std::cout << "Trial " << trial << "\n" << std::flush;
       do_something();
-      cout << "Trial " << trial << " has passed\n" << flush;
+      std::cout << "Trial " << trial << " has passed\n" << std::flush;
    }
-   cout << "Now cleaning up\n";
+   std::cout << "Now cleaning up\n";
    heap1.collect();
    heap2.collect();
    return 0;

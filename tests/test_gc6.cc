@@ -10,7 +10,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #include <assert.h>
-#include <iostream.h>
+#include <iostream>
 #include <AD/gc/gcobject.h>
 #include <AD/gc/weakptr.h>
 #include <AD/gc/gcheaps.h>
@@ -48,7 +48,7 @@ void do_tests(int trial)
 {
    int i;
 
-   cout << "Trial number " << trial << "\n" << flush;
+   std::cout << "Trial number " << trial << "\n" << std::flush;
 
    current_trial = trial;
 
@@ -61,7 +61,7 @@ void do_tests(int trial)
    for (i = 0; i < TRIALS; i++) 
       wps[i] = ps[i] = new TEST(i,trial);
 
-   cout << "Data has been allocated\n" << flush;
+   std::cout << "Data has been allocated\n" << std::flush;
 
    GC::garbage_collect();
 
@@ -103,9 +103,9 @@ void do_tests(int trial)
       }
    }
 
-   cout << " Created = " << created
+   std::cout << " Created = " << created
         << " Destroyed = " << destroyed
-        << " Alive = " << alive << '\n' << flush;
+        << " Alive = " << alive << '\n' << std::flush;
 
    assert (created == alive + destroyed);
 
@@ -116,15 +116,15 @@ void do_tests(int trial)
 int main()
 {
    GC::get_default_gc().set_finalization(true);
-   cout << "Testing the weak pointers facility\n" << flush;
+   std::cout << "Testing the weak pointers facility\n" << std::flush;
    int trials = 10;
    for (int i = 1; i <= trials; i++)
      do_tests(i);
 
-   cout << " Total created = " << total_created
+   std::cout << " Total created = " << total_created
         << " Total destroyed = " << total_destroyed << '\n';
 
-   GC::get_default_gc().print_statistics(cout);
-   cout << "The weakpointers facility seems to be ok\n" << flush;
+   GC::get_default_gc().print_statistics(std::cout);
+   std::cout << "The weakpointers facility seems to be ok\n" << std::flush;
    return 0;
 }

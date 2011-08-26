@@ -4,7 +4,7 @@
 //  In addition of reclaiming garbage, BGC_F will also call the finalization
 //  method (the destructor) for each object freed.
 //
-#include <iostream.h>
+#include <iostream>
 #include <AD/gc/markswp.h>
 
 MarkSweepGC marksweep_gc;
@@ -54,7 +54,7 @@ instantiate datatype EXP;
 //  Define a method that prints an expression.  This is a simple
 //  inductive definition
 //
-ostream& operator << (ostream& f, EXP e)
+std::ostream& operator << (std::ostream& f, EXP e)
 {  match (e) {
       om:       { return f << "om"; }
    |  num i:    { return f << i; }
@@ -166,22 +166,22 @@ int main()
    //
    GC::get_default_gc().set_finalization(true); 
 
-   cout << "Now performing some rewrites and generating some garbage.\n"
-           "(See also the test 'test_rc1')\n" << flush;
+   std::cout << "Now performing some rewrites and generating some garbage.\n"
+           "(See also the test 'test_rc1')\n" << std::flush;
    // GC::get_default_gc().set_verbosity(0);
    do_my_stuff();
-   cout << "Finished.  Now I'll force one more GC to clean up.\n"
+   std::cout << "Finished.  Now I'll force one more GC to clean up.\n"
            "There should be at most a few kilobytes of retention at the end.\n"
            "The GC should be able to recognized a large part of the heap as\n"
            "garbage.  See below:\n";
    // GC::get_default_gc().set_verbosity(1);
    GC::garbage_collect();
-   cout << "The following allocation count should be very close to the\n"
+   std::cout << "The following allocation count should be very close to the\n"
            "finalization count.  If they are very far apart that means\n"
            "something is wrong.\n" 
         << "Allocation count        = " << LOGGER::allocation_count << '\n'
         << "Number of finalizations = " << LOGGER::deallocation_count << '\n';
    if (GC::get_default_gc().statistics().bytes_used <= 1024)
-      cout << "Seems like it's working well for your platform.   Lucky dog!\n";
+      std::cout << "Seems like it's working well for your platform.   Lucky dog!\n";
    return 0;
 }
