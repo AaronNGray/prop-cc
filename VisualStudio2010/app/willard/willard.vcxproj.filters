@@ -1,0 +1,135 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Prop_Compiler Include="..\..\..\app\willard\paige.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\parser.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\phase1.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\phase2.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\phase3.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\phase4.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\phase5.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\querygraph.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\rename.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\willard.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\willard-ast.pcc">
+      <Filter>Source Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\list.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\paige.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\parser.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\phase1.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\phase2.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\phase3.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\phase4.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\phase5.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\proj.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\querygraph.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\rename.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\smap.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\willard.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+    <Prop_Compiler Include="..\..\..\app\willard\willard-ast.ph">
+      <Filter>Header Files</Filter>
+    </Prop_Compiler>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\app\willard\paige.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\app\willard\paige-aux.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\app\willard\parser.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\app\willard\phase1.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\app\willard\phase2.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\app\willard\phase3.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\app\willard\phase4.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\app\willard\phase5.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\app\willard\proj.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\app\willard\querygraph.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\app\willard\rename.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\app\willard\willard.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\app\willard\willard-ast.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
