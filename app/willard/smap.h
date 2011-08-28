@@ -1,12 +1,12 @@
 ///////////////////////////////////////////////////////////////////////////////
-//  This file is generated automatically using Prop (version 2.3.5),
-//  last updated on Jun 18, 1997.
-//  The original source file is "smap.ph".
+//  This file is generated automatically using Prop (version 2.4.0),
+//  last updated on Jul 1, 2011.
+//  The original source file is "..\..\..\app\willard\smap.ph".
 ///////////////////////////////////////////////////////////////////////////////
 
 #define PROP_TUPLE2_USED
 #include <propdefs.h>
-#line 1 "smap.ph"
+#line 1 "../../../app/willard/smap.ph"
 #ifndef smap_h
 #define smap_h
 
@@ -22,16 +22,16 @@ class SMap : public LHashTable<K, V>
 
 template <class A, class B>
    inline int hash (const 
-#line 15 "smap.ph"
+#line 15 "../../../app/willard/smap.ph"
 Tuple2<A, B>  
-#line 15 "smap.ph"
+#line 15 "../../../app/willard/smap.ph"
 & x) { return hash(x._1) + hash(x._2); }
 
 template <class A, class B>
    inline int equal (const Tuple2<A, B>  
-#line 18 "smap.ph"
+#line 18 "../../../app/willard/smap.ph"
 & x, const Tuple2<A, B>  
-#line 18 "smap.ph"
+#line 18 "../../../app/willard/smap.ph"
 & y) 
       { return equal(x._1,y._1) && equal(x._2,y._2); }
 

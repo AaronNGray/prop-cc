@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
-//  This file is generated automatically using Prop (version 2.3.5),
-//  last updated on Jun 18, 1997.
-//  The original source file is "willard.ph".
+//  This file is generated automatically using Prop (version 2.4.0),
+//  last updated on Jul 1, 2011.
+//  The original source file is "..\..\..\app\willard\willard.ph".
 ///////////////////////////////////////////////////////////////////////////////
 
 #define PROP_REWRITING_USED
@@ -9,7 +9,7 @@
 #define PROP_QUARK_USED
 #define PROP_TUPLE2_USED
 #include <propdefs.h>
-#line 1 "willard.ph"
+#line 1 "../../../app/willard/willard.ph"
 #ifndef willard_decomposition_h
 #define willard_decomposition_h
 
@@ -45,7 +45,7 @@ public:
 };
 
 #endif
-#line 36 "willard.ph"
+#line 36 "../../../app/willard/willard.ph"
 /*
 ------------------------------- Statistics -------------------------------
 Merge matching rules         = yes

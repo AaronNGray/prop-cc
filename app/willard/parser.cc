@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
-//  This file is generated automatically using Prop (version 2.3.5),
-//  last updated on Jun 18, 1997.
-//  The original source file is "parser.pcc".
+//  This file is generated automatically using Prop (version 2.4.0),
+//  last updated on Jul 1, 2011.
+//  The original source file is "..\..\..\app\willard\parser.pcc".
 ///////////////////////////////////////////////////////////////////////////////
 
 #define PROP_REWRITING_USED
@@ -12,27 +12,27 @@
 #define PROP_QUARK_USED
 #define PROP_TUPLE2_USED
 #include <propdefs.h>
-#line 1 "parser.pcc"
+#line 1 "../../../app/willard/parser.pcc"
 #include "willard-ast.h"
 #include "parser.h"
 #include "paige.h"
 #include <AD/strings/quark.h>
 
-#line 6 "parser.pcc"
-#line 14 "parser.pcc"
+#line 6 "../../../app/willard/parser.pcc"
+#line 14 "../../../app/willard/parser.pcc"
 enum Tokens {
-   XX_t_r_u_eXX = 256, XX_f_a_l_s_eXX = 257, XX_i_nXX = 258, 
-   XX_a_n_dXX = 259, XX_o_rXX = 260, XX_n_o_tXX = 261, 
-   XX_f_o_r_a_l_lXX = 262, XX_e_x_i_s_t_sXX = 263, XX_l_e_tXX = 264, 
-   XX_e_n_dXX = 265, XXhlXX = 266, XXhnXX = 267, 
-   XXcpXX = 268, XXckXX = 269, XXclXX = 270, 
-   XXcnXX = 271, XXciXX = 272, XXcjXX = 273, 
-   XXflXX = 274, XXfnXX = 275, XXdnXX = 276, 
-   XXcpdnXX = 277, XXdmXX = 278, XXdoXX = 279, 
-   XXdmdnXX = 280, XXdodnXX = 281, XXhmXX = 282, 
-   XXcdXX = 283, XXcmXX = 284, XXdlXX = 285, 
-   XXdkXX = 286, XXcoXX = 287, INTEGER = 288, 
-   IDENT = 289
+  XX_t_r_u_eXX = 256, XX_f_a_l_s_eXX = 257, XX_i_nXX = 258, 
+  XX_a_n_dXX = 259, XX_o_rXX = 260, XX_n_o_tXX = 261, 
+  XX_f_o_r_a_l_lXX = 262, XX_e_x_i_s_t_sXX = 263, XX_l_e_tXX = 264, 
+  XX_e_n_dXX = 265, XXhlXX = 266, XXhnXX = 267, 
+  XXcpXX = 268, XXckXX = 269, XXclXX = 270, 
+  XXcnXX = 271, XXciXX = 272, XXcjXX = 273, 
+  XXflXX = 274, XXfnXX = 275, XXdnXX = 276, 
+  XXcpdnXX = 277, XXdmXX = 278, XXdoXX = 279, 
+  XXdmdnXX = 280, XXdodnXX = 281, XXhmXX = 282, 
+  XXcdXX = 283, XXcmXX = 284, XXdlXX = 285, 
+  XXdkXX = 286, XXcoXX = 287, INTEGER = 288, 
+  IDENT = 289
 };
 
 
@@ -44,10 +44,10 @@ enum Tokens {
 //
 ///////////////////////////////////////////////////////////////////////////////
 class PrettyOStream;
-extern ostream& operator<<(ostream&, Tokens);
+extern std::ostream& operator<<(std::ostream&, Tokens);
 extern PrettyOStream& operator<<(PrettyOStream&, Tokens);
-#line 14 "parser.pcc"
-#line 14 "parser.pcc"
+#line 14 "../../../app/willard/parser.pcc"
+#line 14 "../../../app/willard/parser.pcc"
 
 
 //
@@ -55,11 +55,11 @@ extern PrettyOStream& operator<<(PrettyOStream&, Tokens);
 //
 int QueryParser::get_token()
 {  
-#line 20 "parser.pcc"
-#line 23 "parser.pcc"
+#line 20 "../../../app/willard/parser.pcc"
+#line 23 "../../../app/willard/parser.pcc"
 {
-   for (;;) {
-      {
+  for (;;) {
+    {
 static const DFATables::Offset _X1_base [ 66 ] = {
    0, 0, 0, 0, 0, 0, 34, 164, 163, 163, 163, 163, 18, 7, 162, 0, 
    0, 162, 0, 160, 0, 0, 160, 37, 0, 11, 0, 0, 0, 0, 0, 0, 
@@ -131,69 +131,69 @@ static const DFATables::Rule _X1_accept_rule [ 66 ] = {
    0, 34, 6, 9, 34, 34, 34, 10, 4, 1, 34, 34, 34, 34, 2, 34, 
    7, 8
 };
-         static const RegexMatch _X1
-                          ( _X1_base,
-                            _X1_check,
-                            _X1_def,
-                            _X1_next,
-                            _X1_accept_rule,
-                            _X1_equiv_classes );
-         int rule__;
-         const char * next;
-         switch(rule__ = _X1.MatchText(RegexMatch::start_state,lexbuf,next)) {
-            case 1: {
-               L2:; 
-#line 21 "parser.pcc"
-              return ((Tokens)(rule__ + 255)); 
-#line 21 "parser.pcc"
-            } break;
-            case 2: { goto L2; } break;
-            case 3: { goto L2; } break;
-            case 4: { goto L2; } break;
-            case 5: { goto L2; } break;
-            case 6: { goto L2; } break;
-            case 7: { goto L2; } break;
-            case 8: { goto L2; } break;
-            case 9: { goto L2; } break;
-            case 10: { goto L2; } break;
-            case 11: { goto L2; } break;
-            case 12: { goto L2; } break;
-            case 13: { goto L2; } break;
-            case 14: { goto L2; } break;
-            case 15: { goto L2; } break;
-            case 16: { goto L2; } break;
-            case 17: { goto L2; } break;
-            case 18: { goto L2; } break;
-            case 19: { goto L2; } break;
-            case 20: { goto L2; } break;
-            case 21: { goto L2; } break;
-            case 22: { goto L2; } break;
-            case 23: { goto L2; } break;
-            case 24: { goto L2; } break;
-            case 25: { goto L2; } break;
-            case 26: { goto L2; } break;
-            case 27: { goto L2; } break;
-            case 28: { goto L2; } break;
-            case 29: { goto L2; } break;
-            case 30: { goto L2; } break;
-            case 31: { goto L2; } break;
-            case 32: { goto L2; } break;
-            case 33: { goto L2; } break;
-            case 34: { goto L2; } break;
-            case 35: {} break;
-            case 36: {
-#line 23 "parser.pcc"
-              line_no++; 
-#line 23 "parser.pcc"
-            } break;
-            default: { goto L1; }
-         }
+      static const RegexMatch _X1
+                      ( _X1_base,
+                        _X1_check,
+                        _X1_def,
+                        _X1_next,
+                        _X1_accept_rule,
+                        _X1_equiv_classes );
+      int rule__;
+      const char * next = 0;
+      switch(rule__ = _X1.MatchText(RegexMatch::start_state,lexbuf,next)) {
+        case 1: {
+          L2:; 
+#line 21 "../../../app/willard/parser.pcc"
+         return ((Tokens)(rule__ + 255)); 
+#line 21 "../../../app/willard/parser.pcc"
+        } break;
+        case 2: { goto L2; } break;
+        case 3: { goto L2; } break;
+        case 4: { goto L2; } break;
+        case 5: { goto L2; } break;
+        case 6: { goto L2; } break;
+        case 7: { goto L2; } break;
+        case 8: { goto L2; } break;
+        case 9: { goto L2; } break;
+        case 10: { goto L2; } break;
+        case 11: { goto L2; } break;
+        case 12: { goto L2; } break;
+        case 13: { goto L2; } break;
+        case 14: { goto L2; } break;
+        case 15: { goto L2; } break;
+        case 16: { goto L2; } break;
+        case 17: { goto L2; } break;
+        case 18: { goto L2; } break;
+        case 19: { goto L2; } break;
+        case 20: { goto L2; } break;
+        case 21: { goto L2; } break;
+        case 22: { goto L2; } break;
+        case 23: { goto L2; } break;
+        case 24: { goto L2; } break;
+        case 25: { goto L2; } break;
+        case 26: { goto L2; } break;
+        case 27: { goto L2; } break;
+        case 28: { goto L2; } break;
+        case 29: { goto L2; } break;
+        case 30: { goto L2; } break;
+        case 31: { goto L2; } break;
+        case 32: { goto L2; } break;
+        case 33: { goto L2; } break;
+        case 34: { goto L2; } break;
+        case 35: {} break;
+        case 36: {
+#line 23 "../../../app/willard/parser.pcc"
+         line_no++; 
+#line 23 "../../../app/willard/parser.pcc"
+        } break;
+        default: { goto L1; }
       }
-   }
-   L1:;
+    }
+  }
+  L1:;
 }
-#line 24 "parser.pcc"
-#line 24 "parser.pcc"
+#line 24 "../../../app/willard/parser.pcc"
+#line 24 "../../../app/willard/parser.pcc"
 
    return EOF;
 }
@@ -202,25 +202,25 @@ static const DFATables::Rule _X1_accept_rule [ 66 ] = {
 //  Method to create a nested definition
 //
 Exp make_defs (Exp (*f)(Ids,Exps,Exp), 
-#line 31 "parser.pcc"
+#line 31 "../../../app/willard/parser.pcc"
 a_List<Tuple2<Ids, Exps> > *  
-#line 31 "parser.pcc"
+#line 31 "../../../app/willard/parser.pcc"
  defs, Exp e)
 {  
-#line 34 "parser.pcc"
+#line 34 "../../../app/willard/parser.pcc"
 {
-   if (defs) {
-#line 34 "parser.pcc"
-     return f(defs->_1._1,defs->_1._2,make_defs(f,defs->_2,e)); 
-#line 34 "parser.pcc"
-   } else {
-#line 33 "parser.pcc"
-     return e; 
-#line 33 "parser.pcc"
-   }
+  if (defs) {
+#line 34 "../../../app/willard/parser.pcc"
+   return f(defs->_1._1,defs->_1._2,make_defs(f,defs->_2,e)); 
+#line 34 "../../../app/willard/parser.pcc"
+  } else {
+#line 33 "../../../app/willard/parser.pcc"
+   return e; 
+#line 33 "../../../app/willard/parser.pcc"
+  }
 }
-#line 35 "parser.pcc"
-#line 35 "parser.pcc"
+#line 35 "../../../app/willard/parser.pcc"
+#line 35 "../../../app/willard/parser.pcc"
 
 }
 
@@ -228,8 +228,8 @@ a_List<Tuple2<Ids, Exps> > *
 //
 //  This is our parser
 //
-#line 42 "parser.pcc"
-#line 134 "parser.pcc"
+#line 42 "../../../app/willard/parser.pcc"
+#line 134 "../../../app/willard/parser.pcc"
 ///////////////////////////////////////////////////////////////////////////////
 // Encoded parser tables for syntax class QueryParser
 ///////////////////////////////////////////////////////////////////////////////
@@ -332,23 +332,23 @@ static const DFATables::EquivMap QueryParser_equiv [ 307 ] = {
 #ifdef DEBUG_QueryParser
 static const int QueryParser_line[] =
 {
-   55, 60, 62, 63, 64, 65, 66, 67, 
-   68, 69, 70, 71, 72, 73, 74, 75, 
-   76, 77, 78, 79, 80, 81, 82, 83, 
-   84, 85, 88, 89, 92, 93, 97, 98, 
-   101, 102, 105, 106, 110, 113, 116, 117, 
-   120, 121, 124, 127, 128, 131, 0
+  55, 60, 62, 63, 64, 65, 66, 67, 
+  68, 69, 70, 71, 72, 73, 74, 75, 
+  76, 77, 78, 79, 80, 81, 82, 83, 
+  84, 85, 88, 89, 92, 93, 97, 98, 
+  101, 102, 105, 106, 110, 113, 116, 117, 
+  120, 121, 124, 127, 128, 131, 0
 };
 
 static const char * const QueryParser_symbolname[] =
 {
-   "?", "\"{\"", "\":\"", "\"}\"", "\"|\"", "\"+\"", "\"-\"", "\"*\"", 
-   "\"/\"", "\"=\"", "\"/=\"", "\"<\"", "\">\"", "\"<=\"", "\">=\"", "\"and\"", 
-   "\"or\"", "\"in\"", "\"not\"", "\"#\"", "\"(\"", "\")\"", "\"[\"", "\"]\"", 
-   "\"forall\"", "\".\"", "\"exists\"", "\"let\"", "\"end\"", "\",\"", "INTEGER", "\"true\"", 
-   "\"false\"", "IDENT", "???", "???", "top", "exp", "exps", "literal", 
-   "generators", "rvar", "ids", "defs", "range", "ranges", "integer", "boolean", 
-   "id", "???"
+  "?", "\"{\"", "\":\"", "\"}\"", "\"|\"", "\"+\"", "\"-\"", "\"*\"", 
+  "\"/\"", "\"=\"", "\"/=\"", "\"<\"", "\">\"", "\"<=\"", "\">=\"", "\"and\"", 
+  "\"or\"", "\"in\"", "\"not\"", "\"#\"", "\"(\"", "\")\"", "\"[\"", "\"]\"", 
+  "\"forall\"", "\".\"", "\"exists\"", "\"let\"", "\"end\"", "\",\"", "INTEGER", "\"true\"", 
+  "\"false\"", "IDENT", "???", "???", "top", "exp", "exps", "literal", 
+  "generators", "rvar", "ids", "defs", "range", "ranges", "integer", "boolean", 
+  "id", "???"
 };
 
 static const DFATables::ShortSymbol QueryParser_rhs_0[] = { 37,  -1 };
@@ -400,53 +400,53 @@ static const DFATables::ShortSymbol QueryParser_rhs_45[] = { 33,  -1 };
 static const DFATables::ShortSymbol QueryParser_rhs_46[] = { 36, 35,  -1 };
 static const DFATables::ShortSymbol * QueryParser_rhs[] =
 {
-   QueryParser_rhs_0, 
-   QueryParser_rhs_1, 
-   QueryParser_rhs_2, 
-   QueryParser_rhs_3, 
-   QueryParser_rhs_4, 
-   QueryParser_rhs_5, 
-   QueryParser_rhs_6, 
-   QueryParser_rhs_7, 
-   QueryParser_rhs_8, 
-   QueryParser_rhs_9, 
-   QueryParser_rhs_10, 
-   QueryParser_rhs_11, 
-   QueryParser_rhs_12, 
-   QueryParser_rhs_13, 
-   QueryParser_rhs_14, 
-   QueryParser_rhs_15, 
-   QueryParser_rhs_16, 
-   QueryParser_rhs_17, 
-   QueryParser_rhs_18, 
-   QueryParser_rhs_19, 
-   QueryParser_rhs_20, 
-   QueryParser_rhs_21, 
-   QueryParser_rhs_22, 
-   QueryParser_rhs_23, 
-   QueryParser_rhs_24, 
-   QueryParser_rhs_25, 
-   QueryParser_rhs_26, 
-   QueryParser_rhs_27, 
-   QueryParser_rhs_28, 
-   QueryParser_rhs_29, 
-   QueryParser_rhs_30, 
-   QueryParser_rhs_31, 
-   QueryParser_rhs_32, 
-   QueryParser_rhs_33, 
-   QueryParser_rhs_34, 
-   QueryParser_rhs_35, 
-   QueryParser_rhs_36, 
-   QueryParser_rhs_37, 
-   QueryParser_rhs_38, 
-   QueryParser_rhs_39, 
-   QueryParser_rhs_40, 
-   QueryParser_rhs_41, 
-   QueryParser_rhs_42, 
-   QueryParser_rhs_43, 
-   QueryParser_rhs_44, 
-   QueryParser_rhs_45, 
-   QueryParser_rhs_46
+  QueryParser_rhs_0, 
+  QueryParser_rhs_1, 
+  QueryParser_rhs_2, 
+  QueryParser_rhs_3, 
+  QueryParser_rhs_4, 
+  QueryParser_rhs_5, 
+  QueryParser_rhs_6, 
+  QueryParser_rhs_7, 
+  QueryParser_rhs_8, 
+  QueryParser_rhs_9, 
+  QueryParser_rhs_10, 
+  QueryParser_rhs_11, 
+  QueryParser_rhs_12, 
+  QueryParser_rhs_13, 
+  QueryParser_rhs_14, 
+  QueryParser_rhs_15, 
+  QueryParser_rhs_16, 
+  QueryParser_rhs_17, 
+  QueryParser_rhs_18, 
+  QueryParser_rhs_19, 
+  QueryParser_rhs_20, 
+  QueryParser_rhs_21, 
+  QueryParser_rhs_22, 
+  QueryParser_rhs_23, 
+  QueryParser_rhs_24, 
+  QueryParser_rhs_25, 
+  QueryParser_rhs_26, 
+  QueryParser_rhs_27, 
+  QueryParser_rhs_28, 
+  QueryParser_rhs_29, 
+  QueryParser_rhs_30, 
+  QueryParser_rhs_31, 
+  QueryParser_rhs_32, 
+  QueryParser_rhs_33, 
+  QueryParser_rhs_34, 
+  QueryParser_rhs_35, 
+  QueryParser_rhs_36, 
+  QueryParser_rhs_37, 
+  QueryParser_rhs_38, 
+  QueryParser_rhs_39, 
+  QueryParser_rhs_40, 
+  QueryParser_rhs_41, 
+  QueryParser_rhs_42, 
+  QueryParser_rhs_43, 
+  QueryParser_rhs_44, 
+  QueryParser_rhs_45, 
+  QueryParser_rhs_46
 };
 
 
@@ -456,43 +456,43 @@ static const DFATables::ShortSymbol * QueryParser_rhs[] =
 // Semantic value stack for syntax class QueryParser
 ///////////////////////////////////////////////////////////////////////////////
 union QueryParser_semantic_stack_type {
-   int dummy;
-#line 58 "parser.pcc"
-   typedef Exp ATTRIBUTE_0;
-   ATTRIBUTE_0 _188, _183, _142, _139, _135, _131, _129, _123, _121, _115, _110, _104, _101, _98, _95, _93, _91, _89, _87, _85, _83, _81, _80, _78, _76, _75, _73, _71, _70, _68, _66, _65, _63, _61, _60, _58, _56, _55, _53, _51, _50, _48, _46, _45, _43, _41, _40, _38, _36, _35, _33, _31, _30, _28, _26, _25, _23, _21, _20, _17, _13, _11, _6, _4, _2;
-#line 88 "parser.pcc"
-   typedef Exps ATTRIBUTE_1;
-   ATTRIBUTE_1 _144, _141, _138, _112, _107;
-#line 92 "parser.pcc"
-   typedef Literal ATTRIBUTE_2;
-   ATTRIBUTE_2 _149, _146, _99;
-#line 96 "parser.pcc"
-   typedef a_List<Tuple2<Ids, Exps> > *  ATTRIBUTE_3;
-   ATTRIBUTE_3 _162, _157, _152, _15, _8;
-#line 101 "parser.pcc"
-   typedef Ids ATTRIBUTE_4;
-   ATTRIBUTE_4 _167, _164, _158, _153;
-#line 105 "parser.pcc"
-   typedef Ids ATTRIBUTE_5;
-   ATTRIBUTE_5 _178, _175, _172, _169;
-#line 109 "parser.pcc"
-   typedef struct { Ids ids; Exps exps;  } ATTRIBUTE_6;
-   ATTRIBUTE_6 _190, _185, _180, _133;
-#line 116 "parser.pcc"
-   typedef Exps ATTRIBUTE_7;
-   ATTRIBUTE_7 _195, _192, _160, _155;
-#line 120 "parser.pcc"
-   typedef Exps ATTRIBUTE_8;
-   ATTRIBUTE_8 _206, _203, _200, _197;
-#line 124 "parser.pcc"
-   typedef int ATTRIBUTE_9;
-   ATTRIBUTE_9 _208, _147;
-#line 127 "parser.pcc"
-   typedef Bool ATTRIBUTE_10;
-   ATTRIBUTE_10 _214, _211, _150;
-#line 131 "parser.pcc"
-   typedef Id ATTRIBUTE_11;
-   ATTRIBUTE_11 _217, _204, _201, _193, _186, _181, _176, _173, _165, _127, _125, _119, _117, _105, _102;
+  int dummy;
+#line 58 "../../../app/willard/parser.pcc"
+  typedef Exp ATTRIBUTE_0;
+  ATTRIBUTE_0 _188, _183, _142, _139, _135, _131, _129, _123, _121, _115, _110, _104, _101, _98, _95, _93, _91, _89, _87, _85, _83, _81, _80, _78, _76, _75, _73, _71, _70, _68, _66, _65, _63, _61, _60, _58, _56, _55, _53, _51, _50, _48, _46, _45, _43, _41, _40, _38, _36, _35, _33, _31, _30, _28, _26, _25, _23, _21, _20, _17, _13, _11, _6, _4, _2;
+#line 88 "../../../app/willard/parser.pcc"
+  typedef Exps ATTRIBUTE_1;
+  ATTRIBUTE_1 _144, _141, _138, _112, _107;
+#line 92 "../../../app/willard/parser.pcc"
+  typedef Literal ATTRIBUTE_2;
+  ATTRIBUTE_2 _149, _146, _99;
+#line 96 "../../../app/willard/parser.pcc"
+  typedef a_List<Tuple2<Ids, Exps> > *  ATTRIBUTE_3;
+  ATTRIBUTE_3 _162, _157, _152, _15, _8;
+#line 101 "../../../app/willard/parser.pcc"
+  typedef Ids ATTRIBUTE_4;
+  ATTRIBUTE_4 _167, _164, _158, _153;
+#line 105 "../../../app/willard/parser.pcc"
+  typedef Ids ATTRIBUTE_5;
+  ATTRIBUTE_5 _178, _175, _172, _169;
+#line 109 "../../../app/willard/parser.pcc"
+  typedef struct { Ids ids; Exps exps;  } ATTRIBUTE_6;
+  ATTRIBUTE_6 _190, _185, _180, _133;
+#line 116 "../../../app/willard/parser.pcc"
+  typedef Exps ATTRIBUTE_7;
+  ATTRIBUTE_7 _195, _192, _160, _155;
+#line 120 "../../../app/willard/parser.pcc"
+  typedef Exps ATTRIBUTE_8;
+  ATTRIBUTE_8 _206, _203, _200, _197;
+#line 124 "../../../app/willard/parser.pcc"
+  typedef int ATTRIBUTE_9;
+  ATTRIBUTE_9 _208, _147;
+#line 127 "../../../app/willard/parser.pcc"
+  typedef Bool ATTRIBUTE_10;
+  ATTRIBUTE_10 _214, _211, _150;
+#line 131 "../../../app/willard/parser.pcc"
+  typedef Id ATTRIBUTE_11;
+  ATTRIBUTE_11 _217, _204, _201, _193, _186, _181, _176, _173, _165, _127, _125, _119, _117, _105, _102;
 };
 
 
@@ -501,431 +501,431 @@ union QueryParser_semantic_stack_type {
 ///////////////////////////////////////////////////////////////////////////////
 inline void QueryParser::action_driver(const Rule _r_)
 {
-   QueryParser_semantic_stack_type syn_;
-   ////////////////////////////////////////////////////////////////////////////
-   // Tracing code for syntax class QueryParser
-   ////////////////////////////////////////////////////////////////////////////
+  QueryParser_semantic_stack_type syn_ = t__[0];
+  /////////////////////////////////////////////////////////////////////////////
+  // Tracing code for syntax class QueryParser
+  /////////////////////////////////////////////////////////////////////////////
 #ifdef DEBUG_QueryParser
-   {  cerr << "Reducing via rule " << _r_ << " at line "
-           << QueryParser_line[_r_] << ", "
-           << QueryParser_symbolname[QueryParser_lhs[_r_]] << " <- ";
-      for (const DFATables::ShortSymbol * _p_ = QueryParser_rhs[_r_]; *_p_ >= 0; _p_++)
-         cerr << QueryParser_symbolname[*_p_] << ' ';
-      cerr << '\n';
-   }
+  { std::cerr << "Reducing via rule " << _r_ << " at line "
+         << QueryParser_line[_r_] << ", "
+         << QueryParser_symbolname[QueryParser_lhs[_r_]] << " <- ";
+    for (const DFATables::ShortSymbol * _p_ = QueryParser_rhs[_r_]; *_p_ >= 0; _p_++)
+       std::cerr << QueryParser_symbolname[*_p_] << ' ';
+    std::cerr << '\n';
+  }
 #endif
 
-   ////////////////////////////////////////////////////////////////////////////
-   // Actions for syntax class QueryParser
-   ////////////////////////////////////////////////////////////////////////////
-   t__ -= QueryParser_ncount[_r_];
-   switch (_r_) {
+  /////////////////////////////////////////////////////////////////////////////
+  // Actions for syntax class QueryParser
+  /////////////////////////////////////////////////////////////////////////////
+  t__ -= QueryParser_ncount[_r_];
+  switch (_r_) {
 
 #undef to__
 #define to__ 0
-      case 0: {
-#line 55 "parser.pcc"
-        query = t__[1+to__]._2; 
-#line 55 "parser.pcc"
+    case 0: {
+#line 55 "../../../app/willard/parser.pcc"
+     query = t__[1+to__]._2; 
+#line 55 "../../../app/willard/parser.pcc"
 } break;
-      case 1: {
-#line 60 "parser.pcc"
-        syn_._4 = make_defs(GENERATOR,t__[2+to__]._8,t__[1+to__]._6); 
-#line 60 "parser.pcc"
+    case 1: {
+#line 60 "../../../app/willard/parser.pcc"
+     syn_._4 = make_defs(GENERATOR,t__[2+to__]._8,t__[1+to__]._6); 
+#line 60 "../../../app/willard/parser.pcc"
 } break;
-      case 2: {
-#line 62 "parser.pcc"
-        syn_._11 = make_defs(GENERATOR,t__[2+to__]._15,GUARD(t__[3+to__]._17,t__[1+to__]._13)); 
-#line 62 "parser.pcc"
+    case 2: {
+#line 62 "../../../app/willard/parser.pcc"
+     syn_._11 = make_defs(GENERATOR,t__[2+to__]._15,GUARD(t__[3+to__]._17,t__[1+to__]._13)); 
+#line 62 "../../../app/willard/parser.pcc"
 } break;
-      case 3: {
-#line 63 "parser.pcc"
-        syn_._20 = OP("+",
-#line 63 "parser.pcc"
-#line 63 "parser.pcc"
-         list_1_(t__[1+to__]._21,list_1_(t__[2+to__]._23))
-#line 63 "parser.pcc"
-#line 63 "parser.pcc"
-         ); 
-#line 63 "parser.pcc"
+    case 3: {
+#line 63 "../../../app/willard/parser.pcc"
+     syn_._20 = OP("+",
+#line 63 "../../../app/willard/parser.pcc"
+#line 63 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._21,list_1_(t__[2+to__]._23))
+#line 63 "../../../app/willard/parser.pcc"
+#line 63 "../../../app/willard/parser.pcc"
+      ); 
+#line 63 "../../../app/willard/parser.pcc"
 } break;
-      case 4: {
-#line 64 "parser.pcc"
-        syn_._25 = OP("-",
-#line 64 "parser.pcc"
-#line 64 "parser.pcc"
-         list_1_(t__[1+to__]._26,list_1_(t__[2+to__]._28))
-#line 64 "parser.pcc"
-#line 64 "parser.pcc"
-         ); 
-#line 64 "parser.pcc"
+    case 4: {
+#line 64 "../../../app/willard/parser.pcc"
+     syn_._25 = OP("-",
+#line 64 "../../../app/willard/parser.pcc"
+#line 64 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._26,list_1_(t__[2+to__]._28))
+#line 64 "../../../app/willard/parser.pcc"
+#line 64 "../../../app/willard/parser.pcc"
+      ); 
+#line 64 "../../../app/willard/parser.pcc"
 } break;
-      case 5: {
-#line 65 "parser.pcc"
-        syn_._30 = OP("*",
-#line 65 "parser.pcc"
-#line 65 "parser.pcc"
-         list_1_(t__[1+to__]._31,list_1_(t__[2+to__]._33))
-#line 65 "parser.pcc"
-#line 65 "parser.pcc"
-         ); 
-#line 65 "parser.pcc"
+    case 5: {
+#line 65 "../../../app/willard/parser.pcc"
+     syn_._30 = OP("*",
+#line 65 "../../../app/willard/parser.pcc"
+#line 65 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._31,list_1_(t__[2+to__]._33))
+#line 65 "../../../app/willard/parser.pcc"
+#line 65 "../../../app/willard/parser.pcc"
+      ); 
+#line 65 "../../../app/willard/parser.pcc"
 } break;
-      case 6: {
-#line 66 "parser.pcc"
-        syn_._35 = OP("/",
-#line 66 "parser.pcc"
-#line 66 "parser.pcc"
-         list_1_(t__[1+to__]._36,list_1_(t__[2+to__]._38))
-#line 66 "parser.pcc"
-#line 66 "parser.pcc"
-         ); 
-#line 66 "parser.pcc"
+    case 6: {
+#line 66 "../../../app/willard/parser.pcc"
+     syn_._35 = OP("/",
+#line 66 "../../../app/willard/parser.pcc"
+#line 66 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._36,list_1_(t__[2+to__]._38))
+#line 66 "../../../app/willard/parser.pcc"
+#line 66 "../../../app/willard/parser.pcc"
+      ); 
+#line 66 "../../../app/willard/parser.pcc"
 } break;
-      case 7: {
-#line 67 "parser.pcc"
-        syn_._40 = OP("=",
-#line 67 "parser.pcc"
-#line 67 "parser.pcc"
-         list_1_(t__[1+to__]._41,list_1_(t__[2+to__]._43))
-#line 67 "parser.pcc"
-#line 67 "parser.pcc"
-         ); 
-#line 67 "parser.pcc"
+    case 7: {
+#line 67 "../../../app/willard/parser.pcc"
+     syn_._40 = OP("=",
+#line 67 "../../../app/willard/parser.pcc"
+#line 67 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._41,list_1_(t__[2+to__]._43))
+#line 67 "../../../app/willard/parser.pcc"
+#line 67 "../../../app/willard/parser.pcc"
+      ); 
+#line 67 "../../../app/willard/parser.pcc"
 } break;
-      case 8: {
-#line 68 "parser.pcc"
-        syn_._45 = OP("/=",
-#line 68 "parser.pcc"
-#line 68 "parser.pcc"
-         list_1_(t__[1+to__]._46,list_1_(t__[2+to__]._48))
-#line 68 "parser.pcc"
-#line 68 "parser.pcc"
-         ); 
-#line 68 "parser.pcc"
+    case 8: {
+#line 68 "../../../app/willard/parser.pcc"
+     syn_._45 = OP("/=",
+#line 68 "../../../app/willard/parser.pcc"
+#line 68 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._46,list_1_(t__[2+to__]._48))
+#line 68 "../../../app/willard/parser.pcc"
+#line 68 "../../../app/willard/parser.pcc"
+      ); 
+#line 68 "../../../app/willard/parser.pcc"
 } break;
-      case 9: {
-#line 69 "parser.pcc"
-        syn_._50 = OP("<",
-#line 69 "parser.pcc"
-#line 69 "parser.pcc"
-         list_1_(t__[1+to__]._51,list_1_(t__[2+to__]._53))
-#line 69 "parser.pcc"
-#line 69 "parser.pcc"
-         ); 
-#line 69 "parser.pcc"
+    case 9: {
+#line 69 "../../../app/willard/parser.pcc"
+     syn_._50 = OP("<",
+#line 69 "../../../app/willard/parser.pcc"
+#line 69 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._51,list_1_(t__[2+to__]._53))
+#line 69 "../../../app/willard/parser.pcc"
+#line 69 "../../../app/willard/parser.pcc"
+      ); 
+#line 69 "../../../app/willard/parser.pcc"
 } break;
-      case 10: {
-#line 70 "parser.pcc"
-        syn_._55 = OP(">",
-#line 70 "parser.pcc"
-#line 70 "parser.pcc"
-         list_1_(t__[1+to__]._56,list_1_(t__[2+to__]._58))
-#line 70 "parser.pcc"
-#line 70 "parser.pcc"
-         ); 
-#line 70 "parser.pcc"
+    case 10: {
+#line 70 "../../../app/willard/parser.pcc"
+     syn_._55 = OP(">",
+#line 70 "../../../app/willard/parser.pcc"
+#line 70 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._56,list_1_(t__[2+to__]._58))
+#line 70 "../../../app/willard/parser.pcc"
+#line 70 "../../../app/willard/parser.pcc"
+      ); 
+#line 70 "../../../app/willard/parser.pcc"
 } break;
-      case 11: {
-#line 71 "parser.pcc"
-        syn_._60 = OP("<=",
-#line 71 "parser.pcc"
-#line 71 "parser.pcc"
-         list_1_(t__[1+to__]._61,list_1_(t__[2+to__]._63))
-#line 71 "parser.pcc"
-#line 71 "parser.pcc"
-         ); 
-#line 71 "parser.pcc"
+    case 11: {
+#line 71 "../../../app/willard/parser.pcc"
+     syn_._60 = OP("<=",
+#line 71 "../../../app/willard/parser.pcc"
+#line 71 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._61,list_1_(t__[2+to__]._63))
+#line 71 "../../../app/willard/parser.pcc"
+#line 71 "../../../app/willard/parser.pcc"
+      ); 
+#line 71 "../../../app/willard/parser.pcc"
 } break;
-      case 12: {
-#line 72 "parser.pcc"
-        syn_._65 = OP(">=",
-#line 72 "parser.pcc"
-#line 72 "parser.pcc"
-         list_1_(t__[1+to__]._66,list_1_(t__[2+to__]._68))
-#line 72 "parser.pcc"
-#line 72 "parser.pcc"
-         ); 
-#line 72 "parser.pcc"
+    case 12: {
+#line 72 "../../../app/willard/parser.pcc"
+     syn_._65 = OP(">=",
+#line 72 "../../../app/willard/parser.pcc"
+#line 72 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._66,list_1_(t__[2+to__]._68))
+#line 72 "../../../app/willard/parser.pcc"
+#line 72 "../../../app/willard/parser.pcc"
+      ); 
+#line 72 "../../../app/willard/parser.pcc"
 } break;
-      case 13: {
-#line 73 "parser.pcc"
-        syn_._70 = OP("and",
-#line 73 "parser.pcc"
-#line 73 "parser.pcc"
-         list_1_(t__[1+to__]._71,list_1_(t__[2+to__]._73))
-#line 73 "parser.pcc"
-#line 73 "parser.pcc"
-         ); 
-#line 73 "parser.pcc"
+    case 13: {
+#line 73 "../../../app/willard/parser.pcc"
+     syn_._70 = OP("and",
+#line 73 "../../../app/willard/parser.pcc"
+#line 73 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._71,list_1_(t__[2+to__]._73))
+#line 73 "../../../app/willard/parser.pcc"
+#line 73 "../../../app/willard/parser.pcc"
+      ); 
+#line 73 "../../../app/willard/parser.pcc"
 } break;
-      case 14: {
-#line 74 "parser.pcc"
-        syn_._75 = OP("or",
-#line 74 "parser.pcc"
-#line 74 "parser.pcc"
-         list_1_(t__[1+to__]._76,list_1_(t__[2+to__]._78))
-#line 74 "parser.pcc"
-#line 74 "parser.pcc"
-         ); 
-#line 74 "parser.pcc"
+    case 14: {
+#line 74 "../../../app/willard/parser.pcc"
+     syn_._75 = OP("or",
+#line 74 "../../../app/willard/parser.pcc"
+#line 74 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._76,list_1_(t__[2+to__]._78))
+#line 74 "../../../app/willard/parser.pcc"
+#line 74 "../../../app/willard/parser.pcc"
+      ); 
+#line 74 "../../../app/willard/parser.pcc"
 } break;
-      case 15: {
-#line 75 "parser.pcc"
-        syn_._80 = OP("in",
-#line 75 "parser.pcc"
-#line 75 "parser.pcc"
-         list_1_(t__[1+to__]._81,list_1_(t__[2+to__]._83))
-#line 75 "parser.pcc"
-#line 75 "parser.pcc"
-         ); 
-#line 75 "parser.pcc"
+    case 15: {
+#line 75 "../../../app/willard/parser.pcc"
+     syn_._80 = OP("in",
+#line 75 "../../../app/willard/parser.pcc"
+#line 75 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._81,list_1_(t__[2+to__]._83))
+#line 75 "../../../app/willard/parser.pcc"
+#line 75 "../../../app/willard/parser.pcc"
+      ); 
+#line 75 "../../../app/willard/parser.pcc"
 } break;
-      case 16: {
-#line 76 "parser.pcc"
-        syn_._85 = OP("not",
-#line 76 "parser.pcc"
-#line 76 "parser.pcc"
-         list_1_(t__[1+to__]._87)
-#line 76 "parser.pcc"
-#line 76 "parser.pcc"
-         ); 
-#line 76 "parser.pcc"
+    case 16: {
+#line 76 "../../../app/willard/parser.pcc"
+     syn_._85 = OP("not",
+#line 76 "../../../app/willard/parser.pcc"
+#line 76 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._87)
+#line 76 "../../../app/willard/parser.pcc"
+#line 76 "../../../app/willard/parser.pcc"
+      ); 
+#line 76 "../../../app/willard/parser.pcc"
 } break;
-      case 17: {
-#line 77 "parser.pcc"
-        syn_._89 = Count(t__[1+to__]._91); 
-#line 77 "parser.pcc"
+    case 17: {
+#line 77 "../../../app/willard/parser.pcc"
+     syn_._89 = Count(t__[1+to__]._91); 
+#line 77 "../../../app/willard/parser.pcc"
 } break;
-      case 18: {
-#line 78 "parser.pcc"
-        syn_._93 = t__[1+to__]._95; 
-#line 78 "parser.pcc"
+    case 18: {
+#line 78 "../../../app/willard/parser.pcc"
+     syn_._93 = t__[1+to__]._95; 
+#line 78 "../../../app/willard/parser.pcc"
 } break;
-      case 19: {
-#line 79 "parser.pcc"
-        syn_._98 = LIT(t__[1+to__]._99); 
-#line 79 "parser.pcc"
+    case 19: {
+#line 79 "../../../app/willard/parser.pcc"
+     syn_._98 = LIT(t__[1+to__]._99); 
+#line 79 "../../../app/willard/parser.pcc"
 } break;
-      case 20: {
-#line 80 "parser.pcc"
-        syn_._101 = ID(t__[1+to__]._102); 
-#line 80 "parser.pcc"
+    case 20: {
+#line 80 "../../../app/willard/parser.pcc"
+     syn_._101 = ID(t__[1+to__]._102); 
+#line 80 "../../../app/willard/parser.pcc"
 } break;
-      case 21: {
-#line 81 "parser.pcc"
-        syn_._104 = APP(t__[1+to__]._105,t__[2+to__]._107); 
-#line 81 "parser.pcc"
+    case 21: {
+#line 81 "../../../app/willard/parser.pcc"
+     syn_._104 = APP(t__[1+to__]._105,t__[2+to__]._107); 
+#line 81 "../../../app/willard/parser.pcc"
 } break;
-      case 22: {
-#line 82 "parser.pcc"
-        syn_._110 = TUPLE(t__[1+to__]._112); 
-#line 82 "parser.pcc"
+    case 22: {
+#line 82 "../../../app/willard/parser.pcc"
+     syn_._110 = TUPLE(t__[1+to__]._112); 
+#line 82 "../../../app/willard/parser.pcc"
 } break;
-      case 23: {
-#line 83 "parser.pcc"
-        syn_._115 = FORALL(t__[1+to__]._117,ID(t__[2+to__]._119),t__[3+to__]._121); 
-#line 83 "parser.pcc"
+    case 23: {
+#line 83 "../../../app/willard/parser.pcc"
+     syn_._115 = FORALL(t__[1+to__]._117,ID(t__[2+to__]._119),t__[3+to__]._121); 
+#line 83 "../../../app/willard/parser.pcc"
 } break;
-      case 24: {
-#line 84 "parser.pcc"
-        syn_._123 = EXISTS(t__[1+to__]._125,ID(t__[2+to__]._127),t__[3+to__]._129); 
-#line 84 "parser.pcc"
+    case 24: {
+#line 84 "../../../app/willard/parser.pcc"
+     syn_._123 = EXISTS(t__[1+to__]._125,ID(t__[2+to__]._127),t__[3+to__]._129); 
+#line 84 "../../../app/willard/parser.pcc"
 } break;
-      case 25: {
-#line 85 "parser.pcc"
-        syn_._131 = PaigeGoyal::make_let(t__[1+to__]._133.ids,t__[1+to__]._133.exps,t__[2+to__]._135); 
-#line 85 "parser.pcc"
+    case 25: {
+#line 85 "../../../app/willard/parser.pcc"
+     syn_._131 = PaigeGoyal::make_let(t__[1+to__]._133.ids,t__[1+to__]._133.exps,t__[2+to__]._135); 
+#line 85 "../../../app/willard/parser.pcc"
 } break;
-      case 26: {
-#line 88 "parser.pcc"
-        syn_._138 = 
-#line 88 "parser.pcc"
-#line 88 "parser.pcc"
-         list_1_(t__[1+to__]._139)
-#line 88 "parser.pcc"
-#line 88 "parser.pcc"
-         ; 
-#line 88 "parser.pcc"
+    case 26: {
+#line 88 "../../../app/willard/parser.pcc"
+     syn_._138 = 
+#line 88 "../../../app/willard/parser.pcc"
+#line 88 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._139)
+#line 88 "../../../app/willard/parser.pcc"
+#line 88 "../../../app/willard/parser.pcc"
+      ; 
+#line 88 "../../../app/willard/parser.pcc"
 } break;
-      case 27: {
-#line 89 "parser.pcc"
-        syn_._141 = 
-#line 89 "parser.pcc"
-#line 89 "parser.pcc"
-         list_1_(t__[1+to__]._142,t__[2+to__]._144)
-#line 89 "parser.pcc"
-#line 89 "parser.pcc"
-         ; 
-#line 89 "parser.pcc"
+    case 27: {
+#line 89 "../../../app/willard/parser.pcc"
+     syn_._141 = 
+#line 89 "../../../app/willard/parser.pcc"
+#line 89 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._142,t__[2+to__]._144)
+#line 89 "../../../app/willard/parser.pcc"
+#line 89 "../../../app/willard/parser.pcc"
+      ; 
+#line 89 "../../../app/willard/parser.pcc"
 } break;
-      case 28: {
-#line 92 "parser.pcc"
-        syn_._146 = INT(t__[1+to__]._147); 
-#line 92 "parser.pcc"
+    case 28: {
+#line 92 "../../../app/willard/parser.pcc"
+     syn_._146 = INT(t__[1+to__]._147); 
+#line 92 "../../../app/willard/parser.pcc"
 } break;
-      case 29: {
-#line 93 "parser.pcc"
-        syn_._149 = BOOL(t__[1+to__]._150); 
-#line 93 "parser.pcc"
+    case 29: {
+#line 93 "../../../app/willard/parser.pcc"
+     syn_._149 = BOOL(t__[1+to__]._150); 
+#line 93 "../../../app/willard/parser.pcc"
 } break;
-      case 30: {
-#line 97 "parser.pcc"
-        syn_._152 = 
-#line 97 "parser.pcc"
-#line 97 "parser.pcc"
-         list_1_(mkTuple2(t__[1+to__]._153,t__[2+to__]._155))
-#line 97 "parser.pcc"
-#line 97 "parser.pcc"
-         ; 
-#line 97 "parser.pcc"
+    case 30: {
+#line 97 "../../../app/willard/parser.pcc"
+     syn_._152 = 
+#line 97 "../../../app/willard/parser.pcc"
+#line 97 "../../../app/willard/parser.pcc"
+      list_1_(mkTuple2(t__[1+to__]._153,t__[2+to__]._155))
+#line 97 "../../../app/willard/parser.pcc"
+#line 97 "../../../app/willard/parser.pcc"
+      ; 
+#line 97 "../../../app/willard/parser.pcc"
 } break;
-      case 31: {
-#line 98 "parser.pcc"
-        syn_._157 = 
-#line 98 "parser.pcc"
-#line 98 "parser.pcc"
-         list_1_(mkTuple2(t__[1+to__]._158,t__[2+to__]._160),t__[3+to__]._162)
-#line 98 "parser.pcc"
-#line 98 "parser.pcc"
-         ; 
-#line 98 "parser.pcc"
+    case 31: {
+#line 98 "../../../app/willard/parser.pcc"
+     syn_._157 = 
+#line 98 "../../../app/willard/parser.pcc"
+#line 98 "../../../app/willard/parser.pcc"
+      list_1_(mkTuple2(t__[1+to__]._158,t__[2+to__]._160),t__[3+to__]._162)
+#line 98 "../../../app/willard/parser.pcc"
+#line 98 "../../../app/willard/parser.pcc"
+      ; 
+#line 98 "../../../app/willard/parser.pcc"
 } break;
-      case 32: {
-#line 101 "parser.pcc"
-        syn_._164 = 
-#line 101 "parser.pcc"
-#line 101 "parser.pcc"
-         list_1_(t__[1+to__]._165)
-#line 101 "parser.pcc"
-#line 101 "parser.pcc"
-         ; 
-#line 101 "parser.pcc"
+    case 32: {
+#line 101 "../../../app/willard/parser.pcc"
+     syn_._164 = 
+#line 101 "../../../app/willard/parser.pcc"
+#line 101 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._165)
+#line 101 "../../../app/willard/parser.pcc"
+#line 101 "../../../app/willard/parser.pcc"
+      ; 
+#line 101 "../../../app/willard/parser.pcc"
 } break;
-      case 33: {
-#line 102 "parser.pcc"
-        syn_._167 = t__[1+to__]._169; 
-#line 102 "parser.pcc"
+    case 33: {
+#line 102 "../../../app/willard/parser.pcc"
+     syn_._167 = t__[1+to__]._169; 
+#line 102 "../../../app/willard/parser.pcc"
 } break;
-      case 34: {
-#line 105 "parser.pcc"
-        syn_._172 = 
-#line 105 "parser.pcc"
-#line 105 "parser.pcc"
-         list_1_(t__[1+to__]._173)
-#line 105 "parser.pcc"
-#line 105 "parser.pcc"
-         ; 
-#line 105 "parser.pcc"
+    case 34: {
+#line 105 "../../../app/willard/parser.pcc"
+     syn_._172 = 
+#line 105 "../../../app/willard/parser.pcc"
+#line 105 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._173)
+#line 105 "../../../app/willard/parser.pcc"
+#line 105 "../../../app/willard/parser.pcc"
+      ; 
+#line 105 "../../../app/willard/parser.pcc"
 } break;
-      case 35: {
-#line 106 "parser.pcc"
-        syn_._175 = 
-#line 106 "parser.pcc"
-#line 106 "parser.pcc"
-         list_1_(t__[1+to__]._176,t__[2+to__]._178)
-#line 106 "parser.pcc"
-#line 106 "parser.pcc"
-         ; 
-#line 106 "parser.pcc"
+    case 35: {
+#line 106 "../../../app/willard/parser.pcc"
+     syn_._175 = 
+#line 106 "../../../app/willard/parser.pcc"
+#line 106 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._176,t__[2+to__]._178)
+#line 106 "../../../app/willard/parser.pcc"
+#line 106 "../../../app/willard/parser.pcc"
+      ; 
+#line 106 "../../../app/willard/parser.pcc"
 } break;
-      case 36: {
-#line 110 "parser.pcc"
-        syn_._180.ids = 
-#line 110 "parser.pcc"
-#line 110 "parser.pcc"
-         list_1_(t__[1+to__]._181)
-#line 110 "parser.pcc"
-#line 110 "parser.pcc"
-         ; syn_._180.exps =
-#line 110 "parser.pcc"
-#line 110 "parser.pcc"
-         list_1_(t__[2+to__]._183)
-#line 110 "parser.pcc"
-#line 110 "parser.pcc"
-         ; 
-#line 110 "parser.pcc"
+    case 36: {
+#line 110 "../../../app/willard/parser.pcc"
+     syn_._180.ids = 
+#line 110 "../../../app/willard/parser.pcc"
+#line 110 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._181)
+#line 110 "../../../app/willard/parser.pcc"
+#line 110 "../../../app/willard/parser.pcc"
+      ; syn_._180.exps =
+#line 110 "../../../app/willard/parser.pcc"
+#line 110 "../../../app/willard/parser.pcc"
+      list_1_(t__[2+to__]._183)
+#line 110 "../../../app/willard/parser.pcc"
+#line 110 "../../../app/willard/parser.pcc"
+      ; 
+#line 110 "../../../app/willard/parser.pcc"
 } break;
-      case 37: {
-#line 111 "parser.pcc"
-        syn_._185.ids  = 
-#line 111 "parser.pcc"
-#line 111 "parser.pcc"
-         list_1_(t__[1+to__]._186,t__[3+to__]._190.ids)
-#line 111 "parser.pcc"
-#line 111 "parser.pcc"
-         ; 
-         					  syn_._185.exps = 
-#line 112 "parser.pcc"
-#line 112 "parser.pcc"
-         list_1_(t__[2+to__]._188,t__[3+to__]._190.exps)
-#line 112 "parser.pcc"
-#line 112 "parser.pcc"
-         ; 
-         					
-#line 113 "parser.pcc"
+    case 37: {
+#line 111 "../../../app/willard/parser.pcc"
+     syn_._185.ids  = 
+#line 111 "../../../app/willard/parser.pcc"
+#line 111 "../../../app/willard/parser.pcc"
+      list_1_(t__[1+to__]._186,t__[3+to__]._190.ids)
+#line 111 "../../../app/willard/parser.pcc"
+#line 111 "../../../app/willard/parser.pcc"
+      ; 
+      					  syn_._185.exps = 
+#line 112 "../../../app/willard/parser.pcc"
+#line 112 "../../../app/willard/parser.pcc"
+      list_1_(t__[2+to__]._188,t__[3+to__]._190.exps)
+#line 112 "../../../app/willard/parser.pcc"
+#line 112 "../../../app/willard/parser.pcc"
+      ; 
+      					
+#line 113 "../../../app/willard/parser.pcc"
 } break;
-      case 38: {
-#line 116 "parser.pcc"
-        syn_._192 = 
-#line 116 "parser.pcc"
-#line 116 "parser.pcc"
-         list_1_(ID(t__[1+to__]._193))
-#line 116 "parser.pcc"
-#line 116 "parser.pcc"
-         ; 
-#line 116 "parser.pcc"
+    case 38: {
+#line 116 "../../../app/willard/parser.pcc"
+     syn_._192 = 
+#line 116 "../../../app/willard/parser.pcc"
+#line 116 "../../../app/willard/parser.pcc"
+      list_1_(ID(t__[1+to__]._193))
+#line 116 "../../../app/willard/parser.pcc"
+#line 116 "../../../app/willard/parser.pcc"
+      ; 
+#line 116 "../../../app/willard/parser.pcc"
 } break;
-      case 39: {
-#line 117 "parser.pcc"
-        syn_._195 = t__[1+to__]._197; 
-#line 117 "parser.pcc"
+    case 39: {
+#line 117 "../../../app/willard/parser.pcc"
+     syn_._195 = t__[1+to__]._197; 
+#line 117 "../../../app/willard/parser.pcc"
 } break;
-      case 40: {
-#line 120 "parser.pcc"
-        syn_._200 = 
-#line 120 "parser.pcc"
-#line 120 "parser.pcc"
-         list_1_(ID(t__[1+to__]._201))
-#line 120 "parser.pcc"
-#line 120 "parser.pcc"
-         ; 
-#line 120 "parser.pcc"
+    case 40: {
+#line 120 "../../../app/willard/parser.pcc"
+     syn_._200 = 
+#line 120 "../../../app/willard/parser.pcc"
+#line 120 "../../../app/willard/parser.pcc"
+      list_1_(ID(t__[1+to__]._201))
+#line 120 "../../../app/willard/parser.pcc"
+#line 120 "../../../app/willard/parser.pcc"
+      ; 
+#line 120 "../../../app/willard/parser.pcc"
 } break;
-      case 41: {
-#line 121 "parser.pcc"
-        syn_._203 = 
-#line 121 "parser.pcc"
-#line 121 "parser.pcc"
-         list_1_(ID(t__[1+to__]._204),t__[2+to__]._206)
-#line 121 "parser.pcc"
-#line 121 "parser.pcc"
-         ; 
-#line 121 "parser.pcc"
+    case 41: {
+#line 121 "../../../app/willard/parser.pcc"
+     syn_._203 = 
+#line 121 "../../../app/willard/parser.pcc"
+#line 121 "../../../app/willard/parser.pcc"
+      list_1_(ID(t__[1+to__]._204),t__[2+to__]._206)
+#line 121 "../../../app/willard/parser.pcc"
+#line 121 "../../../app/willard/parser.pcc"
+      ; 
+#line 121 "../../../app/willard/parser.pcc"
 } break;
-      case 42: {
-#line 124 "parser.pcc"
-        syn_._208 = atol(lexbuf.text()); 
-#line 124 "parser.pcc"
+    case 42: {
+#line 124 "../../../app/willard/parser.pcc"
+     syn_._208 = atol(lexbuf.text()); 
+#line 124 "../../../app/willard/parser.pcc"
 } break;
-      case 43: {
-#line 127 "parser.pcc"
-        syn_._211 = true; 
-#line 127 "parser.pcc"
+    case 43: {
+#line 127 "../../../app/willard/parser.pcc"
+     syn_._211 = true; 
+#line 127 "../../../app/willard/parser.pcc"
 } break;
-      case 44: {
-#line 128 "parser.pcc"
-        syn_._214 = false; 
-#line 128 "parser.pcc"
+    case 44: {
+#line 128 "../../../app/willard/parser.pcc"
+     syn_._214 = false; 
+#line 128 "../../../app/willard/parser.pcc"
 } break;
-      case 45: {
-#line 131 "parser.pcc"
-        syn_._217 = Quark(lexbuf.text()); 
-#line 131 "parser.pcc"
+    case 45: {
+#line 131 "../../../app/willard/parser.pcc"
+     syn_._217 = Quark(lexbuf.text()); 
+#line 131 "../../../app/willard/parser.pcc"
 } break;
-   }
-   if (t__ >= bot__ + stack_size__) grow_semantic_stack();
-   *++t__ = syn_;
+  }
+  if (t__ >= bot__ + stack_size__) grow_semantic_stack();
+  *++t__ = syn_;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -933,31 +933,31 @@ inline void QueryParser::action_driver(const Rule _r_)
 ///////////////////////////////////////////////////////////////////////////////
 void QueryParser::parse()
 {
-   QueryParser_semantic_stack_type stack__[INITIAL_STACK_SIZE_];
-   t__ = bot__ = stack__;
-   stack_size__ = sizeof(stack__)/sizeof(stack__[0]) - 1;
-   heap_allocated__ = 0;
-   parser_prefix();
-   LR1ParserDriver<QueryParser,(LR1Parser::State)30> drv;
-   drv.driver(*this);
-   parser_suffix();
-   if (bot__ != stack__) delete [] bot__;
+  QueryParser_semantic_stack_type stack__[INITIAL_STACK_SIZE_];
+  t__ = bot__ = stack__;
+  stack_size__ = sizeof(stack__)/sizeof(stack__[0]) - 1;
+  heap_allocated__ = 0;
+  parser_prefix();
+  LR1ParserDriver<QueryParser,(LR1Parser::State)30> drv;
+  drv.driver(*this);
+  parser_suffix();
+  if (bot__ != stack__) delete [] bot__;
 }
 
 void QueryParser::adjust_stack(int offset) { t__ += offset; }
 
 void QueryParser::grow_semantic_stack()
 {
-   int N = (stack_size__ + 1) * 2;
-   QueryParser_semantic_stack_type * S = new QueryParser_semantic_stack_type [N];
-   if (N >= LR1Parser::SEMANTIC_STACK_SIZE) 
-      error_report("Warning: semantic stack overflow");
-   memcpy(S, bot__, sizeof(QueryParser_semantic_stack_type) * (stack_size__ + 1));
-   if (heap_allocated__) delete [] bot__;
-   t__ = S + (t__ - bot__);
-   bot__ = S;
-   stack_size__ = N - 1;
-   heap_allocated__ = 1;
+  int N = (stack_size__ + 1) * 2;
+  QueryParser_semantic_stack_type * S = new QueryParser_semantic_stack_type [N];
+  if (N >= LR1Parser::SEMANTIC_STACK_SIZE) 
+     error_report("Warning: semantic stack overflow");
+  memcpy(S, bot__, sizeof(QueryParser_semantic_stack_type) * (stack_size__ + 1));
+  if (heap_allocated__) delete [] bot__;
+  t__ = S + (t__ - bot__);
+  bot__ = S;
+  stack_size__ = N - 1;
+  heap_allocated__ = 1;
 }
 
 QueryParser::QueryParser ()
@@ -965,8 +965,8 @@ QueryParser::QueryParser ()
           QueryParser_len,QueryParser_ncount,QueryParser_lhs,QueryParser_equiv,290,290,304)
 {
 }
-#line 134 "parser.pcc"
-#line 134 "parser.pcc"
+#line 134 "../../../app/willard/parser.pcc"
+#line 134 "../../../app/willard/parser.pcc"
 
 
 
@@ -984,10 +984,10 @@ Exp QueryParser::read()
 //  This is the parser error handler
 //
 QueryParser::ErrorAction QueryParser::error_report(const char message[])
-{  cerr << line_no << ": " << message << " near: " << lexbuf.text() << '\n';
+{  std::cerr << line_no << ": " << message << " near: " << lexbuf.text() << '\n';
    return Retry;
 }
-#line 154 "parser.pcc"
+#line 154 "../../../app/willard/parser.pcc"
 /*
 ------------------------------- Statistics -------------------------------
 Merge matching rules         = yes

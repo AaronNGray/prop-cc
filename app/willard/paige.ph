@@ -1,13 +1,14 @@
 #ifndef paige_doyal_h
 #define paige_doyal_h
 
+#include <iostream>
 #include <AD/pretty/postream.h>
 #include <AD/contain/varstack.h>
 #include "willard-ast.ph"
 #include "idset.h"
 #include "smap.h"
 
-class ostream;
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -125,8 +126,8 @@ public:
    ////////////////////////////////////////////////////////////////////////////
    void message(const char * mesg, Exp e);
    void error(const char * mesg, Exp e);
-   void set_log  (ostream&);
-   void set_error(ostream&);
+   void set_log  (std::ostream&);
+   void set_error(std::ostream&);
 protected:
 
    ////////////////////////////////////////////////////////////////////////////

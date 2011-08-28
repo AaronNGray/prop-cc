@@ -1,15 +1,15 @@
 ///////////////////////////////////////////////////////////////////////////////
-//  This file is generated automatically using Prop (version 2.3.2),
-//  last updated on Mar 14, 1997.
-//  The original source file is "setl-lexer.pcc".
+//  This file is generated automatically using Prop (version 2.4.0),
+//  last updated on Jul 1, 2011.
+//  The original source file is "..\..\..\app\setl-pe\setl-lexer.pcc".
 ///////////////////////////////////////////////////////////////////////////////
 
 #define PROP_PRINTER_USED
 #define PROP_REGEXP_MATCHING_USED
 #define PROP_PARSER_USED
 #include <propdefs.h>
-#line 1 "setl-lexer.pcc"
-#include <iostream.h>
+#line 1 "../../../app/setl-pe/setl-lexer.pcc"
+#include <iostream>
 #include "setl-lexeme.h"
 #include "setl-syntax.h"
 
@@ -18,164 +18,180 @@
 // Instantiate the token type
 //
 ///////////////////////////////////////////////////////////////////////////////
-#line 10 "setl-lexer.pcc"
-#line 10 "setl-lexer.pcc"
+#line 10 "../../../app/setl-pe/setl-lexer.pcc"
+#line 10 "../../../app/setl-pe/setl-lexer.pcc"
 ///////////////////////////////////////////////////////////////////////////////
-// Instantiation of datatype SETL_Token
+//
+// Interface specification of datatype SETL_Token
+//
 ///////////////////////////////////////////////////////////////////////////////
-#line 10 "setl-lexer.pcc"
+#line 10 "../../../app/setl-pe/setl-lexer.pcc"
 ///////////////////////////////////////////////////////////////////////////////
 //
 // Pretty printing methods for SETL_Token
 //
 ///////////////////////////////////////////////////////////////////////////////
-ostream& operator << (ostream& strm__, SETL_Token  obj__)
+std::ostream& operator << (std::ostream& strm__, SETL_Token  obj__);
+PrettyOStream& operator << (PrettyOStream& strm__, SETL_Token  obj__);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Instantiation of datatype SETL_Token
+//
+///////////////////////////////////////////////////////////////////////////////
+#line 10 "../../../app/setl-pe/setl-lexer.pcc"
+///////////////////////////////////////////////////////////////////////////////
+//
+// Pretty printing methods for SETL_Token
+//
+///////////////////////////////////////////////////////////////////////////////
+std::ostream& operator << (std::ostream& strm__, SETL_Token  obj__)
 {  PrettyOStream S(strm__); S << obj__; return strm__; }
 
 PrettyOStream& operator << (PrettyOStream& strm__, SETL_Token  obj__)
 {
-   switch ((obj__))
-   {
-      case XX_i_fXX: 
-         strm__ << "if";
-         break;
-      case XX_t_h_e_nXX: 
-         strm__ << "then";
-         break;
-      case XX_e_l_s_eXX: 
-         strm__ << "else";
-         break;
-      case XX_w_h_i_l_eXX: 
-         strm__ << "while";
-         break;
-      case XX_d_oXX: 
-         strm__ << "do";
-         break;
-      case XX_f_o_rXX: 
-         strm__ << "for";
-         break;
-      case XX_l_o_o_pXX: 
-         strm__ << "loop";
-         break;
-      case XX_c_a_s_eXX: 
-         strm__ << "case";
-         break;
-      case XX_o_fXX: 
-         strm__ << "of";
-         break;
-      case XX_b_e_g_i_nXX: 
-         strm__ << "begin";
-         break;
-      case XX_e_n_dXX: 
-         strm__ << "end";
-         break;
-      case XX_e_x_c_e_p_t_i_o_nXX: 
-         strm__ << "exception";
-         break;
-      case XX_r_a_i_s_eXX: 
-         strm__ << "raise";
-         break;
-      case XX_h_a_n_d_l_eXX: 
-         strm__ << "handle";
-         break;
-      case XX_d_a_t_a_t_y_p_eXX: 
-         strm__ << "datatype";
-         break;
-      case XX_t_y_p_eXX: 
-         strm__ << "type";
-         break;
-      case XX_s_t_r_u_c_t_u_r_eXX: 
-         strm__ << "structure";
-         break;
-      case XX_s_t_r_u_c_tXX: 
-         strm__ << "struct";
-         break;
-      case XX_s_i_g_n_a_t_u_r_eXX: 
-         strm__ << "signature";
-         break;
-      case XX_s_i_gXX: 
-         strm__ << "sig";
-         break;
-      case XX_f_u_n_c_t_o_rXX: 
-         strm__ << "functor";
-         break;
-      case XX_i_n_c_l_u_d_eXX: 
-         strm__ << "include";
-         break;
-      case XX_o_p_e_nXX: 
-         strm__ << "open";
-         break;
-      case XX_v_a_lXX: 
-         strm__ << "val";
-         break;
-      case XX_f_u_nXX: 
-         strm__ << "fun";
-         break;
-      case XX_s_h_a_r_i_n_gXX: 
-         strm__ << "sharing";
-         break;
-      case XX_l_e_tXX: 
-         strm__ << "let";
-         break;
-      case XX_l_o_c_a_lXX: 
-         strm__ << "local";
-         break;
-      case XX_i_nXX: 
-         strm__ << "in";
-         break;
-      case MOD: 
-         strm__ << "MOD";
-         break;
-      case DIV: 
-         strm__ << "DIV";
-         break;
-      case ARB: 
-         strm__ << "ARB";
-         break;
-      case ARROW: 
-         strm__ << "ARROW";
-         break;
-      case ASSIGN: 
-         strm__ << "ASSIGN";
-         break;
-      case GE: 
-         strm__ << "GE";
-         break;
-      case LE: 
-         strm__ << "LE";
-         break;
-      case NE: 
-         strm__ << "NE";
-         break;
-      case WITH: 
-         strm__ << "WITH";
-         break;
-      case LESS: 
-         strm__ << "LESS";
-         break;
-      case INTEGER: 
-         strm__ << "<int>";
-         break;
-      case REAL: 
-         strm__ << "<real>";
-         break;
-      case IDENTIFIER: 
-         strm__ << "<id>";
-         break;
-      case STRING: 
-         strm__ << "<string>";
-         break;
-      case CHARACTER: 
-         strm__ << "<character>";
-         break;
-   }
-   return strm__;
+  switch (obj__)
+  {
+    case XX_i_fXX: 
+      strm__ << "if";
+      break;
+    case XX_t_h_e_nXX: 
+      strm__ << "then";
+      break;
+    case XX_e_l_s_eXX: 
+      strm__ << "else";
+      break;
+    case XX_w_h_i_l_eXX: 
+      strm__ << "while";
+      break;
+    case XX_d_oXX: 
+      strm__ << "do";
+      break;
+    case XX_f_o_rXX: 
+      strm__ << "for";
+      break;
+    case XX_l_o_o_pXX: 
+      strm__ << "loop";
+      break;
+    case XX_c_a_s_eXX: 
+      strm__ << "case";
+      break;
+    case XX_o_fXX: 
+      strm__ << "of";
+      break;
+    case XX_b_e_g_i_nXX: 
+      strm__ << "begin";
+      break;
+    case XX_e_n_dXX: 
+      strm__ << "end";
+      break;
+    case XX_e_x_c_e_p_t_i_o_nXX: 
+      strm__ << "exception";
+      break;
+    case XX_r_a_i_s_eXX: 
+      strm__ << "raise";
+      break;
+    case XX_h_a_n_d_l_eXX: 
+      strm__ << "handle";
+      break;
+    case XX_d_a_t_a_t_y_p_eXX: 
+      strm__ << "datatype";
+      break;
+    case XX_t_y_p_eXX: 
+      strm__ << "type";
+      break;
+    case XX_s_t_r_u_c_t_u_r_eXX: 
+      strm__ << "structure";
+      break;
+    case XX_s_t_r_u_c_tXX: 
+      strm__ << "struct";
+      break;
+    case XX_s_i_g_n_a_t_u_r_eXX: 
+      strm__ << "signature";
+      break;
+    case XX_s_i_gXX: 
+      strm__ << "sig";
+      break;
+    case XX_f_u_n_c_t_o_rXX: 
+      strm__ << "functor";
+      break;
+    case XX_i_n_c_l_u_d_eXX: 
+      strm__ << "include";
+      break;
+    case XX_o_p_e_nXX: 
+      strm__ << "open";
+      break;
+    case XX_v_a_lXX: 
+      strm__ << "val";
+      break;
+    case XX_f_u_nXX: 
+      strm__ << "fun";
+      break;
+    case XX_s_h_a_r_i_n_gXX: 
+      strm__ << "sharing";
+      break;
+    case XX_l_e_tXX: 
+      strm__ << "let";
+      break;
+    case XX_l_o_c_a_lXX: 
+      strm__ << "local";
+      break;
+    case XX_i_nXX: 
+      strm__ << "in";
+      break;
+    case MOD: 
+      strm__ << "MOD";
+      break;
+    case DIV: 
+      strm__ << "DIV";
+      break;
+    case ARB: 
+      strm__ << "ARB";
+      break;
+    case ARROW: 
+      strm__ << "ARROW";
+      break;
+    case ASSIGN: 
+      strm__ << "ASSIGN";
+      break;
+    case GE: 
+      strm__ << "GE";
+      break;
+    case LE: 
+      strm__ << "LE";
+      break;
+    case NE: 
+      strm__ << "NE";
+      break;
+    case WITH: 
+      strm__ << "WITH";
+      break;
+    case LESS: 
+      strm__ << "LESS";
+      break;
+    case INTEGER: 
+      strm__ << "<int>";
+      break;
+    case REAL: 
+      strm__ << "<real>";
+      break;
+    case IDENTIFIER: 
+      strm__ << "<id>";
+      break;
+    case STRING: 
+      strm__ << "<string>";
+      break;
+    case CHARACTER: 
+      strm__ << "<character>";
+      break;
+  }
+  return strm__;
 }
 
 
 
-#line 10 "setl-lexer.pcc"
-#line 10 "setl-lexer.pcc"
+#line 10 "../../../app/setl-pe/setl-lexer.pcc"
+#line 10 "../../../app/setl-pe/setl-lexer.pcc"
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -185,11 +201,11 @@ PrettyOStream& operator << (PrettyOStream& strm__, SETL_Token  obj__)
 ///////////////////////////////////////////////////////////////////////////////
 int SETLSyntax::get_token()
 {  
-#line 18 "setl-lexer.pcc"
-#line 22 "setl-lexer.pcc"
+#line 18 "../../../app/setl-pe/setl-lexer.pcc"
+#line 22 "../../../app/setl-pe/setl-lexer.pcc"
 {
-   for (;;) {
-      {
+  for (;;) {
+    {
 static const DFATables::Offset _X1_base [ 159 ] = {
    0, 0, 0, 0, 46, 19, 370, 17, 21, 365, 26, 364, 32, 30, 364, 56, 
    60, 71, 363, 363, 363, 363, 362, 362, 361, 99, 359, 357, 1, 158, 243, 1, 
@@ -306,83 +322,83 @@ static const DFATables::Rule _X1_accept_rule [ 159 ] = {
    42, 13, 28, 42, 42, 42, 42, 42, 10, 18, 42, 42, 42, 14, 42, 42, 
    42, 42, 42, 26, 22, 21, 42, 42, 42, 42, 42, 15, 17, 19, 12
 };
-         static const RegexMatch _X1
-                          ( _X1_base,
-                            _X1_check,
-                            _X1_def,
-                            _X1_next,
-                            _X1_accept_rule,
-                            _X1_equiv_classes );
-         int rule__;
-         const char * next;
-         switch(rule__ = _X1.MatchText(RegexMatch::start_state,lexer_buf,next)) {
-            case 1: {
-               L2:; 
-#line 19 "setl-lexer.pcc"
-              return ((SETL_Token)(rule__ + 255)); 
-#line 19 "setl-lexer.pcc"
-            } break;
-            case 2: { goto L2; } break;
-            case 3: { goto L2; } break;
-            case 4: { goto L2; } break;
-            case 5: { goto L2; } break;
-            case 6: { goto L2; } break;
-            case 7: { goto L2; } break;
-            case 8: { goto L2; } break;
-            case 9: { goto L2; } break;
-            case 10: { goto L2; } break;
-            case 11: { goto L2; } break;
-            case 12: { goto L2; } break;
-            case 13: { goto L2; } break;
-            case 14: { goto L2; } break;
-            case 15: { goto L2; } break;
-            case 16: { goto L2; } break;
-            case 17: { goto L2; } break;
-            case 18: { goto L2; } break;
-            case 19: { goto L2; } break;
-            case 20: { goto L2; } break;
-            case 21: { goto L2; } break;
-            case 22: { goto L2; } break;
-            case 23: { goto L2; } break;
-            case 24: { goto L2; } break;
-            case 25: { goto L2; } break;
-            case 26: { goto L2; } break;
-            case 27: { goto L2; } break;
-            case 28: { goto L2; } break;
-            case 29: { goto L2; } break;
-            case 30: { goto L2; } break;
-            case 31: { goto L2; } break;
-            case 32: { goto L2; } break;
-            case 33: { goto L2; } break;
-            case 34: { goto L2; } break;
-            case 35: { goto L2; } break;
-            case 36: { goto L2; } break;
-            case 37: { goto L2; } break;
-            case 38: { goto L2; } break;
-            case 39: { goto L2; } break;
-            case 40: { goto L2; } break;
-            case 41: { goto L2; } break;
-            case 42: { goto L2; } break;
-            case 43: { goto L2; } break;
-            case 44: { goto L2; } break;
-            case 45: {
-#line 20 "setl-lexer.pcc"
-              return lexer_buf[0]; 
-#line 20 "setl-lexer.pcc"
-            } break;
-            case 46: {} break;
-            default: { goto L1; }
-         }
+      static const RegexMatch _X1
+                      ( _X1_base,
+                        _X1_check,
+                        _X1_def,
+                        _X1_next,
+                        _X1_accept_rule,
+                        _X1_equiv_classes );
+      int rule__;
+      const char * next = 0;
+      switch(rule__ = _X1.MatchText(RegexMatch::start_state,lexer_buf,next)) {
+        case 1: {
+          L2:; 
+#line 19 "../../../app/setl-pe/setl-lexer.pcc"
+         return ((SETL_Token)(rule__ + 255)); 
+#line 19 "../../../app/setl-pe/setl-lexer.pcc"
+        } break;
+        case 2: { goto L2; } break;
+        case 3: { goto L2; } break;
+        case 4: { goto L2; } break;
+        case 5: { goto L2; } break;
+        case 6: { goto L2; } break;
+        case 7: { goto L2; } break;
+        case 8: { goto L2; } break;
+        case 9: { goto L2; } break;
+        case 10: { goto L2; } break;
+        case 11: { goto L2; } break;
+        case 12: { goto L2; } break;
+        case 13: { goto L2; } break;
+        case 14: { goto L2; } break;
+        case 15: { goto L2; } break;
+        case 16: { goto L2; } break;
+        case 17: { goto L2; } break;
+        case 18: { goto L2; } break;
+        case 19: { goto L2; } break;
+        case 20: { goto L2; } break;
+        case 21: { goto L2; } break;
+        case 22: { goto L2; } break;
+        case 23: { goto L2; } break;
+        case 24: { goto L2; } break;
+        case 25: { goto L2; } break;
+        case 26: { goto L2; } break;
+        case 27: { goto L2; } break;
+        case 28: { goto L2; } break;
+        case 29: { goto L2; } break;
+        case 30: { goto L2; } break;
+        case 31: { goto L2; } break;
+        case 32: { goto L2; } break;
+        case 33: { goto L2; } break;
+        case 34: { goto L2; } break;
+        case 35: { goto L2; } break;
+        case 36: { goto L2; } break;
+        case 37: { goto L2; } break;
+        case 38: { goto L2; } break;
+        case 39: { goto L2; } break;
+        case 40: { goto L2; } break;
+        case 41: { goto L2; } break;
+        case 42: { goto L2; } break;
+        case 43: { goto L2; } break;
+        case 44: { goto L2; } break;
+        case 45: {
+#line 20 "../../../app/setl-pe/setl-lexer.pcc"
+         return lexer_buf[0]; 
+#line 20 "../../../app/setl-pe/setl-lexer.pcc"
+        } break;
+        case 46: {} break;
+        default: { goto L1; }
       }
-   }
-   L1:;
+    }
+  }
+  L1:;
 }
-#line 22 "setl-lexer.pcc"
-#line 22 "setl-lexer.pcc"
+#line 22 "../../../app/setl-pe/setl-lexer.pcc"
+#line 22 "../../../app/setl-pe/setl-lexer.pcc"
 
    return EOF;
 }
-#line 25 "setl-lexer.pcc"
+#line 25 "../../../app/setl-pe/setl-lexer.pcc"
 /*
 ------------------------------- Statistics -------------------------------
 Merge matching rules         = yes
@@ -391,8 +407,8 @@ Number of ifs generated      = 0
 Number of switches generated = 1
 Number of labels             = 1
 Number of gotos              = 43
-Adaptive matching            = enabled
-Fast string matching         = enabled
-Inline downcasts             = enabled
+Adaptive matching            = disabled
+Fast string matching         = disabled
+Inline downcasts             = disabled
 --------------------------------------------------------------------------
 */

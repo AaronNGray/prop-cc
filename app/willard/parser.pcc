@@ -148,6 +148,6 @@ Exp QueryParser::read()
 //  This is the parser error handler
 //
 QueryParser::ErrorAction QueryParser::error_report(const char message[])
-{  cerr << line_no << ": " << message << " near: " << lexbuf.text() << '\n';
+{  std::cerr << line_no << ": " << message << " near: " << lexbuf.text() << '\n';
    return Retry;
 }

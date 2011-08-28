@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
-//  This file is generated automatically using Prop (version 2.3.5),
-//  last updated on Jun 18, 1997.
-//  The original source file is "rename.ph".
+//  This file is generated automatically using Prop (version 2.4.0),
+//  last updated on Jul 1, 2011.
+//  The original source file is "..\..\..\app\willard\rename.ph".
 ///////////////////////////////////////////////////////////////////////////////
 
 #define PROP_REWRITING_USED
@@ -9,7 +9,7 @@
 #define PROP_QUARK_USED
 #define PROP_TUPLE2_USED
 #include <propdefs.h>
-#line 1 "rename.ph"
+#line 1 "../../../app/willard/rename.ph"
 #ifndef renaming_h
 #define renaming_h
 
@@ -23,46 +23,46 @@
 //   Also for each variable, we collects it range.
 //
 ///////////////////////////////////////////////////////////////////////////////
-#line 14 "rename.ph"
-#line 29 "rename.ph"
+#line 14 "../../../app/willard/rename.ph"
+#line 29 "../../../app/willard/rename.ph"
 class RemoveDuplicateNames : public BURS, virtual public PaigeGoyal {
 private:
-   RemoveDuplicateNames(const RemoveDuplicateNames&);               // no copy constructor
-   void operator = (const RemoveDuplicateNames&); // no assignment
+  RemoveDuplicateNames(const RemoveDuplicateNames&);               // no copy constructor
+  void operator = (const RemoveDuplicateNames&); // no assignment
 public:
-   struct RemoveDuplicateNames_StateRec * stack__, * stack_top__;
+  struct RemoveDuplicateNames_StateRec * stack__, * stack_top__;
 public:
-   void labeler(const char *, int&, int);
-   void labeler(Quark, int&, int);
-          void  labeler(Exp & redex, int&, int);
-   inline virtual void  operator () (Exp & redex) { int s; labeler(redex,s,0); }
-          void  labeler(a_List<Exp> *  & redex, int&, int);
-   inline virtual void  operator () (a_List<Exp> *  & redex) { int s; labeler(redex,s,0); }
-          void  labeler(Literal & redex, int&, int);
-   inline virtual void  operator () (Literal & redex) { int s; labeler(redex,s,0); }
+  void labeler(const char *, int&, int);
+  void labeler(Quark, int&, int);
+         void  labeler(Exp & redex, int&, int);
+  inline virtual void  operator () (Exp & redex) { int s; labeler(redex,s,0); }
+         void  labeler(a_List<Exp> *  & redex, int&, int);
+  inline virtual void  operator () (a_List<Exp> *  & redex) { int s; labeler(redex,s,0); }
+         void  labeler(Literal & redex, int&, int);
+  inline virtual void  operator () (Literal & redex) { int s; labeler(redex,s,0); }
 private:
-#line 16 "rename.ph"
- 
-   SMap<Id, Ids> env;
-   public:
-            RemoveDuplicateNames();
-   virtual ~RemoveDuplicateNames();
-   
-   virtual Exp remove_duplicate_names(Exp);
-   
-   void new_binding(Id&);
-   void new_binding(Ids);
-   void rename(Id&);
-   void old_binding(Id&);
-   void old_binding(Ids);
-#line 29 "rename.ph"
+#line 16 "../../../app/willard/rename.ph"
+
+  SMap<Id, Ids> env;
+  public:
+           RemoveDuplicateNames();
+  virtual ~RemoveDuplicateNames();
+  
+  virtual Exp remove_duplicate_names(Exp);
+  
+  void new_binding(Id&);
+  void new_binding(Ids);
+  void rename(Id&);
+  void old_binding(Id&);
+  void old_binding(Ids);
+#line 29 "../../../app/willard/rename.ph"
 };
-#line 29 "rename.ph"
-#line 29 "rename.ph"
+#line 29 "../../../app/willard/rename.ph"
+#line 29 "../../../app/willard/rename.ph"
 
 
 #endif
-#line 32 "rename.ph"
+#line 32 "../../../app/willard/rename.ph"
 /*
 ------------------------------- Statistics -------------------------------
 Merge matching rules         = yes

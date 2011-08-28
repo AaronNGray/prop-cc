@@ -1,20 +1,20 @@
 ///////////////////////////////////////////////////////////////////////////////
-//  This file is generated automatically using Prop (version 2.3.2),
-//  last updated on Mar 14, 1997.
-//  The original source file is "setl-ast.ph".
+//  This file is generated automatically using Prop (version 2.4.0),
+//  last updated on Jul 1, 2011.
+//  The original source file is "..\..\..\app\setl-pe\setl-ast.ph".
 ///////////////////////////////////////////////////////////////////////////////
 
 #define PROP_GARBAGE_COLLECTION_USED
 #define PROP_PRINTER_USED
 #include <propdefs.h>
-#line 1 "setl-ast.ph"
+#line 1 "../../../app/setl-pe/setl-ast.ph"
 #ifndef SETL_abstract_syntax_h
 #define SETL_abstract_syntax_h
 
 #include "foundation.h"
 
-#line 6 "setl-ast.ph"
-#line 51 "setl-ast.ph"
+#line 6 "../../../app/setl-pe/setl-ast.ph"
+#line 51 "../../../app/setl-pe/setl-ast.ph"
 ///////////////////////////////////////////////////////////////////////////////
 //
 // Forward class definition for Exp
@@ -22,17 +22,17 @@
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef datatype_Exp_defined
 #define datatype_Exp_defined
-   class a_Exp;
-   typedef a_Exp * Exp;
+  class a_Exp;
+  typedef a_Exp * Exp;
 #endif
 
 enum Prim {
-   XXclXX = 0, XXcnXX = 1, XXckXX = 2, 
-   XXcpXX = 3, XXdkdnXX = 4, XXdnXX = 5, 
-   XXdmXX = 6, XXdoXX = 7, XXdodnXX = 8, 
-   XXdmdnXX = 9, XXcpdnXX = 10, XXcdXX = 11, 
-   XX_a_r_bXX = 12, XX_d_i_vXX = 13, XX_m_o_dXX = 14, 
-   XX_w_i_t_hXX = 15, XX_l_e_s_sXX = 16
+  XXclXX = 0, XXcnXX = 1, XXckXX = 2, 
+  XXcpXX = 3, XXdkdnXX = 4, XXdnXX = 5, 
+  XXdmXX = 6, XXdoXX = 7, XXdodnXX = 8, 
+  XXdmdnXX = 9, XXcpdnXX = 10, XXcdXX = 11, 
+  XX_a_r_bXX = 12, XX_d_i_vXX = 13, XX_m_o_dXX = 14, 
+  XX_w_i_t_hXX = 15, XX_l_e_s_sXX = 16
 };
 
 
@@ -44,8 +44,8 @@ enum Prim {
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef datatype_Decl_defined
 #define datatype_Decl_defined
-   class a_Decl;
-   typedef a_Decl * Decl;
+  class a_Decl;
+  typedef a_Decl * Decl;
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -55,8 +55,8 @@ enum Prim {
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef datatype_Term_defined
 #define datatype_Term_defined
-   class a_Term;
-   typedef a_Term * Term;
+  class a_Term;
+  typedef a_Term * Term;
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -66,11 +66,13 @@ enum Prim {
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef datatype_Ty_defined
 #define datatype_Ty_defined
-   class a_Ty;
-   typedef a_Ty * Ty;
+  class a_Ty;
+  typedef a_Ty * Ty;
 #endif
 
-#  define NOty (Ty)0
+#  define v_NOty 0
+
+#  define NOty (Ty)v_NOty
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -79,8 +81,8 @@ enum Prim {
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef datatype_LabeledExp_defined
 #define datatype_LabeledExp_defined
-   class a_LabeledExp;
-   typedef a_LabeledExp * LabeledExp;
+  class a_LabeledExp;
+  typedef a_LabeledExp * LabeledExp;
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -90,50 +92,50 @@ enum Prim {
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef datatype_Literal_defined
 #define datatype_Literal_defined
-   class a_Literal;
-   typedef a_Literal * Literal;
+  class a_Literal;
+  typedef a_Literal * Literal;
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // Definition of type Ids
 ///////////////////////////////////////////////////////////////////////////////
-#line 44 "setl-ast.ph"
+#line 44 "../../../app/setl-pe/setl-ast.ph"
 typedef a_List<Id> *  Ids;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Definition of type Literals
 ///////////////////////////////////////////////////////////////////////////////
-#line 45 "setl-ast.ph"
+#line 45 "../../../app/setl-pe/setl-ast.ph"
 typedef a_List<Literal> *  Literals;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Definition of type Exps
 ///////////////////////////////////////////////////////////////////////////////
-#line 46 "setl-ast.ph"
+#line 46 "../../../app/setl-pe/setl-ast.ph"
 typedef a_List<Exp> *  Exps;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Definition of type LabeledExps
 ///////////////////////////////////////////////////////////////////////////////
-#line 47 "setl-ast.ph"
+#line 47 "../../../app/setl-pe/setl-ast.ph"
 typedef a_List<LabeledExp> *  LabeledExps;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Definition of type Decls
 ///////////////////////////////////////////////////////////////////////////////
-#line 48 "setl-ast.ph"
+#line 48 "../../../app/setl-pe/setl-ast.ph"
 typedef a_List<Decl> *  Decls;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Definition of type Terms
 ///////////////////////////////////////////////////////////////////////////////
-#line 49 "setl-ast.ph"
+#line 49 "../../../app/setl-pe/setl-ast.ph"
 typedef a_List<Term> *  Terms;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Definition of type Tys
 ///////////////////////////////////////////////////////////////////////////////
-#line 50 "setl-ast.ph"
+#line 50 "../../../app/setl-pe/setl-ast.ph"
 typedef a_List<Ty> *  Tys;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -143,26 +145,28 @@ typedef a_List<Ty> *  Tys;
 ///////////////////////////////////////////////////////////////////////////////
 class a_Exp : public GCObject {
 public:
-   enum Tag_Exp {
-      tag_IDexp = 0, tag_LITexp = 1, tag_APPexp = 2, 
-      tag_TUPLEexp = 3, tag_RECORDexp = 4, tag_SETexp = 5, 
-      tag_CASEexp = 6, tag_IFexp = 7, tag_WHILEexp = 8, 
-      tag_SEQexp = 9, tag_LETexp = 10, tag_PRIMexp = 11
-   };
+  enum Tag_Exp {
+    tag_IDexp = 0, tag_LITexp = 1, tag_APPexp = 2, 
+    tag_TUPLEexp = 3, tag_RECORDexp = 4, tag_SETexp = 5, 
+    tag_CASEexp = 6, tag_IFexp = 7, tag_WHILEexp = 8, 
+    tag_SEQexp = 9, tag_LETexp = 10, tag_PRIMexp = 11
+  };
 
 public:
-   const Tag_Exp tag__; // variant tag
+  const Tag_Exp tag__; // variant tag
 protected:
-   inline a_Exp(Tag_Exp t__) : tag__(t__) {}
+  inline a_Exp(Tag_Exp t__) : tag__(t__) {}
 public:
-   virtual ~a_Exp();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+  inline virtual ~a_Exp()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 inline int boxed(const a_Exp *) { return 1; }
@@ -174,17 +178,22 @@ inline int untag(const a_Exp * x) { return x->tag__; }
 ///////////////////////////////////////////////////////////////////////////////
 class Exp_IDexp : public a_Exp {
 public:
-#line 6 "setl-ast.ph"
-   Id IDexp; 
-   Exp_IDexp (Id x_IDexp);
-   ~Exp_IDexp();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 6 "../../../app/setl-pe/setl-ast.ph"
+  Id IDexp; 
+  inline Exp_IDexp (Id x_IDexp)
+   : a_Exp(tag_IDexp), IDexp(x_IDexp)
+  {
+  }
+  inline ~Exp_IDexp()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 
@@ -195,17 +204,22 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 class Exp_LITexp : public a_Exp {
 public:
-#line 8 "setl-ast.ph"
-   Literal LITexp; 
-   Exp_LITexp (Literal x_LITexp);
-   ~Exp_LITexp();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 8 "../../../app/setl-pe/setl-ast.ph"
+  Literal LITexp; 
+  inline Exp_LITexp (Literal x_LITexp)
+   : a_Exp(tag_LITexp), LITexp(x_LITexp)
+  {
+  }
+  inline ~Exp_LITexp()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 
@@ -216,17 +230,22 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 class Exp_APPexp : public a_Exp {
 public:
-#line 9 "setl-ast.ph"
-   Exp _1; Exp _2; 
-   Exp_APPexp (Exp x_1, Exp x_2);
-   ~Exp_APPexp();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 9 "../../../app/setl-pe/setl-ast.ph"
+  Exp _1; Exp _2; 
+  inline Exp_APPexp (Exp x_1, Exp x_2)
+   : a_Exp(tag_APPexp), _1(x_1), _2(x_2)
+  {
+  }
+  inline ~Exp_APPexp()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 
@@ -237,17 +256,22 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 class Exp_TUPLEexp : public a_Exp {
 public:
-#line 10 "setl-ast.ph"
-   Exps TUPLEexp; 
-   Exp_TUPLEexp (Exps x_TUPLEexp);
-   ~Exp_TUPLEexp();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 10 "../../../app/setl-pe/setl-ast.ph"
+  Exps TUPLEexp; 
+  inline Exp_TUPLEexp (Exps x_TUPLEexp)
+   : a_Exp(tag_TUPLEexp), TUPLEexp(x_TUPLEexp)
+  {
+  }
+  inline ~Exp_TUPLEexp()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 
@@ -258,17 +282,22 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 class Exp_RECORDexp : public a_Exp {
 public:
-#line 11 "setl-ast.ph"
-   LabeledExps RECORDexp; 
-   Exp_RECORDexp (LabeledExps x_RECORDexp);
-   ~Exp_RECORDexp();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 11 "../../../app/setl-pe/setl-ast.ph"
+  LabeledExps RECORDexp; 
+  inline Exp_RECORDexp (LabeledExps x_RECORDexp)
+   : a_Exp(tag_RECORDexp), RECORDexp(x_RECORDexp)
+  {
+  }
+  inline ~Exp_RECORDexp()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 
@@ -279,17 +308,22 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 class Exp_SETexp : public a_Exp {
 public:
-#line 12 "setl-ast.ph"
-   Exps SETexp; 
-   Exp_SETexp (Exps x_SETexp);
-   ~Exp_SETexp();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 12 "../../../app/setl-pe/setl-ast.ph"
+  Exps SETexp; 
+  inline Exp_SETexp (Exps x_SETexp)
+   : a_Exp(tag_SETexp), SETexp(x_SETexp)
+  {
+  }
+  inline ~Exp_SETexp()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 
@@ -300,17 +334,22 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 class Exp_CASEexp : public a_Exp {
 public:
-#line 13 "setl-ast.ph"
-   Exp _1; Exps _2; 
-   Exp_CASEexp (Exp x_1, Exps x_2);
-   ~Exp_CASEexp();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 13 "../../../app/setl-pe/setl-ast.ph"
+  Exp _1; Exps _2; 
+  inline Exp_CASEexp (Exp x_1, Exps x_2)
+   : a_Exp(tag_CASEexp), _1(x_1), _2(x_2)
+  {
+  }
+  inline ~Exp_CASEexp()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 
@@ -321,17 +360,22 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 class Exp_IFexp : public a_Exp {
 public:
-#line 14 "setl-ast.ph"
-   Exp _1; Exp _2; Exp _3; 
-   Exp_IFexp (Exp x_1, Exp x_2, Exp x_3);
-   ~Exp_IFexp();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 14 "../../../app/setl-pe/setl-ast.ph"
+  Exp _1; Exp _2; Exp _3; 
+  inline Exp_IFexp (Exp x_1, Exp x_2, Exp x_3)
+   : a_Exp(tag_IFexp), _1(x_1), _2(x_2), _3(x_3)
+  {
+  }
+  inline ~Exp_IFexp()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 
@@ -342,17 +386,22 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 class Exp_WHILEexp : public a_Exp {
 public:
-#line 15 "setl-ast.ph"
-   Exp _1; Exp _2; 
-   Exp_WHILEexp (Exp x_1, Exp x_2);
-   ~Exp_WHILEexp();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 15 "../../../app/setl-pe/setl-ast.ph"
+  Exp _1; Exp _2; 
+  inline Exp_WHILEexp (Exp x_1, Exp x_2)
+   : a_Exp(tag_WHILEexp), _1(x_1), _2(x_2)
+  {
+  }
+  inline ~Exp_WHILEexp()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 
@@ -363,17 +412,22 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 class Exp_SEQexp : public a_Exp {
 public:
-#line 16 "setl-ast.ph"
-   Exps SEQexp; 
-   Exp_SEQexp (Exps x_SEQexp);
-   ~Exp_SEQexp();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 16 "../../../app/setl-pe/setl-ast.ph"
+  Exps SEQexp; 
+  inline Exp_SEQexp (Exps x_SEQexp)
+   : a_Exp(tag_SEQexp), SEQexp(x_SEQexp)
+  {
+  }
+  inline ~Exp_SEQexp()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 
@@ -384,17 +438,22 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 class Exp_LETexp : public a_Exp {
 public:
-#line 17 "setl-ast.ph"
-   Decls _1; Exp _2; 
-   Exp_LETexp (Decls x_1, Exp x_2);
-   ~Exp_LETexp();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 17 "../../../app/setl-pe/setl-ast.ph"
+  Decls _1; Exp _2; 
+  inline Exp_LETexp (Decls x_1, Exp x_2)
+   : a_Exp(tag_LETexp), _1(x_1), _2(x_2)
+  {
+  }
+  inline ~Exp_LETexp()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 
@@ -405,17 +464,22 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 class Exp_PRIMexp : public a_Exp {
 public:
-#line 18 "setl-ast.ph"
-   Prim PRIMexp; 
-   Exp_PRIMexp (Prim x_PRIMexp);
-   ~Exp_PRIMexp();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 18 "../../../app/setl-pe/setl-ast.ph"
+  Prim PRIMexp; 
+  inline Exp_PRIMexp (Prim x_PRIMexp)
+   : a_Exp(tag_PRIMexp), PRIMexp(x_PRIMexp)
+  {
+  }
+  inline ~Exp_PRIMexp()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 
@@ -424,18 +488,71 @@ public:
 // Datatype constructor functions for Exp
 //
 ///////////////////////////////////////////////////////////////////////////////
-extern a_Exp * IDexp (Id x_IDexp);
-extern a_Exp * LITexp (Literal x_LITexp);
-extern a_Exp * APPexp (Exp x_1, Exp x_2);
-extern a_Exp * TUPLEexp (Exps x_TUPLEexp);
-extern a_Exp * RECORDexp (LabeledExps x_RECORDexp);
-extern a_Exp * SETexp (Exps x_SETexp);
-extern a_Exp * CASEexp (Exp x_1, Exps x_2);
-extern a_Exp * IFexp (Exp x_1, Exp x_2, Exp x_3);
-extern a_Exp * WHILEexp (Exp x_1, Exp x_2);
-extern a_Exp * SEQexp (Exps x_SEQexp);
-extern a_Exp * LETexp (Decls x_1, Exp x_2);
-extern a_Exp * PRIMexp (Prim x_PRIMexp);
+inline a_Exp * IDexp (Id x_IDexp)
+{
+  return new Exp_IDexp (x_IDexp);
+}
+inline a_Exp * LITexp (Literal x_LITexp)
+{
+  return new Exp_LITexp (x_LITexp);
+}
+inline a_Exp * APPexp (Exp x_1, Exp x_2)
+{
+  return new Exp_APPexp (x_1, x_2);
+}
+inline a_Exp * TUPLEexp (Exps x_TUPLEexp)
+{
+  return new Exp_TUPLEexp (x_TUPLEexp);
+}
+inline a_Exp * RECORDexp (LabeledExps x_RECORDexp)
+{
+  return new Exp_RECORDexp (x_RECORDexp);
+}
+inline a_Exp * SETexp (Exps x_SETexp)
+{
+  return new Exp_SETexp (x_SETexp);
+}
+inline a_Exp * CASEexp (Exp x_1, Exps x_2)
+{
+  return new Exp_CASEexp (x_1, x_2);
+}
+inline a_Exp * IFexp (Exp x_1, Exp x_2, Exp x_3)
+{
+  return new Exp_IFexp (x_1, x_2, x_3);
+}
+inline a_Exp * WHILEexp (Exp x_1, Exp x_2)
+{
+  return new Exp_WHILEexp (x_1, x_2);
+}
+inline a_Exp * SEQexp (Exps x_SEQexp)
+{
+  return new Exp_SEQexp (x_SEQexp);
+}
+inline a_Exp * LETexp (Decls x_1, Exp x_2)
+{
+  return new Exp_LETexp (x_1, x_2);
+}
+inline a_Exp * PRIMexp (Prim x_PRIMexp)
+{
+  return new Exp_PRIMexp (x_PRIMexp);
+}
+///////////////////////////////////////////////////////////////////////////////
+//
+// Downcasting functions for Exp
+//
+///////////////////////////////////////////////////////////////////////////////
+inline Exp_IDexp * _IDexp(const a_Exp * _x_) { return (Exp_IDexp *)_x_; }
+inline Exp_LITexp * _LITexp(const a_Exp * _x_) { return (Exp_LITexp *)_x_; }
+inline Exp_APPexp * _APPexp(const a_Exp * _x_) { return (Exp_APPexp *)_x_; }
+inline Exp_TUPLEexp * _TUPLEexp(const a_Exp * _x_) { return (Exp_TUPLEexp *)_x_; }
+inline Exp_RECORDexp * _RECORDexp(const a_Exp * _x_) { return (Exp_RECORDexp *)_x_; }
+inline Exp_SETexp * _SETexp(const a_Exp * _x_) { return (Exp_SETexp *)_x_; }
+inline Exp_CASEexp * _CASEexp(const a_Exp * _x_) { return (Exp_CASEexp *)_x_; }
+inline Exp_IFexp * _IFexp(const a_Exp * _x_) { return (Exp_IFexp *)_x_; }
+inline Exp_WHILEexp * _WHILEexp(const a_Exp * _x_) { return (Exp_WHILEexp *)_x_; }
+inline Exp_SEQexp * _SEQexp(const a_Exp * _x_) { return (Exp_SEQexp *)_x_; }
+inline Exp_LETexp * _LETexp(const a_Exp * _x_) { return (Exp_LETexp *)_x_; }
+inline Exp_PRIMexp * _PRIMexp(const a_Exp * _x_) { return (Exp_PRIMexp *)_x_; }
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -444,7 +561,7 @@ extern a_Exp * PRIMexp (Prim x_PRIMexp);
 //
 ///////////////////////////////////////////////////////////////////////////////
 class PrettyOStream;
-extern ostream& operator<<(ostream&, Prim);
+extern std::ostream& operator<<(std::ostream&, Prim);
 extern PrettyOStream& operator<<(PrettyOStream&, Prim);
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -453,32 +570,29 @@ extern PrettyOStream& operator<<(PrettyOStream&, Prim);
 ///////////////////////////////////////////////////////////////////////////////
 class a_Decl : public GCObject {
 public:
-   enum Tag_Decl {
-      tag_TYPEdecl = 0, tag_DATATYPEdecl = 1
-   };
+  enum Tag_Decl {
+    tag_TYPEdecl = 0, tag_DATATYPEdecl = 1
+  };
 
 public:
-   virtual ~a_Decl();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+  const Tag_Decl tag__; // variant tag
 protected:
-   virtual void trace(GC *);
+  inline a_Decl(Tag_Decl t__) : tag__(t__) {}
+public:
+  inline virtual ~a_Decl()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
+protected:
+  virtual void trace(GC *);
 public:
 };
 inline int boxed(const a_Decl *) { return 1; }
-///////////////////////////////////////////////////////////////////////////////
-//
-// Embbeded tag extraction functions
-//
-///////////////////////////////////////////////////////////////////////////////
-inline int untagp(const a_Decl * x)
-   { return (unsigned long)x & 3; }
-inline a_Decl * derefp(const a_Decl * x)
-   { return (a_Decl*)((unsigned long)x & ~3); }
-inline int untag(const a_Decl * x) { return untagp(x); }
+inline int untag(const a_Decl * x) { return x->tag__; }
 ///////////////////////////////////////////////////////////////////////////////
 //
 // Class for datatype constructor Decl::TYPEdecl
@@ -486,17 +600,22 @@ inline int untag(const a_Decl * x) { return untagp(x); }
 ///////////////////////////////////////////////////////////////////////////////
 class Decl_TYPEdecl : public a_Decl {
 public:
-#line 26 "setl-ast.ph"
-   Id _1; Ids _2; Ty _3; 
-   Decl_TYPEdecl (Id x_1, Ids x_2, Ty x_3);
-   ~Decl_TYPEdecl();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 26 "../../../app/setl-pe/setl-ast.ph"
+  Id _1; Ids _2; Ty _3; 
+  inline Decl_TYPEdecl (Id x_1, Ids x_2, Ty x_3)
+   : a_Decl(tag_TYPEdecl), _1(x_1), _2(x_2), _3(x_3)
+  {
+  }
+  inline ~Decl_TYPEdecl()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 
@@ -507,17 +626,22 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 class Decl_DATATYPEdecl : public a_Decl {
 public:
-#line 28 "setl-ast.ph"
-   Id _1; Ids _2; Terms _3; 
-   Decl_DATATYPEdecl (Id x_1, Ids x_2, Terms x_3);
-   ~Decl_DATATYPEdecl();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 28 "../../../app/setl-pe/setl-ast.ph"
+  Id _1; Ids _2; Terms _3; 
+  inline Decl_DATATYPEdecl (Id x_1, Ids x_2, Terms x_3)
+   : a_Decl(tag_DATATYPEdecl), _1(x_1), _2(x_2), _3(x_3)
+  {
+  }
+  inline ~Decl_DATATYPEdecl()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 
@@ -526,8 +650,21 @@ public:
 // Datatype constructor functions for Decl
 //
 ///////////////////////////////////////////////////////////////////////////////
-extern a_Decl * TYPEdecl (Id x_1, Ids x_2, Ty x_3);
-extern a_Decl * DATATYPEdecl (Id x_1, Ids x_2, Terms x_3);
+inline a_Decl * TYPEdecl (Id x_1, Ids x_2, Ty x_3)
+{
+  return new Decl_TYPEdecl (x_1, x_2, x_3);
+}
+inline a_Decl * DATATYPEdecl (Id x_1, Ids x_2, Terms x_3)
+{
+  return new Decl_DATATYPEdecl (x_1, x_2, x_3);
+}
+///////////////////////////////////////////////////////////////////////////////
+//
+// Downcasting functions for Decl
+//
+///////////////////////////////////////////////////////////////////////////////
+inline Decl_TYPEdecl * _TYPEdecl(const a_Decl * _x_) { return (Decl_TYPEdecl *)_x_; }
+inline Decl_DATATYPEdecl * _DATATYPEdecl(const a_Decl * _x_) { return (Decl_DATATYPEdecl *)_x_; }
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -536,17 +673,22 @@ extern a_Decl * DATATYPEdecl (Id x_1, Ids x_2, Terms x_3);
 ///////////////////////////////////////////////////////////////////////////////
 class a_Term : public GCObject {
 public:
-#line 30 "setl-ast.ph"
-   Id _1; Ty _2; 
-   a_Term (Id x_1, Ty x_2);
-   virtual ~a_Term();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 30 "../../../app/setl-pe/setl-ast.ph"
+  Id _1; Ty _2; 
+  inline a_Term (Id x_1, Ty x_2)
+   : _1(x_1), _2(x_2)
+  {
+  }
+  inline virtual ~a_Term()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 inline int boxed(const a_Term *) { return 1; }
@@ -556,7 +698,16 @@ inline int untag(const a_Term *) { return 0; }
 // Datatype constructor functions for Term
 //
 ///////////////////////////////////////////////////////////////////////////////
-extern a_Term * TERM (Id x_1, Ty x_2);
+inline a_Term * TERM (Id x_1, Ty x_2)
+{
+  return new a_Term (x_1, x_2);
+}
+///////////////////////////////////////////////////////////////////////////////
+//
+// Downcasting functions for Term
+//
+///////////////////////////////////////////////////////////////////////////////
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -565,17 +716,22 @@ extern a_Term * TERM (Id x_1, Ty x_2);
 ///////////////////////////////////////////////////////////////////////////////
 class a_Ty : public GCObject {
 public:
-#line 34 "setl-ast.ph"
-   Ty VARty; 
-   a_Ty (Ty x_VARty);
-   virtual ~a_Ty();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 34 "../../../app/setl-pe/setl-ast.ph"
+  Ty VARty; 
+  inline a_Ty (Ty x_VARty)
+   : VARty(x_VARty)
+  {
+  }
+  inline virtual ~a_Ty()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 inline int boxed(const a_Ty * x) { return x != 0; }
@@ -585,7 +741,16 @@ inline int untag(const a_Ty * x) { return x ? 1 : 0; }
 // Datatype constructor functions for Ty
 //
 ///////////////////////////////////////////////////////////////////////////////
-extern a_Ty * VARty (Ty x_VARty);
+inline a_Ty * VARty (Ty x_VARty)
+{
+  return new a_Ty (x_VARty);
+}
+///////////////////////////////////////////////////////////////////////////////
+//
+// Downcasting functions for Ty
+//
+///////////////////////////////////////////////////////////////////////////////
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -594,17 +759,22 @@ extern a_Ty * VARty (Ty x_VARty);
 ///////////////////////////////////////////////////////////////////////////////
 class a_LabeledExp : public GCObject {
 public:
-#line 36 "setl-ast.ph"
-   Id id; Exp exp; 
-   a_LabeledExp (Id x_id, Exp x_exp);
-   virtual ~a_LabeledExp();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 36 "../../../app/setl-pe/setl-ast.ph"
+  Id id; Exp exp; 
+  inline a_LabeledExp (Id x_id, Exp x_exp)
+   : id(x_id), exp(x_exp)
+  {
+  }
+  inline virtual ~a_LabeledExp()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 inline int boxed(const a_LabeledExp *) { return 1; }
@@ -614,7 +784,16 @@ inline int untag(const a_LabeledExp *) { return 0; }
 // Datatype constructor functions for LabeledExp
 //
 ///////////////////////////////////////////////////////////////////////////////
-extern a_LabeledExp * LABELEDexp (Id x_id, Exp x_exp);
+inline a_LabeledExp * LABELEDexp (Id x_id, Exp x_exp)
+{
+  return new a_LabeledExp (x_id, x_exp);
+}
+///////////////////////////////////////////////////////////////////////////////
+//
+// Downcasting functions for LabeledExp
+//
+///////////////////////////////////////////////////////////////////////////////
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -623,33 +802,30 @@ extern a_LabeledExp * LABELEDexp (Id x_id, Exp x_exp);
 ///////////////////////////////////////////////////////////////////////////////
 class a_Literal : public GCObject {
 public:
-   enum Tag_Literal {
-      tag_INTlit = 0, tag_REALlit = 1, tag_STRINGlit = 2, 
-      tag_CHARlit = 3
-   };
+  enum Tag_Literal {
+    tag_INTlit = 0, tag_REALlit = 1, tag_STRINGlit = 2, 
+    tag_CHARlit = 3
+  };
 
 public:
-   virtual ~a_Literal();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+  const Tag_Literal tag__; // variant tag
 protected:
-   virtual void trace(GC *);
+  inline a_Literal(Tag_Literal t__) : tag__(t__) {}
+public:
+  inline virtual ~a_Literal()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
+protected:
+  virtual void trace(GC *);
 public:
 };
 inline int boxed(const a_Literal *) { return 1; }
-///////////////////////////////////////////////////////////////////////////////
-//
-// Embbeded tag extraction functions
-//
-///////////////////////////////////////////////////////////////////////////////
-inline int untagp(const a_Literal * x)
-   { return (unsigned long)x & 3; }
-inline a_Literal * derefp(const a_Literal * x)
-   { return (a_Literal*)((unsigned long)x & ~3); }
-inline int untag(const a_Literal * x) { return untagp(x); }
+inline int untag(const a_Literal * x) { return x->tag__; }
 ///////////////////////////////////////////////////////////////////////////////
 //
 // Class for datatype constructor Literal::INTlit
@@ -657,17 +833,22 @@ inline int untag(const a_Literal * x) { return untagp(x); }
 ///////////////////////////////////////////////////////////////////////////////
 class Literal_INTlit : public a_Literal {
 public:
-#line 38 "setl-ast.ph"
-   int INTlit; 
-   Literal_INTlit (int x_INTlit);
-   ~Literal_INTlit();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 38 "../../../app/setl-pe/setl-ast.ph"
+  int INTlit; 
+  inline Literal_INTlit (int x_INTlit)
+   : a_Literal(tag_INTlit), INTlit(x_INTlit)
+  {
+  }
+  inline ~Literal_INTlit()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 
@@ -678,17 +859,22 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 class Literal_REALlit : public a_Literal {
 public:
-#line 40 "setl-ast.ph"
-   double REALlit; 
-   Literal_REALlit (double x_REALlit);
-   ~Literal_REALlit();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 40 "../../../app/setl-pe/setl-ast.ph"
+  double REALlit; 
+  inline Literal_REALlit (double x_REALlit)
+   : a_Literal(tag_REALlit), REALlit(x_REALlit)
+  {
+  }
+  inline ~Literal_REALlit()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 
@@ -699,17 +885,22 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 class Literal_STRINGlit : public a_Literal {
 public:
-#line 41 "setl-ast.ph"
-   char const * STRINGlit; 
-   Literal_STRINGlit (char const * x_STRINGlit);
-   ~Literal_STRINGlit();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 41 "../../../app/setl-pe/setl-ast.ph"
+  char const * STRINGlit; 
+  inline Literal_STRINGlit (char const * x_STRINGlit)
+   : a_Literal(tag_STRINGlit), STRINGlit(x_STRINGlit)
+  {
+  }
+  inline ~Literal_STRINGlit()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 
@@ -720,17 +911,22 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 class Literal_CHARlit : public a_Literal {
 public:
-#line 42 "setl-ast.ph"
-   char CHARlit; 
-   Literal_CHARlit (char x_CHARlit);
-   ~Literal_CHARlit();
-   ////////////////////////////////////////////////////////////////////////////
-   //
-   // Method for garbage collection tracing
-   //
-   ////////////////////////////////////////////////////////////////////////////
+#line 42 "../../../app/setl-pe/setl-ast.ph"
+  char CHARlit; 
+  inline Literal_CHARlit (char x_CHARlit)
+   : a_Literal(tag_CHARlit), CHARlit(x_CHARlit)
+  {
+  }
+  inline ~Literal_CHARlit()
+  {
+  }
+  /////////////////////////////////////////////////////////////////////////////
+  //
+  // Method for garbage collection tracing
+  //
+  /////////////////////////////////////////////////////////////////////////////
 protected:
-   virtual void trace(GC *);
+  virtual void trace(GC *);
 public:
 };
 
@@ -739,17 +935,38 @@ public:
 // Datatype constructor functions for Literal
 //
 ///////////////////////////////////////////////////////////////////////////////
-extern a_Literal * INTlit (int x_INTlit);
-extern a_Literal * REALlit (double x_REALlit);
-extern a_Literal * STRINGlit (char const * x_STRINGlit);
-extern a_Literal * CHARlit (char x_CHARlit);
+inline a_Literal * INTlit (int x_INTlit)
+{
+  return new Literal_INTlit (x_INTlit);
+}
+inline a_Literal * REALlit (double x_REALlit)
+{
+  return new Literal_REALlit (x_REALlit);
+}
+inline a_Literal * STRINGlit (char const * x_STRINGlit)
+{
+  return new Literal_STRINGlit (x_STRINGlit);
+}
+inline a_Literal * CHARlit (char x_CHARlit)
+{
+  return new Literal_CHARlit (x_CHARlit);
+}
+///////////////////////////////////////////////////////////////////////////////
+//
+// Downcasting functions for Literal
+//
+///////////////////////////////////////////////////////////////////////////////
+inline Literal_INTlit * _INTlit(const a_Literal * _x_) { return (Literal_INTlit *)_x_; }
+inline Literal_REALlit * _REALlit(const a_Literal * _x_) { return (Literal_REALlit *)_x_; }
+inline Literal_STRINGlit * _STRINGlit(const a_Literal * _x_) { return (Literal_STRINGlit *)_x_; }
+inline Literal_CHARlit * _CHARlit(const a_Literal * _x_) { return (Literal_CHARlit *)_x_; }
 
-#line 51 "setl-ast.ph"
-#line 51 "setl-ast.ph"
+#line 51 "../../../app/setl-pe/setl-ast.ph"
+#line 51 "../../../app/setl-pe/setl-ast.ph"
 
 
 #endif
-#line 54 "setl-ast.ph"
+#line 54 "../../../app/setl-pe/setl-ast.ph"
 /*
 ------------------------------- Statistics -------------------------------
 Merge matching rules         = yes
@@ -758,8 +975,8 @@ Number of ifs generated      = 0
 Number of switches generated = 0
 Number of labels             = 0
 Number of gotos              = 0
-Adaptive matching            = enabled
-Fast string matching         = enabled
-Inline downcasts             = enabled
+Adaptive matching            = disabled
+Fast string matching         = disabled
+Inline downcasts             = disabled
 --------------------------------------------------------------------------
 */

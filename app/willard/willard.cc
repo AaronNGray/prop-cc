@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
-//  This file is generated automatically using Prop (version 2.3.5),
-//  last updated on Jun 18, 1997.
-//  The original source file is "willard.pcc".
+//  This file is generated automatically using Prop (version 2.4.0),
+//  last updated on Jul 1, 2011.
+//  The original source file is "..\..\..\app\willard\willard.pcc".
 ///////////////////////////////////////////////////////////////////////////////
 
 #define PROP_REWRITING_USED
@@ -10,8 +10,8 @@
 #define PROP_QUARK_USED
 #define PROP_TUPLE2_USED
 #include <propdefs.h>
-#line 1 "willard.pcc"
-#include <iostream.h>
+#line 1 "../../../app/willard/willard.pcc"
+#include <iostream>
 #include <AD/pretty/postream.h>
 #include "willard-ast.h"
 #include "parser.h"
@@ -29,7 +29,7 @@ int main()
 
    Willard W;
 
-   W.set_log(cout);
+   W.set_log(std::cout);
 
    S << "Input:" << newline << q << newline;
   
@@ -37,10 +37,10 @@ int main()
 
    S << "Output:" << newline << q << newline;
 
-   cerr << "Cons = " << ConsCounter::count << '\n';
+   std::cerr << "Cons = " << ConsCounter::count << '\n';
    return 0;
 }
-#line 30 "willard.pcc"
+#line 30 "../../../app/willard/willard.pcc"
 /*
 ------------------------------- Statistics -------------------------------
 Merge matching rules         = yes

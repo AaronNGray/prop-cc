@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
-//  This file is generated automatically using Prop (version 2.3.5),
-//  last updated on Jun 18, 1997.
-//  The original source file is "querygraph.pcc".
+//  This file is generated automatically using Prop (version 2.4.0),
+//  last updated on Jul 1, 2011.
+//  The original source file is "..\..\..\app\willard\querygraph.pcc".
 ///////////////////////////////////////////////////////////////////////////////
 
 #define PROP_REWRITING_USED
@@ -9,7 +9,7 @@
 #define PROP_QUARK_USED
 #define PROP_TUPLE2_USED
 #include <propdefs.h>
-#line 1 "querygraph.pcc"
+#line 1 "../../../app/willard/querygraph.pcc"
 #include <AD/pretty/postream.h>
 #include "querygraph.h"
 
@@ -57,8 +57,8 @@ Bool QueryGraphConstruction::preceeds(Id x, Id y) const
 //  Transformation rules
 //
 ///////////////////////////////////////////////////////////////////////////////
-#line 48 "querygraph.pcc"
-#line 80 "querygraph.pcc"
+#line 48 "../../../app/willard/querygraph.pcc"
+#line 80 "../../../app/willard/querygraph.pcc"
 ///////////////////////////////////////////////////////////////////////////////
 //
 // This macro can be redefined by the user for debugging
@@ -67,201 +67,201 @@ Bool QueryGraphConstruction::preceeds(Id x, Id y) const
 #ifndef DEBUG_QueryGraphConstruction
 #define DEBUG_QueryGraphConstruction(repl,redex,file,line,rule) repl
 #else
-static const char * QueryGraphConstruction_file_name = "querygraph.pcc";
+static const char * QueryGraphConstruction_file_name = "..\..\..\app\willard\querygraph.pcc";
 #endif
 
 inline void  QueryGraphConstruction::labeler(char const * redex,int& s__,int)
 {
-   {
+  {
 s__ = 0;
-   }
+  }
 }
 
 inline void  QueryGraphConstruction::labeler(Quark redex,int& s__,int)
 {
-   {
+  {
 s__ = 0;
-   }
+  }
 }
 
 void  QueryGraphConstruction::labeler (Exp & redex, int& s__, int r__)
 {
 replacement__:
-   {
-      switch (redex->tag__) {
-         case a_Exp::tag_OP: {
-            if (_less_string(_OP(redex)->_1,"=")) {
-               if (_equal_string(_OP(redex)->_1,"#")) {
-               L1:; 
-#line 67 "querygraph.pcc"
-             
-               // Collect all free variables in this expression.
-               IdSet S;
-               free_vars(_OP(redex)->_2,S);   
-               
-               // Now add edges to the query graph.
-               foreach(i,S)
-               {  Id x = S.value(i);
-               	foreach(j,S)
-               	{  Id y = S.value(j);
-               	   if (x != y && preceeds(x,y)) add_edge(x,y);
-               	}
-               }
-               
-#line 80 "querygraph.pcc"
+  {
+    switch (redex->tag__) {
+      case a_Exp::tag_OP: {
+        if (_less_string(_OP(redex)->_1,"=")) {
+          if (_equal_string(_OP(redex)->_1,"#")) {
+          L1:; 
+#line 67 "../../../app/willard/querygraph.pcc"
+        
+          // Collect all free variables in this expression.
+          IdSet S;
+          free_vars(_OP(redex)->_2,S);   
+          
+          // Now add edges to the query graph.
+          foreach(i,S)
+          {  Id x = S.value(i);
+          	foreach(j,S)
+          	{  Id y = S.value(j);
+          	   if (x != y && preceeds(x,y)) add_edge(x,y);
+          	}
+          }
+          
+#line 80 "../../../app/willard/querygraph.pcc"
 }
-               else if (_equal_string(_OP(redex)->_1,"/=")) { goto L1; }
-               else if (_equal_string(_OP(redex)->_1,"<")) { goto L1; }
-               else if (_equal_string(_OP(redex)->_1,"<=")) { goto L1; }
-            } else {
-               if (_equal_string(_OP(redex)->_1,"=")) { goto L1; }
-               else if (_equal_string(_OP(redex)->_1,">")) { goto L1; }
-               else if (_equal_string(_OP(redex)->_1,">=")) { goto L1; }
-            }
-            } break;
-         case a_Exp::tag_FORALL: {
-#line 55 "querygraph.pcc"
-           push_quantifier(_FORALL(redex)->_1); 
-#line 55 "querygraph.pcc"
-            } break;
-         case a_Exp::tag_EXISTS: {
-#line 56 "querygraph.pcc"
-           push_quantifier(_EXISTS(redex)->_1); 
-#line 56 "querygraph.pcc"
-            } break;
-         case a_Exp::tag_GENERATOR: {
-#line 57 "querygraph.pcc"
-           push_quantifier(_GENERATOR(redex)->_1); 
-#line 57 "querygraph.pcc"
-            } break;
-         default: {} break;
-      }
-   }
-   switch(redex->tag__) {
-      case a_Exp::tag_OP: { 
-         int s0__;
-         int s1__;
-         labeler(_OP(redex)->_1, s0__, r__);
-         labeler(_OP(redex)->_2, s1__, r__);
-         s__ = 0;} break;
-      case a_Exp::tag_APP: { 
-         int s0__;
-         int s1__;
-         labeler(_APP(redex)->_1, s0__, r__);
-         labeler(_APP(redex)->_2, s1__, r__);
-         s__ = 0;} break;
-      case a_Exp::tag_LIT: { 
-         int s0__;
-         labeler(_LIT(redex)->LIT, s0__, r__);
-         s__ = 0;} break;
-      case a_Exp::tag_ID: { 
-         int s0__;
-         labeler(_ID(redex)->ID, s0__, r__);
-         s__ = 0;} break;
-      case a_Exp::tag_TUPLE: { 
-         int s0__;
-         labeler(_TUPLE(redex)->TUPLE, s0__, r__);
-         s__ = 0;} break;
-      case a_Exp::tag_FORALL: { 
-         int s0__;
-         int s1__;
-         int s2__;
-         labeler(_FORALL(redex)->_1, s0__, r__);
-         labeler(_FORALL(redex)->_2, s1__, r__);
-         labeler(_FORALL(redex)->_3, s2__, r__);
-         s__ = 0;} break;
-      case a_Exp::tag_EXISTS: { 
-         int s0__;
-         int s1__;
-         int s2__;
-         labeler(_EXISTS(redex)->_1, s0__, r__);
-         labeler(_EXISTS(redex)->_2, s1__, r__);
-         labeler(_EXISTS(redex)->_3, s2__, r__);
-         s__ = 0;} break;
-      case a_Exp::tag_GUARD: { 
-         int s0__;
-         int s1__;
-         labeler(_GUARD(redex)->_1, s0__, r__);
-         labeler(_GUARD(redex)->_2, s1__, r__);
-         s__ = 0;} break;
-      case a_Exp::tag_GENERATOR: { 
-         int s0__;
-         int s1__;
-         int s2__;
-         s0__ = 0; // Ids
-         labeler(_GENERATOR(redex)->_2, s1__, r__);
-         labeler(_GENERATOR(redex)->_3, s2__, r__);
-         s__ = 0;} break;
-      default: { 
-         int s0__;
-         int s1__;
-         int s2__;
-         labeler(_LET(redex)->_1, s0__, r__);
-         labeler(_LET(redex)->_2, s1__, r__);
-         labeler(_LET(redex)->_3, s2__, r__);
-         s__ = 0;} break;
-   }
-   {
-      switch (redex->tag__) {
-         case a_Exp::tag_FORALL: {
-#line 60 "querygraph.pcc"
-           pop_quantifier(_FORALL(redex)->_1); 
-#line 60 "querygraph.pcc"
-            } break;
-         case a_Exp::tag_EXISTS: {
-#line 61 "querygraph.pcc"
-           pop_quantifier(_EXISTS(redex)->_1); 
-#line 61 "querygraph.pcc"
-            } break;
-         case a_Exp::tag_GENERATOR: {
-#line 62 "querygraph.pcc"
-           pop_quantifier(_GENERATOR(redex)->_1); 
-#line 62 "querygraph.pcc"
-            } break;
-         default: {} break;
-      }
-   }
-   
+          else if (_equal_string(_OP(redex)->_1,"/=")) { goto L1; }
+          else if (_equal_string(_OP(redex)->_1,"<")) { goto L1; }
+          else if (_equal_string(_OP(redex)->_1,"<=")) { goto L1; }
+        } else {
+          if (_equal_string(_OP(redex)->_1,"=")) { goto L1; }
+          else if (_equal_string(_OP(redex)->_1,">")) { goto L1; }
+          else if (_equal_string(_OP(redex)->_1,">=")) { goto L1; }
+        }
+        } break;
+      case a_Exp::tag_FORALL: {
+#line 55 "../../../app/willard/querygraph.pcc"
+       push_quantifier(_FORALL(redex)->_1); 
+#line 55 "../../../app/willard/querygraph.pcc"
+        } break;
+      case a_Exp::tag_EXISTS: {
+#line 56 "../../../app/willard/querygraph.pcc"
+       push_quantifier(_EXISTS(redex)->_1); 
+#line 56 "../../../app/willard/querygraph.pcc"
+        } break;
+      case a_Exp::tag_GENERATOR: {
+#line 57 "../../../app/willard/querygraph.pcc"
+       push_quantifier(_GENERATOR(redex)->_1); 
+#line 57 "../../../app/willard/querygraph.pcc"
+        } break;
+      default: {} break;
+    }
+  }
+  switch(redex->tag__) {
+    case a_Exp::tag_OP: { 
+      int s0__;
+      int s1__;
+      labeler(_OP(redex)->_1, s0__, r__);
+      labeler(_OP(redex)->_2, s1__, r__);
+      s__ = 0;} break;
+    case a_Exp::tag_APP: { 
+      int s0__;
+      int s1__;
+      labeler(_APP(redex)->_1, s0__, r__);
+      labeler(_APP(redex)->_2, s1__, r__);
+      s__ = 0;} break;
+    case a_Exp::tag_LIT: { 
+      int s0__;
+      labeler(_LIT(redex)->LIT, s0__, r__);
+      s__ = 0;} break;
+    case a_Exp::tag_ID: { 
+      int s0__;
+      labeler(_ID(redex)->ID, s0__, r__);
+      s__ = 0;} break;
+    case a_Exp::tag_TUPLE: { 
+      int s0__;
+      labeler(_TUPLE(redex)->TUPLE, s0__, r__);
+      s__ = 0;} break;
+    case a_Exp::tag_FORALL: { 
+      int s0__;
+      int s1__;
+      int s2__;
+      labeler(_FORALL(redex)->_1, s0__, r__);
+      labeler(_FORALL(redex)->_2, s1__, r__);
+      labeler(_FORALL(redex)->_3, s2__, r__);
+      s__ = 0;} break;
+    case a_Exp::tag_EXISTS: { 
+      int s0__;
+      int s1__;
+      int s2__;
+      labeler(_EXISTS(redex)->_1, s0__, r__);
+      labeler(_EXISTS(redex)->_2, s1__, r__);
+      labeler(_EXISTS(redex)->_3, s2__, r__);
+      s__ = 0;} break;
+    case a_Exp::tag_GUARD: { 
+      int s0__;
+      int s1__;
+      labeler(_GUARD(redex)->_1, s0__, r__);
+      labeler(_GUARD(redex)->_2, s1__, r__);
+      s__ = 0;} break;
+    case a_Exp::tag_GENERATOR: { 
+      int s0__;
+      int s1__;
+      int s2__;
+      s0__ = 0; // Ids
+      labeler(_GENERATOR(redex)->_2, s1__, r__);
+      labeler(_GENERATOR(redex)->_3, s2__, r__);
+      s__ = 0;} break;
+    default: { 
+      int s0__;
+      int s1__;
+      int s2__;
+      labeler(_LET(redex)->_1, s0__, r__);
+      labeler(_LET(redex)->_2, s1__, r__);
+      labeler(_LET(redex)->_3, s2__, r__);
+      s__ = 0;} break;
+  }
+  {
+    switch (redex->tag__) {
+      case a_Exp::tag_FORALL: {
+#line 60 "../../../app/willard/querygraph.pcc"
+       pop_quantifier(_FORALL(redex)->_1); 
+#line 60 "../../../app/willard/querygraph.pcc"
+        } break;
+      case a_Exp::tag_EXISTS: {
+#line 61 "../../../app/willard/querygraph.pcc"
+       pop_quantifier(_EXISTS(redex)->_1); 
+#line 61 "../../../app/willard/querygraph.pcc"
+        } break;
+      case a_Exp::tag_GENERATOR: {
+#line 62 "../../../app/willard/querygraph.pcc"
+       pop_quantifier(_GENERATOR(redex)->_1); 
+#line 62 "../../../app/willard/querygraph.pcc"
+        } break;
+      default: {} break;
+    }
+  }
+  
 }
 
 void  QueryGraphConstruction::labeler (Literal & redex, int& s__, int r__)
 {
 replacement__:
-   switch(redex->tag__) {
-      case a_Literal::tag_INT: { 
-         int s0__;
-         s0__ = 0; // int
-         s__ = 0;} break;
-      case a_Literal::tag_STRING: { 
-         int s0__;
-         labeler(_STRING(redex)->STRING, s0__, r__);
-         s__ = 0;} break;
-      default: { 
-         int s0__;
-         s0__ = 0; // Bool
-         s__ = 0;} break;
-   }
-   
+  switch(redex->tag__) {
+    case a_Literal::tag_INT: { 
+      int s0__;
+      s0__ = 0; // int
+      s__ = 0;} break;
+    case a_Literal::tag_STRING: { 
+      int s0__;
+      labeler(_STRING(redex)->STRING, s0__, r__);
+      s__ = 0;} break;
+    default: { 
+      int s0__;
+      s0__ = 0; // Bool
+      s__ = 0;} break;
+  }
+  
 }
 
 void  QueryGraphConstruction::labeler (a_List<Exp> *  & redex, int& s__, int r__)
 {
 replacement__:
-   if ((redex)) {
-      int s0__;
-      int s1__;
-      labeler(redex->_1, s0__, r__);
-      labeler(redex->_2, s1__, r__);
-      s__ = 0;
-   } else {s__ = 0;
-   }
-   
+  if ((redex)) {
+    int s0__;
+    int s1__;
+    labeler(redex->_1, s0__, r__);
+    labeler(redex->_2, s1__, r__);
+    s__ = 0;
+  } else {s__ = 0;
+  }
+  
 }
 
-#line 81 "querygraph.pcc"
-#line 81 "querygraph.pcc"
+#line 81 "../../../app/willard/querygraph.pcc"
+#line 81 "../../../app/willard/querygraph.pcc"
 
-#line 82 "querygraph.pcc"
+#line 82 "../../../app/willard/querygraph.pcc"
 /*
 ------------------------------- Statistics -------------------------------
 Merge matching rules         = yes

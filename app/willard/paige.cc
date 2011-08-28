@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
-//  This file is generated automatically using Prop (version 2.3.5),
-//  last updated on Jun 18, 1997.
-//  The original source file is "paige.pcc".
+//  This file is generated automatically using Prop (version 2.4.0),
+//  last updated on Jul 1, 2011.
+//  The original source file is "..\..\..\app\willard\paige.pcc".
 ///////////////////////////////////////////////////////////////////////////////
 
 #define PROP_REWRITING_USED
@@ -9,10 +9,10 @@
 #define PROP_QUARK_USED
 #define PROP_TUPLE2_USED
 #include <propdefs.h>
-#line 1 "paige.pcc"
+#line 1 "../../../app/willard/paige.pcc"
 #include <assert.h>
-#include <iostream.h>
-#include <fstream.h>
+#include <iostream>
+#include <fstream>
 #include <AD/pretty/postream.h>
 #include "paige.h"
 #include "willard-ast.h"
@@ -22,39 +22,39 @@
 //  Constructor for the Paige/Goyal query transformer
 //
 ///////////////////////////////////////////////////////////////////////////////
-PaigeGoyal::PaigeGoyal() : log(*new ofstream), errlog(cerr)
+PaigeGoyal::PaigeGoyal() : log(*new std::ofstream), errlog(std::cerr)
 {  True     = LIT(BOOL(true));
    False    = LIT(BOOL(false));
    Zero     = LIT(INT(0));
    One      = LIT(INT(1));
    Two      = LIT(INT(2));
    EmptySet = GENERATOR(
-#line 19 "paige.pcc"
-#line 19 "paige.pcc"
+#line 19 "../../../app/willard/paige.pcc"
+#line 19 "../../../app/willard/paige.pcc"
 nil_1_
-#line 19 "paige.pcc"
-#line 19 "paige.pcc"
+#line 19 "../../../app/willard/paige.pcc"
+#line 19 "../../../app/willard/paige.pcc"
 ,
-#line 19 "paige.pcc"
-#line 19 "paige.pcc"
+#line 19 "../../../app/willard/paige.pcc"
+#line 19 "../../../app/willard/paige.pcc"
 nil_1_
-#line 19 "paige.pcc"
-#line 19 "paige.pcc"
+#line 19 "../../../app/willard/paige.pcc"
+#line 19 "../../../app/willard/paige.pcc"
 ,Zero);
    new_name = 0;
    subquery_names = 
-#line 21 "paige.pcc"
-#line 21 "paige.pcc"
+#line 21 "../../../app/willard/paige.pcc"
+#line 21 "../../../app/willard/paige.pcc"
 nil_1_
-#line 21 "paige.pcc"
-#line 21 "paige.pcc"
+#line 21 "../../../app/willard/paige.pcc"
+#line 21 "../../../app/willard/paige.pcc"
 ;
    subqueries = 
-#line 22 "paige.pcc"
-#line 22 "paige.pcc"
+#line 22 "../../../app/willard/paige.pcc"
+#line 22 "../../../app/willard/paige.pcc"
 nil_1_
-#line 22 "paige.pcc"
-#line 22 "paige.pcc"
+#line 22 "../../../app/willard/paige.pcc"
+#line 22 "../../../app/willard/paige.pcc"
 ;
 }
 
@@ -76,26 +76,26 @@ void PaigeGoyal::add_subquery(Id x, Exp e)
 {  // PrettyOStream S; 
    // S << "Subquery: " << x << '=' << e << '\n';
    subquery_names = 
-#line 42 "paige.pcc"
-#line 42 "paige.pcc"
+#line 42 "../../../app/willard/paige.pcc"
+#line 42 "../../../app/willard/paige.pcc"
 list_1_(x,subquery_names)
-#line 42 "paige.pcc"
-#line 42 "paige.pcc"
+#line 42 "../../../app/willard/paige.pcc"
+#line 42 "../../../app/willard/paige.pcc"
 ;
    subqueries     = 
-#line 43 "paige.pcc"
-#line 43 "paige.pcc"
+#line 43 "../../../app/willard/paige.pcc"
+#line 43 "../../../app/willard/paige.pcc"
 list_1_(e,subqueries)
-#line 43 "paige.pcc"
-#line 43 "paige.pcc"
+#line 43 "../../../app/willard/paige.pcc"
+#line 43 "../../../app/willard/paige.pcc"
 ;
 }
 Bool PaigeGoyal::has_subqueries() const { return subqueries != 
-#line 45 "paige.pcc"
-#line 45 "paige.pcc"
+#line 45 "../../../app/willard/paige.pcc"
+#line 45 "../../../app/willard/paige.pcc"
 nil_1_
-#line 45 "paige.pcc"
-#line 45 "paige.pcc"
+#line 45 "../../../app/willard/paige.pcc"
+#line 45 "../../../app/willard/paige.pcc"
 ; }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -106,18 +106,18 @@ nil_1_
 Exp PaigeGoyal::collect_subqueries(Exp exp) 
 {  exp = make_let(subquery_names, subqueries, exp);
    subquery_names = 
-#line 54 "paige.pcc"
-#line 54 "paige.pcc"
+#line 54 "../../../app/willard/paige.pcc"
+#line 54 "../../../app/willard/paige.pcc"
 nil_1_
-#line 54 "paige.pcc"
-#line 54 "paige.pcc"
+#line 54 "../../../app/willard/paige.pcc"
+#line 54 "../../../app/willard/paige.pcc"
 ;
    subqueries     = 
-#line 55 "paige.pcc"
-#line 55 "paige.pcc"
+#line 55 "../../../app/willard/paige.pcc"
+#line 55 "../../../app/willard/paige.pcc"
 nil_1_
-#line 55 "paige.pcc"
-#line 55 "paige.pcc"
+#line 55 "../../../app/willard/paige.pcc"
+#line 55 "../../../app/willard/paige.pcc"
 ;
    return exp;
 }
@@ -129,26 +129,26 @@ nil_1_
 ///////////////////////////////////////////////////////////////////////////////
 Exp PaigeGoyal::make_let(Ids xs, Exps es, Exp exp) 
 {  
-#line 65 "paige.pcc"
-#line 71 "paige.pcc"
+#line 65 "../../../app/willard/paige.pcc"
+#line 71 "../../../app/willard/paige.pcc"
 {
-   for (;;) {
-      if (xs) {
-         if (es) {
-#line 67 "paige.pcc"
-          Id  x = xs->_1;
-            	 Exp e = es->_1; 
-            	 exp = LET(x,e,exp); 
-            	 xs = xs->_2; es = es->_2;
-                  
-#line 71 "paige.pcc"
-         } else { goto L1; }
+  for (;;) {
+    if (xs) {
+      if (es) {
+#line 67 "../../../app/willard/paige.pcc"
+      Id  x = xs->_1;
+        	 Exp e = es->_1; 
+        	 exp = LET(x,e,exp); 
+        	 xs = xs->_2; es = es->_2;
+              
+#line 71 "../../../app/willard/paige.pcc"
       } else { goto L1; }
-   }
-   L1:;
+    } else { goto L1; }
+  }
+  L1:;
 }
-#line 72 "paige.pcc"
-#line 72 "paige.pcc"
+#line 72 "../../../app/willard/paige.pcc"
+#line 72 "../../../app/willard/paige.pcc"
 
    return exp;
 }
@@ -163,35 +163,35 @@ void PaigeGoyal::define_range(Ids xs, Exps es)
 {  Ids  ids = xs;
    Exps exps = es;
    
-#line 85 "paige.pcc"
-#line 86 "paige.pcc"
+#line 85 "../../../app/willard/paige.pcc"
+#line 86 "../../../app/willard/paige.pcc"
 {
-   for (;;) {
-      if (ids) {
-         if (exps) {
-#line 86 "paige.pcc"
-           define_range(ids->_1,exps->_1); ids = ids->_2; exps = exps->_2; 
-#line 86 "paige.pcc"
-         } else { goto L2; }
+  for (;;) {
+    if (ids) {
+      if (exps) {
+#line 86 "../../../app/willard/paige.pcc"
+       define_range(ids->_1,exps->_1); ids = ids->_2; exps = exps->_2; 
+#line 86 "../../../app/willard/paige.pcc"
       } else { goto L2; }
-   }
-   L2:;
+    } else { goto L2; }
+  }
+  L2:;
 }
-#line 87 "paige.pcc"
-#line 87 "paige.pcc"
+#line 87 "../../../app/willard/paige.pcc"
+#line 87 "../../../app/willard/paige.pcc"
 
    if (ids != 
-#line 88 "paige.pcc"
-#line 88 "paige.pcc"
+#line 88 "../../../app/willard/paige.pcc"
+#line 88 "../../../app/willard/paige.pcc"
 nil_1_
-#line 88 "paige.pcc"
-#line 88 "paige.pcc"
+#line 88 "../../../app/willard/paige.pcc"
+#line 88 "../../../app/willard/paige.pcc"
  || exps != 
-#line 88 "paige.pcc"
-#line 88 "paige.pcc"
+#line 88 "../../../app/willard/paige.pcc"
+#line 88 "../../../app/willard/paige.pcc"
 nil_1_
-#line 88 "paige.pcc"
-#line 88 "paige.pcc"
+#line 88 "../../../app/willard/paige.pcc"
+#line 88 "../../../app/willard/paige.pcc"
 )
       errlog << "Arity mismatch in " << xs << "in" << es << ::newline; 
 }
@@ -216,8 +216,8 @@ void PaigeGoyal::error(const char * msg, Exp e)
           << e << ::newline << ::unindent; 
 }
 
-void PaigeGoyal::set_log(ostream& f) { log.set_stream(f); }
-void PaigeGoyal::set_error(ostream& f) { errlog.set_stream(f); }
+void PaigeGoyal::set_log(std::ostream& f) { log.set_stream(f); }
+void PaigeGoyal::set_error(std::ostream& f) { errlog.set_stream(f); }
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -242,11 +242,11 @@ Bool PaigeGoyal::has_edge(Id x, Id y) const
 void PaigeGoyal::add_edge_query(Id x, Id y, Exp q) 
 {
    edge_queries.insert(
-#line 137 "paige.pcc"
-#line 137 "paige.pcc"
+#line 137 "../../../app/willard/paige.pcc"
+#line 137 "../../../app/willard/paige.pcc"
 mkTuple2(x,y)
-#line 137 "paige.pcc"
-#line 137 "paige.pcc"
+#line 137 "../../../app/willard/paige.pcc"
+#line 137 "../../../app/willard/paige.pcc"
 ,q);
 }
 
@@ -269,38 +269,38 @@ void PaigeGoyal::compute_transitive_closure()
 void PaigeGoyal::push_quantifier(Id x) { quantifier_vars.push(x); }
 void PaigeGoyal::push_quantifier(Ids xs) 
 {  
-#line 158 "paige.pcc"
-#line 158 "paige.pcc"
+#line 158 "../../../app/willard/paige.pcc"
+#line 158 "../../../app/willard/paige.pcc"
 {
-   for (;;) {
-      if (xs) {
-#line 158 "paige.pcc"
-        push_quantifier(xs->_1); xs = xs->_2; 
-#line 158 "paige.pcc"
-      } else { goto L3; }
-   }
-   L3:;
+  for (;;) {
+    if (xs) {
+#line 158 "../../../app/willard/paige.pcc"
+     push_quantifier(xs->_1); xs = xs->_2; 
+#line 158 "../../../app/willard/paige.pcc"
+    } else { goto L3; }
+  }
+  L3:;
 }
-#line 158 "paige.pcc"
-#line 158 "paige.pcc"
+#line 158 "../../../app/willard/paige.pcc"
+#line 158 "../../../app/willard/paige.pcc"
  }
 void PaigeGoyal::pop_quantifier(Id x) { quantifier_vars.pop(); }
 void PaigeGoyal::pop_quantifier(Ids xs) 
 {  
-#line 161 "paige.pcc"
-#line 161 "paige.pcc"
+#line 161 "../../../app/willard/paige.pcc"
+#line 161 "../../../app/willard/paige.pcc"
 {
-   for (;;) {
-      if (xs) {
-#line 161 "paige.pcc"
-        pop_quantifier(xs->_1); xs = xs->_2; 
-#line 161 "paige.pcc"
-      } else { goto L4; }
-   }
-   L4:;
+  for (;;) {
+    if (xs) {
+#line 161 "../../../app/willard/paige.pcc"
+     pop_quantifier(xs->_1); xs = xs->_2; 
+#line 161 "../../../app/willard/paige.pcc"
+    } else { goto L4; }
+  }
+  L4:;
 }
-#line 161 "paige.pcc"
-#line 161 "paige.pcc"
+#line 161 "../../../app/willard/paige.pcc"
+#line 161 "../../../app/willard/paige.pcc"
  }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -315,18 +315,18 @@ void PaigeGoyal::print_query_graph()
       Id y = parent.key(i);
       log << ::tab << "edge" << x << "->" << y;
       if (edge_queries.contains(
-#line 174 "paige.pcc"
-#line 174 "paige.pcc"
+#line 174 "../../../app/willard/paige.pcc"
+#line 174 "../../../app/willard/paige.pcc"
 mkTuple2(x,y)
-#line 174 "paige.pcc"
-#line 174 "paige.pcc"
+#line 174 "../../../app/willard/paige.pcc"
+#line 174 "../../../app/willard/paige.pcc"
 ))
 	  log << '\t' << edge_queries[
-#line 175 "paige.pcc"
-#line 175 "paige.pcc"
+#line 175 "../../../app/willard/paige.pcc"
+#line 175 "../../../app/willard/paige.pcc"
 mkTuple2(x,y)
-#line 175 "paige.pcc"
-#line 175 "paige.pcc"
+#line 175 "../../../app/willard/paige.pcc"
+#line 175 "../../../app/willard/paige.pcc"
 ]; 
       log << ::newline;
    }
@@ -340,11 +340,11 @@ mkTuple2(x,y)
 ///////////////////////////////////////////////////////////////////////////////
 Exp PaigeGoyal::decompose(Exp e) 
 {  subqueries = 
-#line 187 "paige.pcc"
-#line 187 "paige.pcc"
+#line 187 "../../../app/willard/paige.pcc"
+#line 187 "../../../app/willard/paige.pcc"
 nil_1_
-#line 187 "paige.pcc"
-#line 187 "paige.pcc"
+#line 187 "../../../app/willard/paige.pcc"
+#line 187 "../../../app/willard/paige.pcc"
 ;
    do {
       changed = false;
@@ -360,7 +360,7 @@ nil_1_
    } while (changed);
    return e;
 }
-#line 202 "paige.pcc"
+#line 202 "../../../app/willard/paige.pcc"
 /*
 ------------------------------- Statistics -------------------------------
 Merge matching rules         = yes

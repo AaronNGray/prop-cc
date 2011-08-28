@@ -1,6 +1,6 @@
 #include <assert.h>
-#include <iostream.h>
-#include <fstream.h>
+#include <iostream>
+#include <fstream>
 #include <AD/pretty/postream.h>
 #include "paige.ph"
 #include "willard-ast.ph"
@@ -10,7 +10,7 @@
 //  Constructor for the Paige/Goyal query transformer
 //
 ///////////////////////////////////////////////////////////////////////////////
-PaigeGoyal::PaigeGoyal() : log(*new ofstream), errlog(cerr)
+PaigeGoyal::PaigeGoyal() : log(*new std::ofstream), errlog(std::cerr)
 {  True     = LIT(BOOL(true));
    False    = LIT(BOOL(false));
    Zero     = LIT(INT(0));
@@ -109,8 +109,8 @@ void PaigeGoyal::error(const char * msg, Exp e)
           << e << ::newline << ::unindent; 
 }
 
-void PaigeGoyal::set_log(ostream& f) { log.set_stream(f); }
-void PaigeGoyal::set_error(ostream& f) { errlog.set_stream(f); }
+void PaigeGoyal::set_log(std::ostream& f) { log.set_stream(f); }
+void PaigeGoyal::set_error(std::ostream& f) { errlog.set_stream(f); }
 
 ///////////////////////////////////////////////////////////////////////////////
 //
