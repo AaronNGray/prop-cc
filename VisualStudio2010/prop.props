@@ -13,7 +13,7 @@
     <Prop_Compiler>
       <IncludePath>..\..\include</IncludePath>
       <RootPath>..\..\prop-src</RootPath>
-      <CommandLineTemplate>"$(SolutionDir)prop\$(Configuration)\prop.exe" [AutoMake] [NonLinear] [FastStringMatch] [AdaptiveMatching] [InlineCasts] [TaggedPointer] [Rewriting] -I%(IncludePath) -I%(RootPath) [AdditionalOptions] [inputs]</CommandLineTemplate>
+      <CommandLineTemplate>"$(SolutionDir)$(Configuration)\prop.exe" [AutoMake] [NonLinear] [FastStringMatch] [AdaptiveMatching] [InlineCasts] [TaggedPointer] [Rewriting] -I%(IncludePath) -I%(RootPath) [AdditionalOptions] [inputs]</CommandLineTemplate>
       <Outputs>%(Output).cc</Outputs>
       <ExecutionDescription>Prop Compiler Compiler</ExecutionDescription>
       <ShowOnlyRuleProperties>false</ShowOnlyRuleProperties>
