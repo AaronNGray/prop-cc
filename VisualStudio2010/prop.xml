@@ -24,6 +24,12 @@
         </Category.DisplayName>
       </Category>
       <Category
+        Name="Optimizations">
+        <Category.DisplayName>
+          <sys:String>Optimizations</sys:String>
+        </Category.DisplayName>
+      </Category>
+      <Category
         Name="Command Line"
         Subtype="CommandLine">
         <Category.DisplayName>
@@ -46,6 +52,46 @@
       Visible="True"
       IncludeInCommandLine="True"
       Switch="-non_linear" />
+    
+    <BoolProperty
+      Name="FastStringMatch"
+      DisplayName="fast string match"
+      Category="Optimizations"
+      Visible="True"
+      IncludeInCommandLine="True"
+      Switch="-Ofast_string_match" />
+    
+    <BoolProperty
+      Name="AdaptiveMatching"
+      DisplayName="adaptive matching"
+      Category="Optimizations"
+      Visible="True"
+      IncludeInCommandLine="True"
+      Switch="-Oadaptive_matching" />
+    
+    <BoolProperty
+      Name="InlineCasts"
+      DisplayName="inline casts"
+      Category="Optimizations"
+      Visible="True"
+      IncludeInCommandLine="True"
+      Switch="-Oinline_casts" />
+    
+    <BoolProperty
+      Name="TaggedPointer"
+      DisplayName="tagged pointer"
+      Category="Optimizations"
+      Visible="True"
+      IncludeInCommandLine="True"
+      Switch="-Otagged_pointer" />
+    
+    <BoolProperty
+      Name="Rewriting"
+      DisplayName="rewriting"
+      Category="Optimizations"
+      Visible="True"
+      IncludeInCommandLine="True"
+      Switch="-Orewriting" />
     
     <StringListProperty
       Name="Inputs"
